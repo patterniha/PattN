@@ -465,6 +465,8 @@ stage_runtime_assets() {
 
   if [[ "$FORCE_NETCORE" -eq 0 ]]; then
     if populate_assets_zip_mode "$outroot" "$rid"; then
+      # PattN: the core-bin bundle ships upstream Xray; replace it with patterniha/Xray-core
+      download_xray "$outroot/bin/xray" "$rid" || echo "[!] xray download failed (kept bundle xray)"
       echo "[*] Using v2rayN bundle archive."
     else
       echo "[*] Bundle failed, fallback to separate core + rules."
@@ -491,7 +493,7 @@ publish_binary() {
   dotnet clean "$PROJECT" -c Release
   rm -rf "$(dirname "$PROJECT")/bin/Release/net10.0" || true
   dotnet restore "$PROJECT"
-  dotnet publish "$PROJECT" -c Release -r "$rid" -p:PublishSingleFile=false -p:SelfContained=true
+  dotnet publish "$PROJECT" -c Release -r "$rid" -p:PublishSingleFile=false -p:SelfContained=true ${VERSION_ARG:+-p:Version=${VERSION_ARG#v}}
 }
 
 write_launcher_file() {
@@ -507,13 +509,13 @@ if [[ -x "$DIR/PattN" ]]; then
   exec "$DIR/PattN" "$@"
 fi
 
-for dll in v2rayN.Desktop.dll v2rayN.dll; do
+for dll in PattN.dll; do
   if [[ -f "$DIR/$dll" ]]; then
     exec /usr/bin/dotnet "$DIR/$dll" "$@"
   fi
 done
 
-echo "v2rayN launcher: no executable found in $DIR" >&2
+echo "PattN launcher: no executable found in $DIR" >&2
 ls -l "$DIR" >&2 || true
 exit 1
 EOF
