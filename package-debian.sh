@@ -309,10 +309,9 @@ download_xray() {
   mkdir -p "$outdir"
 
   if [[ -z "$ver" ]]; then
-    ver="$(curl -fsSL https://api.github.com/repos/patterniha/Xray-core/releases/latest \
-      | grep -Eo '"tag_name":\s*"v[^"]+"' \
-      | sed -E 's/.*"v([^"]+)".*/\1/' \
-      | head -n1)" || true
+    # PattN: resolve the latest tag from the release redirect (the anonymous GitHub API is rate-limited on CI runners)
+    ver="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/patterniha/Xray-core/releases/latest | sed -E 's#.*/releases/tag/v##')" || true
+    [[ "$ver" =~ ^[0-9] ]] || ver=""
   fi
 
   [[ -n "$ver" ]] || { echo "[xray] Failed to get version"; return 1; }
@@ -477,7 +476,7 @@ stage_runtime_assets() {
   if [[ "$FORCE_NETCORE" -eq 0 ]]; then
     if populate_assets_zip_mode "$outroot" "$rid"; then
       # PattN: the core-bin bundle ships upstream Xray; replace it with patterniha/Xray-core
-      download_xray "$outroot/bin/xray" "$rid" || echo "[!] xray download failed (kept bundle xray)"
+      download_xray "$outroot/bin/xray" "$rid" || { echo "[!] PattN: failed to fetch patterniha/Xray-core, aborting"; return 1; }
       echo "[*] Using v2rayN bundle bin assets."
     else
       echo "[*] Bundle failed, fallback to separate core + rules."
