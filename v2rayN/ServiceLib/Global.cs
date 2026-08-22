@@ -2,7 +2,7 @@ namespace ServiceLib;
 
 public class Global
 {
-    public const string AppName = "v2rayN";
+    public const string AppName = "PattN";
     public const string GithubUrl = "https://github.com";
     public const string GithubApiUrl = "https://api.github.com/repos";
     public const string GeoUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/{0}.dat";
@@ -634,7 +634,7 @@ public class Global
     {
         { ECoreType.v2fly, "v2fly/v2ray-core" },
         { ECoreType.v2fly_v5, "v2fly/v2ray-core" },
-        { ECoreType.Xray, "XTLS/Xray-core" },
+        { ECoreType.Xray, "patterniha/Xray-core" },
         { ECoreType.sing_box, "SagerNet/sing-box" },
         { ECoreType.mihomo, "MetaCubeX/mihomo" },
         { ECoreType.hysteria, "apernet/hysteria" },

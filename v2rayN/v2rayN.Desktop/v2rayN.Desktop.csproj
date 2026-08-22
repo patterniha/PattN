@@ -8,6 +8,8 @@
 		<AssemblyName>v2rayN</AssemblyName>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<CETCompat>false</CETCompat>
+		<AssemblyTitle>PattN</AssemblyTitle>
+		<Product>PattN</Product>
 	</PropertyGroup>
 
 	<ItemGroup>

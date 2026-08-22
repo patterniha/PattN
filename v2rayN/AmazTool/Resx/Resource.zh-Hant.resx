@@ -130,10 +130,10 @@
     <value>正在進行中，請等待...</value>
   </data>
   <data name="TryTerminateProcess" xml:space="preserve">
-    <value>嘗試結束 v2rayN 進程...</value>
+    <value>嘗試結束 PattN 進程...</value>
   </data>
   <data name="FailedTerminateProcess" xml:space="preserve">
-    <value>請手動關閉正在執行的 v2rayN，否則可能會升級失敗。</value>
+    <value>請手動關閉正在執行的 PattN，否則可能會升級失敗。</value>
   </data>
   <data name="StartUnzipping" xml:space="preserve">
     <value>開始解壓縮更新包...</value>

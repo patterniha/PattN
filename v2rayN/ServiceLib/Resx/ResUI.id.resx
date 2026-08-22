@@ -718,7 +718,7 @@
     <value>Aktifkan Mux Multiplexing</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>Pengaturan v2rayN</value>
+    <value>Pengaturan PattN</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>Kata sandi autentikasi</value>
@@ -1759,7 +1759,7 @@ Tindakan "Ambil sertifikat" mungkin gagal jika sertifikat self-signed digunakan 
     <value>PreSharedKey</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>Ekspor tautan berbagi internal v2rayN ke papan klip</value>
+    <value>Ekspor tautan berbagi internal PattN ke papan klip</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} memiliki versi baru: {1}</value>

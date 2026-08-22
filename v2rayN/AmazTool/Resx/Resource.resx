@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Restartv2rayN" xml:space="preserve">
-    <value>Start v2rayN, please wait...</value>
+    <value>Start PattN, please wait...</value>
   </data>
   <data name="Guidelines" xml:space="preserve">
     <value>Please run it from the main application.</value>
@@ -130,10 +130,10 @@
     <value>In progress, please wait...</value>
   </data>
   <data name="TryTerminateProcess" xml:space="preserve">
-    <value>Try to terminate the v2rayN process...</value>
+    <value>Try to terminate the PattN process...</value>
   </data>
   <data name="FailedTerminateProcess" xml:space="preserve">
-    <value>Failed to terminate the v2rayN. Close it manually, or the upgrade may fail.</value>
+    <value>Failed to terminate the PattN. Close it manually, or the upgrade may fail.</value>
   </data>
   <data name="StartUnzipping" xml:space="preserve">
     <value>Start extracting the update package...</value>

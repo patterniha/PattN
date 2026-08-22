@@ -718,7 +718,7 @@
     <value>開啟 Mux 多路復用</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>v2rayN 設定</value>
+    <value>PattN 設定</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>認證密碼</value>
@@ -1759,7 +1759,7 @@
     <value>PreSharedKey</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>匯出 v2rayN 內部分享連結至剪貼簿（多選）</value>
+    <value>匯出 PattN 內部分享連結至剪貼簿（多選）</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} 有新版本可用：{1}</value>
@@ -1832,7 +1832,7 @@
     <value>根憑證提供者</value>
   </data>
   <data name="TbRootCertificateProviderTip" xml:space="preserve">
-    <value>僅適用於 v2rayN GUI 的下載與網路請求，不影響核心的憑證驗證</value>
+    <value>僅適用於 PattN GUI 的下載與網路請求，不影響核心的憑證驗證</value>
   </data>
   <data name="TbProxyDialResolveStrategy" xml:space="preserve">
     <value>連線代理解析策略</value>

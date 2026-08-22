@@ -718,7 +718,7 @@
     <value>Activer Mux multiplex</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>Paramètres v2rayN</value>
+    <value>Paramètres PattN</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>Mot de passe d’authentification</value>
@@ -1753,7 +1753,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>PreSharedKey</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>Exporter le lien interne v2rayN vers le presse-papiers</value>
+    <value>Exporter le lien interne PattN vers le presse-papiers</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} a une nouvelle version disponible: {1}</value>
