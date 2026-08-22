@@ -505,10 +505,10 @@ write_spec_file() {
 Name:           v2rayN
 Version:        __VERSION__
 Release:        1%{?dist}
-Summary:        v2rayN (Avalonia) GUI client for Linux
+Summary:        PattN (Avalonia) GUI client for Linux
 License:        GPL-3.0-only
-URL:            https://github.com/2dust/v2rayN
-BugURL:         https://github.com/2dust/v2rayN/issues
+URL:            https://github.com/patterniha/PattN
+BugURL:         https://github.com/patterniha/PattN/issues
 ExclusiveArch:  riscv64
 Source0:        __PKGROOT__.tar.gz
 
@@ -522,11 +522,11 @@ Requires:       bash >= 5.2.21
 Requires:       freetype >= 2.13
 
 %description
-v2rayN Linux for Red Hat Enterprise Linux
+PattN Linux for Red Hat Enterprise Linux
 Support vless / vmess / Trojan / http / socks / Anytls / Hysteria2 / Shadowsocks / tuic / WireGuard
 Support Red Hat Enterprise Linux / Fedora Linux / Rocky Linux / AlmaLinux / CentOS
 For more information, Please visit our website
-https://github.com/2dust/v2rayN
+https://github.com/patterniha/PattN
 
 %prep
 %setup -q -n __PKGROOT__
@@ -562,8 +562,8 @@ install -dm0755 %{buildroot}%{_datadir}/applications
 install -m0644 /dev/stdin %{buildroot}%{_datadir}/applications/v2rayn.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
-Name=v2rayN
-Comment=v2rayN for Red Hat Enterprise Linux
+Name=PattN
+Comment=PattN for Red Hat Enterprise Linux
 Exec=v2rayn
 Icon=v2rayn
 Terminal=false

@@ -525,8 +525,8 @@ write_desktop_file() {
   install -m 644 /dev/stdin "$stage/usr/share/applications/v2rayn.desktop" <<'EOF'
 [Desktop Entry]
 Type=Application
-Name=v2rayN
-Comment=v2rayN for Debian GNU Linux
+Name=PattN
+Comment=PattN for Debian GNU Linux
 Exec=v2rayn
 Icon=v2rayn
 Terminal=false
@@ -609,7 +609,7 @@ Standards-Version: 4.7.0
 
 Package: v2rayn
 Architecture: ${deb_arch}
-Description: v2rayN
+Description: PattN
 EOF
 
   multiarch="$(dpkg-architecture -a"$deb_arch" -qDEB_HOST_MULTIARCH)"
@@ -651,11 +651,11 @@ Package: v2rayn
 Version: ${VERSION}
 Architecture: ${deb_arch}
 Maintainer: 2dust <noreply@github.com>
-Homepage: https://github.com/2dust/v2rayN
+Homepage: https://github.com/patterniha/PattN
 Section: net
 Priority: optional
 Depends: ${final_depends}
-Description: v2rayN (Avalonia) GUI client for Linux
+Description: PattN (Avalonia) GUI client for Linux
  Support vless / vmess / Trojan / http / socks / Anytls / Hysteria2 /
  Shadowsocks / tuic / WireGuard.
 EOF

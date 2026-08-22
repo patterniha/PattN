@@ -53,7 +53,7 @@ cat >"$PackagePath/PattN.app/Contents/Info.plist" <<-EOF
   <key>CFBundleIconName</key>
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
-  <string>2dust.v2rayN</string>
+  <string>patterniha.PattN</string>
   <key>CFBundleName</key>
   <string>PattN</string>
   <key>CFBundlePackageType</key>
