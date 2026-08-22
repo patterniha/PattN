@@ -10,7 +10,7 @@ on:
         required: false
         type: string
         default: './v2rayN.Desktop/v2rayN.Desktop.csproj'
-      version: # PattN: release tag used as the app version (x.y.z); empty keeps Directory.Build.props
+      version: # PattN: release tag used as the app version (x.y.z-P<n>); empty keeps Directory.Build.props
         required: false
         type: string
         default: ''
@@ -82,7 +82,9 @@ jobs:
       if: inputs.version != ''
       shell: bash
       run: |
-        [[ "$Version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::release_tag must be x.y.z (got '$Version')"; exit 1; }
+        [[ "$Version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-P[0-9]+)?$ ]] || { echo "::error::release_tag must be x.y.z-P<n> (got '$Version')"; exit 1; }
+        Base="$(grep -oP '(?<=<Version>)[^<]+' v2rayN/Directory.Build.props)"
+        [[ "${Version%%-P*}" == "$Base" ]] || { echo "::error::release_tag '$Version' must be based on upstream version $Base (Directory.Build.props), e.g. $Base-P1"; exit 1; }
 
     - name: Build v2rayN
       shell: bash

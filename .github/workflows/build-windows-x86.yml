@@ -59,7 +59,7 @@ jobs:
       - name: Check release tag
         shell: pwsh
         run: |
-          if ("${{ inputs.release_tag }}" -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "release_tag must be x.y.z (got '${{ inputs.release_tag }}')" }
+          if ("${{ inputs.release_tag }}" -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(-P[0-9]+)?$') { throw "release_tag must be x.y.z-P<n> (got '${{ inputs.release_tag }}')" }
 
       - name: Publish ${{ matrix.flavor }} win-x86
         shell: pwsh

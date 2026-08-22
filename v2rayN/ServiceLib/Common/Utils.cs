@@ -847,6 +847,12 @@ public class Utils
     {
         try
         {
+            // PattN builds are versioned "x.y.z-P<n>"; only the informational version keeps the suffix
+            var infoVersion = Assembly.GetExecutingAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (infoVersion.IsNotEmpty())
+            {
+                return infoVersion.Split('+')[0];
+            }
             return Assembly.GetExecutingAssembly()?.GetName()?.Version?.ToString(3) ?? "0.0";
         }
         catch (Exception ex)
