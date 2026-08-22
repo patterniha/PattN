@@ -526,7 +526,7 @@ cp -a * %{buildroot}/opt/v2rayN/
 
 find %{buildroot}/opt/v2rayN -type d -exec chmod 0755 {} +
 find %{buildroot}/opt/v2rayN -type f -exec chmod 0644 {} +
-[ -f %{buildroot}/opt/v2rayN/v2rayN ] && chmod 0755 %{buildroot}/opt/v2rayN/v2rayN || :
+[ -f %{buildroot}/opt/v2rayN/PattN ] && chmod 0755 %{buildroot}/opt/v2rayN/PattN || :
 
 install -dm0755 %{buildroot}%{_bindir}
 install -m0755 /dev/stdin %{buildroot}%{_bindir}/v2rayn << 'EOF'
@@ -534,7 +534,7 @@ install -m0755 /dev/stdin %{buildroot}%{_bindir}/v2rayn << 'EOF'
 set -euo pipefail
 DIR="/opt/v2rayN"
 
-if [[ -x "$DIR/v2rayN" ]]; then exec "$DIR/v2rayN" "$@"; fi
+if [[ -x "$DIR/PattN" ]]; then exec "$DIR/PattN" "$@"; fi
 
 for dll in v2rayN.Desktop.dll v2rayN.dll; do
   if [[ -f "$DIR/$dll" ]]; then exec /usr/bin/dotnet "$DIR/$dll" "$@"; fi

@@ -25,7 +25,7 @@ mkdir -p "$PackagePath/PattN.app/Contents/Resources"
 cp -rf "$OutputPath" "$PackagePath/PattN.app/Contents/MacOS"
 cp -f "$PackagePath/PattN.app/Contents/MacOS/v2rayN.icns" "$PackagePath/PattN.app/Contents/Resources/AppIcon.icns"
 echo "When this file exists, app will not store configs under this folder" > "$PackagePath/PattN.app/Contents/MacOS/NotStoreConfigHere.txt"
-chmod +x "$PackagePath/PattN.app/Contents/MacOS/v2rayN"
+chmod +x "$PackagePath/PattN.app/Contents/MacOS/PattN"
 
 cat >"$PackagePath/PattN.app/Contents/Info.plist" <<-EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -47,7 +47,7 @@ cat >"$PackagePath/PattN.app/Contents/Info.plist" <<-EOF
   <key>CFBundleDisplayName</key>
   <string>PattN</string>
   <key>CFBundleExecutable</key>
-  <string>v2rayN</string>
+  <string>PattN</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleIconName</key>

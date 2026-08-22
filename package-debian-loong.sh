@@ -503,8 +503,8 @@ set -euo pipefail
 DIR="/opt/v2rayN"
 cd "$DIR"
 
-if [[ -x "$DIR/v2rayN" ]]; then
-  exec "$DIR/v2rayN" "$@"
+if [[ -x "$DIR/PattN" ]]; then
+  exec "$DIR/PattN" "$@"
 fi
 
 for dll in v2rayN.Desktop.dll v2rayN.dll; do
@@ -662,7 +662,7 @@ EOF
 
   find "$stage/opt/v2rayN" -type d -exec chmod 0755 {} +
   find "$stage/opt/v2rayN" -type f -exec chmod 0644 {} +
-  [[ -f "$stage/opt/v2rayN/v2rayN" ]] && chmod 0755 "$stage/opt/v2rayN/v2rayN" || true
+  [[ -f "$stage/opt/v2rayN/PattN" ]] && chmod 0755 "$stage/opt/v2rayN/PattN" || true
 
   deb_out="$OUTPUT_DIR/v2rayn_${VERSION}_${deb_arch}.deb"
   dpkg-deb --root-owner-group --build "$stage" "$deb_out"

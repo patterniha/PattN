@@ -24,7 +24,7 @@ internal class Utils
         return Path.Combine(startupPath, fileName);
     }
 
-    public static string V2rayN => "v2rayN";
+    public static string V2rayN => "PattN";
 
     public static void StartV2RayN()
     {
