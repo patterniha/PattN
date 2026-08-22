@@ -233,7 +233,7 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
                 case ECoreType.v2fly:
                 case ECoreType.Xray:
                 case ECoreType.v2fly_v5:
-                    version = Regex.Match(echo, $"{coreInfo.Match} ([0-9.]+(?:-[0-9A-Za-z]+)?) \\(").Groups[1].Value;
+                    version = Regex.Match(echo, $"{coreInfo.Match} ([0-9.]+) \\(").Groups[1].Value;
                     break;
 
                 case ECoreType.mihomo:

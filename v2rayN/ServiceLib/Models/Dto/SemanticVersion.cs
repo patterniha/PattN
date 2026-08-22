@@ -5,7 +5,6 @@ public class SemanticVersion
     private readonly int major;
     private readonly int minor;
     private readonly int patch;
-    private readonly int revision;
     private readonly string version;
 
     public SemanticVersion(int major, int minor, int patch)
@@ -29,8 +28,7 @@ public class SemanticVersion
             }
             this.version = version.RemovePrefix('v');
 
-            // numeric segments only, so suffixed tags such as "26.7.28-P1" compare as 26.7.28.1
-            var parts = Regex.Matches(this.version, @"\d+").Select(m => m.Value).ToArray();
+            var parts = this.version.Split('.');
             if (parts.Length == 2)
             {
                 major = int.Parse(parts.First());
@@ -42,7 +40,6 @@ public class SemanticVersion
                 major = int.Parse(parts[0]);
                 minor = int.Parse(parts[1]);
                 patch = int.Parse(parts[2]);
-                revision = parts.Length == 4 ? int.Parse(parts[3]) : 0;
             }
             else
             {
@@ -61,7 +58,7 @@ public class SemanticVersion
     {
         if (obj is SemanticVersion other)
         {
-            return major == other.major && minor == other.minor && patch == other.patch && revision == other.revision;
+            return major == other.major && minor == other.minor && patch == other.patch;
         }
         else
         {
@@ -71,7 +68,7 @@ public class SemanticVersion
 
     public override int GetHashCode()
     {
-        return major.GetHashCode() ^ minor.GetHashCode() ^ patch.GetHashCode() ^ revision.GetHashCode();
+        return major.GetHashCode() ^ minor.GetHashCode() ^ patch.GetHashCode();
     }
 
     /// <summary>
@@ -141,7 +138,7 @@ public class SemanticVersion
                 }
                 else
                 {
-                    return revision >= other.revision;
+                    return true;
                 }
             }
         }
@@ -179,7 +176,7 @@ public class SemanticVersion
                 }
                 else
                 {
-                    return revision <= other.revision;
+                    return true;
                 }
             }
         }
