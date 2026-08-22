@@ -236,6 +236,8 @@ resolve_version() {
   fi
 
   VERSION="${VERSION#v}"
+  # PattN tags look like 7.24.8-P1; RPM versions cannot contain '-'
+  VERSION="${VERSION//-/.}"
   echo "[*] GUI version resolved as: ${VERSION}"
 }
 

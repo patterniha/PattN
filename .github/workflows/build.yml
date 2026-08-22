@@ -83,7 +83,7 @@ jobs:
       shell: bash
       run: |
         [[ "$Version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-P[0-9]+)?$ ]] || { echo "::error::release_tag must be x.y.z-P<n> (got '$Version')"; exit 1; }
-        Base="$(grep -oP '(?<=<Version>)[^<]+' v2rayN/Directory.Build.props)"
+        Base="$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' v2rayN/Directory.Build.props | head -n 1)"
         [[ "${Version%%-P*}" == "$Base" ]] || { echo "::error::release_tag '$Version' must be based on upstream version $Base (Directory.Build.props), e.g. $Base-P1"; exit 1; }
 
     - name: Build v2rayN
