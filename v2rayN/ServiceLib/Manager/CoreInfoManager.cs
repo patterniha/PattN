@@ -47,7 +47,46 @@ public sealed class CoreInfoManager
             msg = string.Format(ResUI.NotFoundCore, Utils.GetBinPath("", coreInfo?.CoreType.ToString()), coreInfo?.CoreExes?.LastOrDefault(), coreInfo?.Url);
             Logging.SaveLog(msg);
         }
+        else if (coreInfo.CoreType == ECoreType.Xray && Utils.IsWindows())
+        {
+            fileName = GetXrayAliasExecFile(fileName);
+        }
         return fileName;
+    }
+
+    private const string XrayAliasExeName = "p-xray-p.exe";
+
+    // Windows treats a process named "xray.exe" as suspicious (XTLS/Xray-core#4427), so the core is run from a
+    // copy under another name; xray.exe itself is kept (and stays the update target) for third-party tools.
+    private static string GetXrayAliasExecFile(string xrayExe)
+    {
+        var aliasExe = Path.Combine(Path.GetDirectoryName(xrayExe) ?? string.Empty, XrayAliasExeName);
+        try
+        {
+            if (!File.Exists(aliasExe) || !IsSameFileContent(xrayExe, aliasExe))
+            {
+                File.Copy(xrayExe, aliasExe, true);
+            }
+            return aliasExe;
+        }
+        catch (Exception ex)
+        {
+            // e.g. the copy is still running; keep using whichever file exists
+            Logging.SaveLog("CoreInfoManager", ex);
+            return File.Exists(aliasExe) ? aliasExe : xrayExe;
+        }
+    }
+
+    // Xray builds are reproducible (fixed timestamp) and sizes can repeat across versions, so compare by hash
+    private static bool IsSameFileContent(string path1, string path2)
+    {
+        if (new FileInfo(path1).Length != new FileInfo(path2).Length)
+        {
+            return false;
+        }
+        using var stream1 = File.OpenRead(path1);
+        using var stream2 = File.OpenRead(path2);
+        return SHA256.HashData(stream1).AsSpan().SequenceEqual(SHA256.HashData(stream2));
     }
 
     public List<ECoreType> GetCheckUpdateCoreTypes()
