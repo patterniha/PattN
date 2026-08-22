@@ -18,6 +18,7 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     with:
+      version: ${{ inputs.release_tag }}
       target: windows
 
   release-zip:

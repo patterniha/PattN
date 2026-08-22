@@ -10,6 +10,10 @@ on:
         required: false
         type: string
         default: './v2rayN.Desktop/v2rayN.Desktop.csproj'
+      version: # PattN: release tag used as the app version (x.y.z); empty keeps Directory.Build.props
+        required: false
+        type: string
+        default: ''
 
 jobs:
   build:
@@ -37,6 +41,7 @@ jobs:
           )
         }}
       Project: ${{ inputs.project }}
+      Version: ${{ inputs.version }}
       ExtOpt: |-
         ${{
           case(
@@ -73,15 +78,21 @@ jobs:
       with:
         dotnet-version: 10.0.1xx
         
+    - name: Check version
+      if: inputs.version != ''
+      shell: bash
+      run: |
+        [[ "$Version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::release_tag must be x.y.z (got '$Version')"; exit 1; }
+
     - name: Build v2rayN
       shell: bash
       working-directory: ./v2rayN
-      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true $ExtOpt -o $Output
+      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true $ExtOpt ${Version:+-p:Version=$Version} -o $Output
 
     - name: Build AmazTool
       shell: bash
       working-directory: ./v2rayN
-      run: dotnet publish ./AmazTool/AmazTool.csproj -c Release -r $RID -p:SelfContained=true -p:PublishTrimmed=true $ExtOpt -o $Output
+      run: dotnet publish ./AmazTool/AmazTool.csproj -c Release -r $RID -p:SelfContained=true -p:PublishTrimmed=true $ExtOpt ${Version:+-p:Version=$Version} -o $Output
 
     - name: Remove Debug Symbols
       shell: bash

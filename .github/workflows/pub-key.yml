@@ -37,12 +37,12 @@ jobs:
         set -euo pipefail
         fingerprint="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')"
         [[ -n "$fingerprint" ]] || { echo "No GPG secret key found."; exit 1; }
-        gpg --batch --armor --export "$fingerprint" > v2rayN-public-key.asc
+        gpg --batch --armor --export "$fingerprint" > PattN-public-key.asc
 
     - name: Upload GPG public key to release
       uses: svenstaro/upload-release-action@v2
       with:
-        file: v2rayN-public-key.asc
+        file: PattN-public-key.asc
         tag: ${{ inputs.release_tag }}
         prerelease: true
         overwrite: true

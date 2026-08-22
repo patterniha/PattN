@@ -18,6 +18,7 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     with:
+      version: ${{ inputs.release_tag }}
       target: macos
 
   release-zip:
@@ -53,7 +54,7 @@ jobs:
       uses: actions/download-artifact@v8
       with:
         name: ${{ matrix.arch }}
-        path: v2rayN-macos-${{ env.Arch }}
+        path: PattN-macos-${{ env.Arch }}
     
     - name: Setup create-dmg
       run: brew install create-dmg
@@ -62,13 +63,13 @@ jobs:
       run: chmod 755 package-osx.sh
 
     - name: Package dmg
-      run: ./package-osx.sh macos-$Arch v2rayN-macos-$Arch ${{ inputs.release_tag }}
+      run: ./package-osx.sh macos-$Arch PattN-macos-$Arch ${{ inputs.release_tag }}
 
     - name: Upload dmg artifact
       uses: actions/upload-artifact@v7
       with:
         name: release-dmg-${{ matrix.arch }}
-        path: v2rayN*.dmg
+        path: PattN*.dmg
         if-no-files-found: error
 
   release-dmg:

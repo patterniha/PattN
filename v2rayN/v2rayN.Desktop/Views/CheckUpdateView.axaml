@@ -78,7 +78,7 @@
                                     Grid.Column="1"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
-                                    Text="{Binding CoreTypeForStorage}" />
+                                    Text="{Binding CoreTypeDisplay}" />
                                 <TextBlock
                                     Grid.Column="2"
                                     HorizontalAlignment="Left"

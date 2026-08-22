@@ -11,6 +11,7 @@ on:
 jobs:
   winget:
     name: Publish winget package
+    if: github.repository == '2dust/v2rayN'
     runs-on: windows-latest
     steps:
       - name: Submit v2ray package to Windows Package Manager Community Repository

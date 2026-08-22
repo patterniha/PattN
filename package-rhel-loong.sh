@@ -260,7 +260,7 @@ xray_url_for_rid() {
   local ver="$2"
 
   case "$rid" in
-    linux-loongarch64) echo "https://github.com/XTLS/Xray-core/releases/download/v${ver}/Xray-linux-loong64.zip" ;;
+    linux-loongarch64) echo "https://github.com/patterniha/Xray-core/releases/download/v${ver}/Xray-linux-loong64.zip" ;;
     *)                 return 1 ;;
   esac
 }
@@ -294,7 +294,7 @@ download_xray() {
   mkdir -p "$outdir"
 
   if [[ -z "$ver" ]]; then
-    ver="$(curl -fsSL https://api.github.com/repos/XTLS/Xray-core/releases/latest \
+    ver="$(curl -fsSL https://api.github.com/repos/patterniha/Xray-core/releases/latest \
       | grep -Eo '"tag_name":\s*"v[^"]+"' \
       | sed -E 's/.*"v([^"]+)".*/\1/' \
       | head -n1)" || true
