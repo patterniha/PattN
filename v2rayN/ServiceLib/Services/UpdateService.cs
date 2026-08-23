@@ -145,8 +145,15 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
         requests.AddRange(await GetSrsFileAllRequest());
         // NOTE: srs files are more small, so we reverse the order to ensure a good download experience for the user.
         requests.Reverse();
-        await DownloadGeoFiles(requests);
-        await UpdateFunc(true, string.Format(ResUI.MsgDownloadGeoFileSuccessfully, "geo"));
+        var installed = await DownloadGeoFiles(requests);
+        if (installed)
+        {
+            await UpdateFunc(true, string.Format(ResUI.MsgDownloadGeoFileSuccessfully, "geo"));
+        }
+        else
+        {
+            await UpdateFunc(false, ResUI.OperationFailed);
+        }
     }
 
     #region CheckUpdate private
@@ -533,8 +540,9 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
         };
     }
 
-    private async Task DownloadGeoFiles(List<FileDownloadRequest> requests)
+    private async Task<bool> DownloadGeoFiles(List<FileDownloadRequest> requests)
     {
+        var installed = false;
         var tmpFilePathDict = new Dictionary<string, string>();
         var tmpFileRequests = new List<FileDownloadRequest>();
         foreach (var request in requests)
@@ -552,6 +560,7 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
         {
             if (args.Success)
             {
+                installed = true;
                 //_ = UpdateFunc(false, string.Format(ResUI.MsgDownloadGeoFileSuccessfully, fileName));
 
                 foreach (var request in requests)
@@ -589,6 +598,7 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
         };
 
         await downloadHandle.DownloadSmallFilesAsync(tmpFileRequests, true, TimeSpan.FromSeconds(_timeout));
+        return installed;
     }
 
     #endregion Geo private

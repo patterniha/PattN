@@ -87,12 +87,19 @@ public class DownloadService
             {
                 var span = states.Span;
                 var completedCount = 0;
+                var failedCount = 0;
+                FileDownloadState? failedState = null;
                 var downloadingStates = new List<FileDownloadState>();
                 foreach (ref readonly var item in span)
                 {
                     if (item.Completed)
                     {
                         completedCount++;
+                        if (item.IsFailed)
+                        {
+                            failedCount++;
+                            failedState ??= item;
+                        }
                     }
                     else if (item.TotalBytes > 0)
                     {
@@ -104,25 +111,13 @@ public class DownloadService
                 var totalTotalBytes = downloadingStates.Sum(x => x.TotalBytes);
                 var downloadingFileName = string.Join(", ", downloadingStates.Select(x => x.Request.FileName));
                 var allCompleted = completedCount == span.Length;
-                if (allCompleted)
+                if (allCompleted && failedCount > 0 && failedState?.Error != null)
                 {
-                    // check and throw errors if any
-                    FileDownloadState? failedState = null;
-                    foreach (ref readonly var item in span)
-                    {
-                        if (!item.IsFailed)
-                        {
-                            continue;
-                        }
-                        failedState = item;
-                        break;
-                    }
-                    if (failedState?.Error != null)
-                    {
-                        throw failedState.Error;
-                    }
+                    // do not throw here (the downloader swallows it); report and let the caller see Success=false
+                    Logging.SaveLog(_tag, failedState.Error);
+                    Error?.Invoke(this, new ErrorEventArgs(failedState.Error));
                 }
-                UpdateCompleted?.Invoke(this, new UpdateResult(allCompleted, $"{completedCount}/{span.Length} | {Utils.HumanFy((long)totalSpeed / 1024)}/s {Utils.HumanFy(totalDownloadedBytes / 1024)}/{Utils.HumanFy(totalTotalBytes / 1024)} {downloadingFileName}"));
+                UpdateCompleted?.Invoke(this, new UpdateResult(allCompleted && failedCount == 0, $"{completedCount}/{span.Length} | {Utils.HumanFy((long)totalSpeed / 1024)}/s {Utils.HumanFy(totalDownloadedBytes / 1024)}/{Utils.HumanFy(totalTotalBytes / 1024)} {downloadingFileName}"));
             }
         }
         catch (Exception ex)
