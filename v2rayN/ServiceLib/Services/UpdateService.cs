@@ -441,6 +441,13 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
         // Append default items
         geoSiteFiles.AddRange(["google", "cn", "geolocation-cn", "category-ads-all"]);
 
+        // The Iran (Chocolate4U) rule-set source does not provide geosite-gfw.srs (referenced by the built-in blacklist routing).
+        // A single 404 aborts the whole batch and nothing (including geosite.dat/geoip.dat) gets installed, so skip it.
+        if (_config.ConstItem.SrsSourceUrl == Global.SingboxRulesetSources[2])
+        {
+            geoSiteFiles.RemoveAll(f => f == "gfw");
+        }
+
         // Download files
         var path = Utils.GetBinPath("srss");
         if (!Directory.Exists(path))
