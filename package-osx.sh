@@ -20,6 +20,13 @@ mkdir -p "$OutputPath/bin/xray"
 cp -f xray-core/xray "$OutputPath/bin/xray/xray"
 chmod +x "$OutputPath/bin/xray/xray"
 
+# PattN: bundle Chocolate4U geo files
+wget -nv -O "$OutputPath/bin/geosite.dat" "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat"
+wget -nv -O "$OutputPath/bin/geoip.dat" "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat"
+mkdir -p "$OutputPath/bin/srss"
+wget -nv -O "$OutputPath/bin/srss/geosite-ir.srs" "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geosite-ir.srs"
+wget -nv -O "$OutputPath/bin/srss/geoip-ir.srs" "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geoip-ir.srs"
+
 PackagePath="v2rayN-Package-${Arch}"
 mkdir -p "$PackagePath/PattN.app/Contents/Resources"
 cp -rf "$OutputPath" "$PackagePath/PattN.app/Contents/MacOS"

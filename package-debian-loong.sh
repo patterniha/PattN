@@ -470,6 +470,8 @@ stage_runtime_assets() {
     if populate_assets_zip_mode "$outroot" "$rid"; then
       # PattN: the core-bin bundle ships upstream Xray; replace it with patterniha/Xray-core
       download_xray "$outroot/bin/xray" "$rid" || { echo "[!] PattN: failed to fetch patterniha/Xray-core, aborting"; return 1; }
+      # PattN: replace bundled geo files with Chocolate4U + Iran rule-sets
+      download_geo_assets "$outroot" || echo "[!] Geo rules download failed (kept bundle defaults)"
       echo "[*] Using v2rayN bundle archive."
     else
       echo "[*] Bundle failed, fallback to separate core + rules."
