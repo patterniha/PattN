@@ -18,5 +18,11 @@ public record FileDownloadRequest
     public required string FilePath { get; init; }
     public string? DisplayFileName { get; init; }
 
+    /// <summary>
+    /// Treat HTTP 404 as a successful (skipped) download.
+    /// Used for sing-box rule-set files that may not exist on the selected source.
+    /// </summary>
+    public bool IgnoreNotFound { get; init; }
+
     public string FileName => DisplayFileName ?? Path.GetFileName(FilePath);
 }
