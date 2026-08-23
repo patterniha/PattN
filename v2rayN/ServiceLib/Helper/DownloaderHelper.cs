@@ -261,7 +261,7 @@ public class DownloaderHelper
             downloader.DownloadFileCompleted += (sender, value) =>
             {
                 var newState = states[index] with { Completed = true };
-                if (value.Error != null)
+                if (value.Error != null && !(request.IgnoreNotFound && IsNotFoundError(value.Error)))
                 {
                     newState = newState with { Error = value.Error };
                 }
@@ -270,6 +270,19 @@ public class DownloaderHelper
             };
             await downloader.DownloadFileTaskAsync(request.FileUrl, request.FilePath, parallelCancellationToken);
         });
+    }
+
+    private static bool IsNotFoundError(Exception? ex)
+    {
+        while (ex != null)
+        {
+            if (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound })
+            {
+                return true;
+            }
+            ex = ex.InnerException;
+        }
+        return false;
     }
 
     // https://github.com/bezzad/Downloader/blob/a75a6e431acd6cbba6293f7afdcf676544a09174/src/Downloader/SocketClient.cs#L45
