@@ -185,8 +185,8 @@ jobs:
             Copy-Item $cronet.FullName "$singDir/libcronet.dll" -Force
           }
 
-          Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/V2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "$bin/geosite.dat"
-          Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/V2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "$bin/geoip.dat"
+          Invoke-WebRequest -Uri "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat" -OutFile "$bin/geosite.dat"
+          Invoke-WebRequest -Uri "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat" -OutFile "$bin/geoip.dat"
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/geoip-only-cn-private.dat" -OutFile "$bin/geoip-only-cn-private.dat"
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb" -OutFile "$bin/Country.mmdb"
           Invoke-WebRequest -Uri "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geoip.metadb" -OutFile "$bin/geoip.metadb"
@@ -219,6 +219,9 @@ jobs:
           foreach ($f in $geositeRules) {
             Invoke-WebRequest -Uri "https://raw.githubusercontent.com/2dust/sing-box-rules/refs/heads/rule-set-geosite/$f" -OutFile "$srssDir/$f"
           }
+
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geosite-ir.srs" -OutFile "$srssDir/geosite-ir.srs"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geoip-ir.srs" -OutFile "$srssDir/geoip-ir.srs"
 
       - name: Package zip
         shell: pwsh

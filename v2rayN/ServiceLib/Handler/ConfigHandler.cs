@@ -33,6 +33,7 @@ public static class ConfigHandler
             }
         }
 
+        var isNewConfig = config == null;
         config ??= new Config();
 
         config.CoreBasicItem ??= new()
@@ -113,6 +114,13 @@ public static class ConfigHandler
         }
 
         config.ConstItem ??= new ConstItem();
+        if (isNewConfig)
+        {
+            // PattN: fresh installs default to the Iran regional preset sources (Chocolate4U)
+            config.ConstItem.GeoSourceUrl = Global.GeoFilesSources[2];
+            config.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[2];
+            config.ConstItem.RouteRulesTemplateSourceUrl = Global.RoutingRulesSources[2];
+        }
 
         config.SimpleDNSItem ??= InitBuiltinSimpleDNS();
         config.SimpleDNSItem.BlockAAAAQuery ??= false;
@@ -2662,9 +2670,28 @@ public static class ConfigHandler
         };
         await AddBatchRoutingRules(item1, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "global"));
 
+        //PattN: Iran direct (Chocolate4U), see https://github.com/Chocolate4U/Iran-v2ray-rules
+        var item4 = new RoutingItem()
+        {
+            Remarks = "IR-ایران مستقیم، بقیه پراکسی",
+            DomainStrategy = "IPOnDemand",
+            Url = string.Empty,
+            Sort = maxSort + 4,
+        };
+        await AddBatchRoutingRules(item4, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "white_iran"));
+
+        //PattN: Iran global proxy
+        var item5 = new RoutingItem()
+        {
+            Remarks = "IR-پراکسی سراسری",
+            Url = string.Empty,
+            Sort = maxSort + 5,
+        };
+        await AddBatchRoutingRules(item5, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "global_iran"));
+
         if (!blImportAdvancedRules)
         {
-            await SetDefaultRouting(config, item2);
+            await SetDefaultRouting(config, item4);
         }
         return 0;
     }

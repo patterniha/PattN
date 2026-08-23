@@ -31,7 +31,9 @@
 		<EmbeddedResource Include="Sample\clash_tun_yaml" />
 		<EmbeddedResource Include="Sample\custom_routing_black" />
 		<EmbeddedResource Include="Sample\custom_routing_global" />
+		<EmbeddedResource Include="Sample\custom_routing_global_iran" />
 		<EmbeddedResource Include="Sample\custom_routing_white" />
+		<EmbeddedResource Include="Sample\custom_routing_white_iran" />
 		<EmbeddedResource Include="Sample\dns_singbox_normal" />
 		<EmbeddedResource Include="Sample\dns_v2ray_normal" />
 		<EmbeddedResource Include="Sample\kill_as_sudo_linux_sh" />

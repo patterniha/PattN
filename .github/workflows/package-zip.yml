@@ -73,6 +73,15 @@ jobs:
         cp -f xray-core/xray* PattN-$Target-$Arch/bin/xray/
         chmod +x PattN-$Target-$Arch/bin/xray/xray 2>/dev/null || true
 
+    - name: Bundle Chocolate4U geo files
+      run: |
+        set -euo pipefail
+        wget -nv -O "PattN-$Target-$Arch/bin/geosite.dat" "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat"
+        wget -nv -O "PattN-$Target-$Arch/bin/geoip.dat" "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat"
+        mkdir -p "PattN-$Target-$Arch/bin/srss"
+        wget -nv -O "PattN-$Target-$Arch/bin/srss/geosite-ir.srs" "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geosite-ir.srs"
+        wget -nv -O "PattN-$Target-$Arch/bin/srss/geoip-ir.srs" "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geoip-ir.srs"
+
     - name: Package zip archive
       run: 7z a -tZip PattN-$Target-$Arch.zip PattN-$Target-$Arch -mx1
 
