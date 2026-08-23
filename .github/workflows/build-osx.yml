@@ -9,21 +9,32 @@ on:
   push:
     branches:
       - master
+      - my-releases
+  pull_request:
+    branches:
+      - master
+      - my-releases
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/build.yml
     with:
       version: ${{ inputs.release_tag }}
       target: macos
 
   release-zip:
-    if: inputs.release_tag != ''
+    if: inputs.release_tag != '' && github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/my-releases')
     needs: build
+    permissions:
+      contents: write
+      actions: read
     uses: ./.github/workflows/package-zip.yml
     with:
       target: macos
@@ -32,8 +43,11 @@ jobs:
     
   dmg:
     name: package and release macOS dmg
-    if: inputs.release_tag != ''
+    if: inputs.release_tag != '' && github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/my-releases')
     needs: build
+    permissions:
+      contents: read
+      actions: read
     strategy:
       matrix:
         arch: [ x64, arm64 ]
@@ -57,13 +71,13 @@ jobs:
         path: PattN-macos-${{ env.Arch }}
     
     - name: Setup create-dmg
-      run: brew install create-dmg
+      run: brew install create-dmg sevenzip
 
     - name: Ensure script permissions
       run: chmod 755 package-osx.sh
 
     - name: Package dmg
-      run: ./package-osx.sh macos-$Arch PattN-macos-$Arch ${{ inputs.release_tag }}
+      run: ./package-osx.sh "macos-$Arch" "PattN-macos-$Arch" "${{ inputs.release_tag }}"
 
     - name: Upload dmg artifact
       uses: actions/upload-artifact@v7
@@ -74,8 +88,11 @@ jobs:
 
   release-dmg:
     name: sign and upload macOS dmg
-    if: inputs.release_tag != ''
+    if: inputs.release_tag != '' && github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/my-releases')
     needs: dmg
+    permissions:
+      contents: write
+      actions: read
     strategy:
       matrix:
         arch: [ x64, arm64 ]

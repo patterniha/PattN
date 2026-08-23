@@ -103,6 +103,11 @@ build/
 *.svclog
 *.scc
 
+# macOS packaging output and Finder metadata
+.DS_Store
+dist/
+PattN-macos-*.dmg
+
 # Chutzpah Test files
 _Chutzpah*
 

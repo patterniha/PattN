@@ -50,10 +50,67 @@ jobs:
         path: PattN-${{ env.Target }}-${{ env.Arch }}
 
     - name: Get v2rayN-core-bin
+      shell: bash
       run: |
-        wget -nv -O core-bin.zip "https://github.com/2dust/v2rayN-core-bin/raw/refs/heads/master/v2rayN-$Target-$Arch.zip"
-        7z x -y core-bin.zip
-        cp -an v2rayN-$Target-$Arch/. PattN-$Target-$Arch/
+        set -euo pipefail
+        core_archive=core-bin.zip
+        if [[ "$Target" == macos ]]; then
+          source "$GITHUB_WORKSPACE/macos-assets.sh"
+          case "$Target-$Arch" in
+            macos-64)
+              core_url="https://github.com/2dust/v2rayN-core-bin/raw/$PATTN_MACOS_CORE_REF/v2rayN-macos-64.zip"
+              core_sha256="$PATTN_MACOS_CORE_SHA256_X64"
+              ;;
+            macos-arm64)
+              core_url="https://github.com/2dust/v2rayN-core-bin/raw/$PATTN_MACOS_CORE_REF/v2rayN-macos-arm64.zip"
+              core_sha256="$PATTN_MACOS_CORE_SHA256_ARM64"
+              ;;
+            *)
+              echo "::error::no pinned macOS core asset for $Target-$Arch"
+              exit 1
+              ;;
+          esac
+          curl --fail --location --retry 3 --retry-delay 2 \
+            --connect-timeout 30 --max-time 900 \
+            --proto '=https' --proto-redir '=https' \
+            --silent --show-error --output "$core_archive" "$core_url"
+          echo "$core_sha256  $core_archive" | sha256sum --check --status
+        else
+          wget -nv -O "$core_archive" "https://github.com/2dust/v2rayN-core-bin/raw/refs/heads/master/v2rayN-$Target-$Arch.zip"
+        fi
+        if [[ "$Target" == macos ]]; then
+          archive_listing="$(7z l -slt "$core_archive")"
+          first_path=1
+          while IFS= read -r archive_line; do
+            case "$archive_line" in
+              'Path = '*)
+                archive_path="${archive_line#Path = }"
+                if (( first_path )); then
+                  first_path=0
+                  continue
+                fi
+                [[ -n "$archive_path" && "$archive_path" != /* && ! "$archive_path" =~ ^[A-Za-z]: ]] || {
+                  echo "::error::unsafe path in macOS core archive: $archive_path"
+                  exit 1
+                }
+                case "/$archive_path/" in
+                  */../*|*/./*)
+                    echo "::error::unsafe path in macOS core archive: $archive_path"
+                    exit 1
+                    ;;
+                esac
+                ;;
+            esac
+          done <<< "$archive_listing"
+        fi
+        7z x -y "$core_archive"
+        if [[ "$Target" == macos ]]; then
+          core_root="v2rayN-$Target-$Arch"
+          [[ -d "$core_root" && ! -L "$core_root" ]]
+          unsafe_entry="$(find "$core_root" -mindepth 1 ! -type f ! -type d -print -quit)"
+          [[ -z "$unsafe_entry" ]] || { echo "::error::unsafe file in macOS core archive: $unsafe_entry"; exit 1; }
+        fi
+        cp -an "v2rayN-$Target-$Arch"/. "PattN-$Target-$Arch"/
 
     - name: Bundle patterniha/Xray-core
       run: |
@@ -67,14 +124,75 @@ jobs:
           macos-arm64)   asset=Xray-macos-arm64-v8a.zip ;;
           *) echo "::error::no Xray asset mapping for $Target-$Arch"; exit 1 ;;
         esac
-        wget -nv -O xray-core.zip "https://github.com/patterniha/Xray-core/releases/latest/download/$asset"
+        if [[ "$Target" == macos ]]; then
+          source "$GITHUB_WORKSPACE/macos-assets.sh"
+          case "$Target-$Arch" in
+            macos-64)
+              xray_url="https://github.com/patterniha/Xray-core/releases/download/$PATTN_MACOS_XRAY_RELEASE_TAG/Xray-macos-64.zip"
+              xray_sha256="$PATTN_MACOS_XRAY_SHA256_X64"
+              ;;
+            macos-arm64)
+              xray_url="https://github.com/patterniha/Xray-core/releases/download/$PATTN_MACOS_XRAY_RELEASE_TAG/Xray-macos-arm64-v8a.zip"
+              xray_sha256="$PATTN_MACOS_XRAY_SHA256_ARM64"
+              ;;
+            *)
+              echo "::error::no pinned macOS Xray asset for $Target-$Arch"
+              exit 1
+              ;;
+          esac
+          curl --fail --location --retry 3 --retry-delay 2 \
+            --connect-timeout 30 --max-time 900 \
+            --proto '=https' --proto-redir '=https' \
+            --silent --show-error --output xray-core.zip "$xray_url"
+          echo "$xray_sha256  xray-core.zip" | sha256sum --check --status
+        else
+          wget -nv -O xray-core.zip "https://github.com/patterniha/Xray-core/releases/latest/download/$asset"
+        fi
+        if [[ "$Target" == macos ]]; then
+          archive_listing="$(7z l -slt xray-core.zip)"
+          first_path=1
+          while IFS= read -r archive_line; do
+            case "$archive_line" in
+              'Path = '*)
+                archive_path="${archive_line#Path = }"
+                if (( first_path )); then
+                  first_path=0
+                  continue
+                fi
+                [[ -n "$archive_path" && "$archive_path" != /* && ! "$archive_path" =~ ^[A-Za-z]: ]] || {
+                  echo "::error::unsafe path in macOS Xray archive: $archive_path"
+                  exit 1
+                }
+                case "/$archive_path/" in
+                  */../*|*/./*)
+                    echo "::error::unsafe path in macOS Xray archive: $archive_path"
+                    exit 1
+                    ;;
+                esac
+                ;;
+            esac
+          done <<< "$archive_listing"
+        fi
         7z x -y -oxray-core xray-core.zip
-        mkdir -p PattN-$Target-$Arch/bin/xray
-        cp -f xray-core/xray* PattN-$Target-$Arch/bin/xray/
-        chmod +x PattN-$Target-$Arch/bin/xray/xray 2>/dev/null || true
+        if [[ "$Target" == macos ]]; then
+          unsafe_entry="$(find xray-core -mindepth 1 ! -type f ! -type d -print -quit)"
+          [[ -z "$unsafe_entry" ]] || { echo "::error::unsafe file in macOS Xray archive: $unsafe_entry"; exit 1; }
+          [[ -f xray-core/xray && ! -L xray-core/xray && -x xray-core/xray ]]
+        fi
+        mkdir -p "PattN-$Target-$Arch/bin/xray"
+        if [[ "$Target" == macos ]]; then
+          cp -f xray-core/xray "PattN-$Target-$Arch/bin/xray/xray"
+        else
+          cp -f xray-core/xray* "PattN-$Target-$Arch/bin/xray/"
+        fi
+        if [[ "$Target" == macos ]]; then
+          chmod +x "PattN-$Target-$Arch/bin/xray/xray"
+        else
+          chmod +x "PattN-$Target-$Arch/bin/xray/xray" 2>/dev/null || true
+        fi
 
     - name: Package zip archive
-      run: 7z a -tZip PattN-$Target-$Arch.zip PattN-$Target-$Arch -mx1
+      run: 7z a -tZip "PattN-$Target-$Arch.zip" "PattN-$Target-$Arch" -mx1
 
     - name: Rename windows-desktop
       if: inputs.target == 'windows-desktop'

@@ -89,17 +89,100 @@ jobs:
     - name: Build v2rayN
       shell: bash
       working-directory: ./v2rayN
-      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true $ExtOpt ${Version:+-p:Version=$Version} -o $Output
+      run: |
+        set -euo pipefail
+        publish_args=(-c Release -r "$RID" -p:SelfContained=true)
+        if [[ -n "$ExtOpt" ]]; then
+          read -r -a ext_args <<< "$ExtOpt"
+          publish_args+=("${ext_args[@]}")
+        fi
+        if [[ -n "$Version" ]]; then
+          publish_args+=("-p:Version=$Version")
+        fi
+        publish_args+=(-o "$Output")
+        dotnet publish "$Project" "${publish_args[@]}"
 
     - name: Build AmazTool
       shell: bash
       working-directory: ./v2rayN
-      run: dotnet publish ./AmazTool/AmazTool.csproj -c Release -r $RID -p:SelfContained=true -p:PublishTrimmed=true $ExtOpt ${Version:+-p:Version=$Version} -o $Output
+      run: |
+        set -euo pipefail
+        publish_args=(-c Release -r "$RID" -p:SelfContained=true -p:PublishTrimmed=true)
+        if [[ -n "$ExtOpt" ]]; then
+          read -r -a ext_args <<< "$ExtOpt"
+          publish_args+=("${ext_args[@]}")
+        fi
+        if [[ -n "$Version" ]]; then
+          publish_args+=("-p:Version=$Version")
+        fi
+        publish_args+=(-o "$Output")
+        dotnet publish ./AmazTool/AmazTool.csproj "${publish_args[@]}"
 
     - name: Remove Debug Symbols
       shell: bash
       run: |
         find ${{ matrix.arch }} -type f -name '*.pdb' -delete
+
+    - name: Validate macOS publish artifact
+      if: inputs.target == 'macos'
+      shell: bash
+      run: |
+        set -euo pipefail
+        case "${{ matrix.arch }}" in
+          x64) expected_arch=x86_64 ;;
+          arm64) expected_arch=arm64 ;;
+          *) echo "::error::unsupported macOS matrix architecture: ${{ matrix.arch }}"; exit 1 ;;
+        esac
+
+        main_executable="${{ github.workspace }}/${{ matrix.arch }}/PattN"
+        amaz_tool="${{ github.workspace }}/${{ matrix.arch }}/AmazTool"
+        check_macos_binary() {
+          local binary="$1"
+          local label="$2"
+          local dependency
+          local rpath
+
+          if [[ ! -f "$binary" || -L "$binary" || ! -x "$binary" ]]; then
+            echo "::error::$label is not a real executable: $binary"
+            exit 1
+          fi
+          if [[ "$(lipo -archs "$binary")" != "$expected_arch" ]]; then
+            echo "::error::$label has the wrong architecture: $(lipo -archs "$binary") (expected $expected_arch)"
+            exit 1
+          fi
+
+          dependency="$(otool -L "$binary" | awk '
+            NR > 1 && $1 ~ /^\// &&
+            $1 !~ /^\/System\/Library\// &&
+            $1 !~ /^\/usr\/lib\// { print $1; exit }
+          ')"
+          if [[ -n "$dependency" ]]; then
+            echo "::error::$label has a non-system absolute dependency: $dependency"
+            exit 1
+          fi
+
+          rpath="$(otool -l "$binary" | awk '
+            $1 == "path" && $2 ~ /^\// &&
+            $2 !~ /^\/System\/Library\// &&
+            $2 !~ /^\/usr\/lib\// { print $2; exit }
+          ')"
+          if [[ -n "$rpath" ]]; then
+            echo "::error::$label has a non-system absolute rpath: $rpath"
+            exit 1
+          fi
+        }
+
+        check_macos_binary "$main_executable" PattN
+        check_macos_binary "$amaz_tool" AmazTool
+
+        for icon in \
+          "${{ github.workspace }}/${{ matrix.arch }}/v2rayN.icns" \
+          "${{ github.workspace }}/${{ matrix.arch }}/v2rayN.png"; do
+          if [[ ! -f "$icon" || -L "$icon" ]]; then
+            echo "::error::missing real macOS asset: $icon"
+            exit 1
+          fi
+        done
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7
