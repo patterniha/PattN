@@ -382,8 +382,8 @@ download_geo_assets() {
   mkdir -p "$bin_dir" "$srss_dir"
 
   echo "[+] Download Xray Geo to ${bin_dir}"
-  curl -fsSL -o "$bin_dir/geosite.dat" "https://github.com/Loyalsoldier/V2ray-rules-dat/releases/latest/download/geosite.dat"
-  curl -fsSL -o "$bin_dir/geoip.dat" "https://github.com/Loyalsoldier/V2ray-rules-dat/releases/latest/download/geoip.dat"
+  curl -fsSL -o "$bin_dir/geosite.dat" "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat"
+  curl -fsSL -o "$bin_dir/geoip.dat" "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat"
   curl -fsSL -o "$bin_dir/geoip-only-cn-private.dat" "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/geoip-only-cn-private.dat"
   curl -fsSL -o "$bin_dir/Country.mmdb" "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb"
 
@@ -396,6 +396,10 @@ download_geo_assets() {
 
   for f in geosite-cn.srs geosite-gfw.srs geosite-google.srs geosite-greatfire.srs geosite-geolocation-cn.srs geosite-category-ads-all.srs geosite-private.srs; do
     curl -fsSL -o "$srss_dir/$f" "https://raw.githubusercontent.com/2dust/sing-box-rules/refs/heads/rule-set-geosite/$f"
+  done
+
+  for f in geosite-ir.srs geoip-ir.srs; do
+    curl -fsSL -o "$srss_dir/$f" "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/$f"
   done
 
   unify_geo_layout "$outroot"

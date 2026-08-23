@@ -5,8 +5,8 @@ public class Global
     public const string AppName = "PattN";
     public const string GithubUrl = "https://github.com";
     public const string GithubApiUrl = "https://api.github.com/repos";
-    public const string GeoUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/{0}.dat";
-    public const string SingboxRulesetUrl = @"https://raw.githubusercontent.com/2dust/sing-box-rules/rule-set-{0}/{1}.srs";
+    public const string GeoUrl = "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/{0}.dat";
+    public const string SingboxRulesetUrl = @"https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/{1}.srs";
 
     public const string PromotionUrl = @"aHR0cHM6Ly90Lm1lL3BhdHRfY2hhbm5lbF94";
     public const string ConfigFileName = "guiNConfig.json";
@@ -175,14 +175,16 @@ public class Global
     [
         "",
         @"https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/{0}.dat",
-        @"https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/{0}.dat"
+        @"https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/{0}.dat",
+        @"https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/{0}.dat"
     ];
 
     public static readonly List<string> SingboxRulesetSources =
     [
         "",
         @"https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/release/sing-box/rule-set-{0}/{1}.srs",
-        @"https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/{1}.srs"
+        @"https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/{1}.srs",
+        @"https://raw.githubusercontent.com/2dust/sing-box-rules/rule-set-{0}/{1}.srs"
     ];
 
     public static readonly List<string> RoutingRulesSources =
