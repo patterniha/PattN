@@ -2958,6 +2958,20 @@ public static class ConfigHandler
                 break;
         }
 
+        // Activate a routing that matches the preset's geo data.
+        // The IR rule-sets need geosite "ir" (Chocolate4U only) and geosite:gfw only exists on Loyalsoldier/runetfreedom;
+        // an active routing with categories missing from the new dats would stop the core from starting.
+        // Derived from the effective geo source so the mapping follows whatever the built-in default is.
+        var effectiveGeoUrl = config.ConstItem.GeoSourceUrl.IsNullOrEmpty() ? Global.GeoUrl : config.ConstItem.GeoSourceUrl;
+        var routingPrefix = effectiveGeoUrl.Contains("Chocolate4U", StringComparison.OrdinalIgnoreCase) ? "IR-"
+            : effectiveGeoUrl.Contains("russia", StringComparison.OrdinalIgnoreCase) ? "RU"
+            : "V4-";
+        var presetRouting = (await AppManager.Instance.RoutingItems())?.FirstOrDefault(t => t.Remarks.StartsWith(routingPrefix));
+        if (presetRouting != null)
+        {
+            await SetDefaultRouting(config, presetRouting);
+        }
+
         return true;
     }
 
