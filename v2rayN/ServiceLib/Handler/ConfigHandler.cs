@@ -2941,6 +2941,17 @@ public static class ConfigHandler
                 config.SimpleDNSItem = InitBuiltinSimpleDNS();
                 break;
 
+            case EPresetType.China:
+                config.ConstItem.GeoSourceUrl = Global.GeoFilesSources[3];
+                config.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[3];
+                config.ConstItem.RouteRulesTemplateSourceUrl = "";
+
+                await SQLiteHelper.Instance.DeleteAllAsync<DNSItem>();
+                await InitBuiltinDNS(config);
+
+                config.SimpleDNSItem = InitBuiltinSimpleDNS();
+                break;
+
             case EPresetType.Russia:
                 config.ConstItem.GeoSourceUrl = Global.GeoFilesSources[1];
                 config.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[1];
@@ -2986,6 +2997,20 @@ public static class ConfigHandler
                 await SaveDNSItems(config, xrayDnsIran);
                 await SaveDNSItems(config, singboxDnsIran);
                 break;
+        }
+
+        // Activate a routing that matches the preset's geo data.
+        // The IR rule-sets need geosite "ir" (Chocolate4U only) and geosite:gfw only exists on Loyalsoldier/runetfreedom;
+        // an active routing with categories missing from the new dats would stop the core from starting.
+        // Derived from the effective geo source so the mapping follows whatever the built-in default is.
+        var effectiveGeoUrl = config.ConstItem.GeoSourceUrl.IsNullOrEmpty() ? Global.GeoUrl : config.ConstItem.GeoSourceUrl;
+        var routingPrefix = effectiveGeoUrl.Contains("Chocolate4U", StringComparison.OrdinalIgnoreCase) ? "IR-"
+            : effectiveGeoUrl.Contains("russia", StringComparison.OrdinalIgnoreCase) ? "RU"
+            : "V4-";
+        var presetRouting = (await AppManager.Instance.RoutingItems())?.FirstOrDefault(t => t.Remarks.StartsWith(routingPrefix));
+        if (presetRouting != null)
+        {
+            await SetDefaultRouting(config, presetRouting);
         }
 
         return true;
