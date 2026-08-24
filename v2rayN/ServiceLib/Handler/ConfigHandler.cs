@@ -2625,6 +2625,15 @@ public static class ConfigHandler
             items = await AppManager.Instance.RoutingItems();
         }
 
+        //PattN TODO Temporary code to be removed later: 7.24.8-P5 (and the Iran template) stored this
+        //ruleset with DomainStrategy IPOnDemand; reset it once so updaters get the AsIs default too
+        var iranDirectItem = items?.FirstOrDefault(t => t.Remarks == "IR-ایران مستقیم، بقیه پراکسی" && t.DomainStrategy == Global.IPOnDemand);
+        if (iranDirectItem != null)
+        {
+            iranDirectItem.DomainStrategy = string.Empty;
+            await SQLiteHelper.Instance.UpdateAsync(iranDirectItem);
+        }
+
         if (!blImportAdvancedRules && items.Count(u => u.Remarks.StartsWith(ver)) > 0)
         {
             //migrate
