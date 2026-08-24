@@ -2911,6 +2911,17 @@ public static class ConfigHandler
                 config.SimpleDNSItem = InitBuiltinSimpleDNS();
                 break;
 
+            case EPresetType.China:
+                config.ConstItem.GeoSourceUrl = Global.GeoFilesSources[3];
+                config.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[3];
+                config.ConstItem.RouteRulesTemplateSourceUrl = "";
+
+                await SQLiteHelper.Instance.DeleteAllAsync<DNSItem>();
+                await InitBuiltinDNS(config);
+
+                config.SimpleDNSItem = InitBuiltinSimpleDNS();
+                break;
+
             case EPresetType.Russia:
                 config.ConstItem.GeoSourceUrl = Global.GeoFilesSources[1];
                 config.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[1];

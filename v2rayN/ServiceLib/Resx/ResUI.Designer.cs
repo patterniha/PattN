@@ -1474,6 +1474,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 China 的本地化字符串。
+        /// </summary>
+        public static string menuRegionalPresetsChina {
+            get {
+                return ResourceManager.GetString("menuRegionalPresetsChina", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Iran 的本地化字符串。
         /// </summary>
         public static string menuRegionalPresetsIran {
