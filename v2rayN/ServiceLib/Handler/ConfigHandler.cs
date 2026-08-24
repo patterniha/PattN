@@ -2969,6 +2969,21 @@ public static class ConfigHandler
                 break;
         }
 
+        // PattN: activate the routing that matches the preset's geo data.
+        // The IR rule-sets need geosite "ir" (Chocolate4U only), geosite:gfw exists only on Loyalsoldier/runetfreedom;
+        // an active routing with categories missing from the new dats would stop the core from starting.
+        var routingPrefix = type switch
+        {
+            EPresetType.China => "V4-",
+            EPresetType.Russia => "RU",
+            _ => "IR-",
+        };
+        var presetRouting = (await AppManager.Instance.RoutingItems())?.FirstOrDefault(t => t.Remarks.StartsWith(routingPrefix));
+        if (presetRouting != null)
+        {
+            await SetDefaultRouting(config, presetRouting);
+        }
+
         return true;
     }
 
