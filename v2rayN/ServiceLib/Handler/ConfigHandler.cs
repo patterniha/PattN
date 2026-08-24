@@ -2674,7 +2674,6 @@ public static class ConfigHandler
         var item4 = new RoutingItem()
         {
             Remarks = "IR-ایران مستقیم، بقیه پراکسی",
-            DomainStrategy = "IPOnDemand",
             Url = string.Empty,
             Sort = maxSort + 4,
         };
