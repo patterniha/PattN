@@ -26,7 +26,16 @@ public class Metrics4Ray
 
 public class Policy4Ray
 {
-    public SystemPolicy4Ray system { get; set; }
+    public Dictionary<string, LevelPolicy4Ray>? levels { get; set; }
+    public SystemPolicy4Ray? system { get; set; }
+}
+
+public class LevelPolicy4Ray
+{
+    public int? handshake { get; set; }
+    public int? connIdle { get; set; }
+    public int? uplinkOnly { get; set; }
+    public int? downlinkOnly { get; set; }
 }
 
 public class SystemPolicy4Ray

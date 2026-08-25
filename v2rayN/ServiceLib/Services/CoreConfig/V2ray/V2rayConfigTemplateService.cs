@@ -174,6 +174,12 @@ public partial class CoreConfigV2rayService
             }
         }
 
+        // Keep the generated policy (levels etc.) unless the template defines its own
+        if (_coreConfig.policy != null && fullConfigTemplateNode["policy"] == null)
+        {
+            fullConfigTemplateNode["policy"] = JsonNode.Parse(JsonUtils.Serialize(_coreConfig.policy));
+        }
+
         var customOutboundsNode = new JsonArray();
 
         var coreConfigNode = JsonNode.Parse(coreConfigContent);
