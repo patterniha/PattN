@@ -536,6 +536,7 @@ Name=PattN
 Comment=PattN for Debian GNU Linux
 Exec=v2rayn
 Icon=v2rayn
+StartupWMClass=PattN
 Terminal=false
 Categories=Network;
 EOF
