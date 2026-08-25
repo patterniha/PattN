@@ -455,6 +455,8 @@ public class Global
 
     public static readonly List<string> DomainDirectDNSAddress =
     [
+        "8.8.8.8",
+        "1.1.1.1",
         "119.29.29.29",
         "223.5.5.5",
         "119.29.29.29,223.5.5.5,https://doh.pub/dns-query",
