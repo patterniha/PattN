@@ -572,6 +572,7 @@ Name=PattN
 Comment=PattN for Red Hat Enterprise Linux
 Exec=v2rayn
 Icon=v2rayn
+StartupWMClass=PattN
 Terminal=false
 Categories=Network;
 EOF
