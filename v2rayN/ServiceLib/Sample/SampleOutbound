@@ -20,8 +20,7 @@
 				"method": "chacha20",
 				"ota": false,
 				"password": "123456",
-				"port": 10086,
-				"level": 1
+				"port": 10086
 			}
 		]
 	},

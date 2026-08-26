@@ -5,20 +5,13 @@ public partial class CoreConfigV2rayService
     private void GenStatistic()
     {
         // Always set policy levels regardless of statistics settings,
-        // level 0 covers inbounds (no userLevel), level 1 covers outbounds
-        var levelPolicy = new LevelPolicy4Ray
-        {
-            handshake = 4,
-            connIdle = 300,
-            uplinkOnly = 0,
-            downlinkOnly = 0
-        };
+        // level 0 covers all sessions, level 12 is used by the dns outbound
         Policy4Ray policyObj = new()
         {
             levels = new Dictionary<string, LevelPolicy4Ray>
             {
-                ["0"] = levelPolicy,
-                ["1"] = levelPolicy
+                ["0"] = new() { uplinkOnly = 0, downlinkOnly = 0 },
+                ["12"] = new() { connIdle = 12, uplinkOnly = 0, downlinkOnly = 0 }
             }
         };
         _coreConfig.policy = policyObj;

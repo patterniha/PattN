@@ -134,7 +134,6 @@ public partial class CoreConfigV2rayService
                         serversItem.uot = protocolExtra.Uot == true ? true : null;
 
                         serversItem.ota = false;
-                        serversItem.level = 1;
 
                         FillOutboundMux(outbound);
 
@@ -164,8 +163,7 @@ public partial class CoreConfigV2rayService
                             SocksUsersItem4Ray socksUsersItem = new()
                             {
                                 user = _node.Username ?? "",
-                                pass = _node.Password,
-                                level = 1
+                                pass = _node.Password
                             };
 
                             serversItem.users = new List<SocksUsersItem4Ray>() { socksUsersItem };
@@ -191,7 +189,6 @@ public partial class CoreConfigV2rayService
                         {
                             outbound.settings.user = _node.Username;
                             outbound.settings.pass = _node.Password;
-                            outbound.settings.level = 1;
                             outbound.settings.email = Global.UserEMail;
                         }
 
@@ -259,7 +256,6 @@ public partial class CoreConfigV2rayService
                         serversItem.password = _node.Password;
 
                         serversItem.ota = false;
-                        serversItem.level = 1;
 
                         FillOutboundMux(outbound);
 
@@ -860,7 +856,12 @@ public partial class CoreConfigV2rayService
 
     private static Outbounds4Ray BuildDnsOutbound()
     {
-        var outbound = new Outbounds4Ray { tag = Global.DnsOutboundTag, protocol = "dns", };
+        var outbound = new Outbounds4Ray
+        {
+            tag = Global.DnsOutboundTag,
+            protocol = "dns",
+            settings = new Outboundsettings4Ray { userLevel = 12 },
+        };
         return outbound;
     }
 
