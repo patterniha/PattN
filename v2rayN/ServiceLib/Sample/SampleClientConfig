@@ -8,6 +8,16 @@
 	"outbounds": [
 		{
 			"protocol": "freedom",
+			"streamSettings": {
+				"sockopt": {
+					"happyEyeballs": {
+						"tryDelayMs": 300,
+						"prioritizeIPv6": false,
+						"interleave": 2,
+						"maxConcurrentTry": 20
+					}
+				}
+			},
 			"tag": "direct"
 		},
 		{
