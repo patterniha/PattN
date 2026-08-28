@@ -73,6 +73,48 @@ public class FmtHandlerTests
     }
 
     [Test]
+    public async Task GetShareUriAndResolveConfig_Vless_ShouldRoundTripCipherSuitesAndUnsafeFingerprint()
+    {
+        var source = CreateVlessProfile();
+        source.StreamSecurity = Global.StreamSecurity;
+        source.Sni = "sni.vless.example";
+        source.Fingerprint = "unsafe";
+        source.CipherSuites = "TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256";
+
+        var resolved = await ExportThenImport(source);
+
+        await resolved.StreamSecurity.Should().BeEqualTo(Global.StreamSecurity);
+        await resolved.Fingerprint.Should().BeEqualTo(source.Fingerprint);
+        await resolved.CipherSuites.Should().BeEqualTo(source.CipherSuites);
+
+        // The suites list is colon-separated on the wire, so the exporter has to percent-encode
+        // the value; the "cs" spelling and the encoded colon are pinned here because an exporter
+        // and an importer that agreed on another spelling would still round-trip cleanly.
+        await AssertExportContains(
+            source,
+            "fp=unsafe",
+            "cs=TLS_AES_128_GCM_SHA256%3ATLS_CHACHA20_POLY1305_SHA256");
+    }
+
+    [Test]
+    public async Task GetShareUriAndResolveConfig_Vmess_ShouldRoundTripCipherSuitesAndUnsafeFingerprint()
+    {
+        // VMess does not go through the shared query string: the QR-code JSON carries its own
+        // "fp" and "cs" members, so the VLESS case above cannot stand in for this path.
+        var source = CreateVmessProfile();
+        source.StreamSecurity = Global.StreamSecurity;
+        source.Sni = "sni.vmess.example";
+        source.Fingerprint = "unsafe";
+        source.CipherSuites = "TLS_AES_256_GCM_SHA384";
+
+        var resolved = await ExportThenImport(source);
+
+        await resolved.StreamSecurity.Should().BeEqualTo(Global.StreamSecurity);
+        await resolved.Fingerprint.Should().BeEqualTo(source.Fingerprint);
+        await resolved.CipherSuites.Should().BeEqualTo(source.CipherSuites);
+    }
+
+    [Test]
     public async Task GetShareUriAndResolveConfig_Shadowsocks_ShouldRoundTripBasicFields()
     {
         var source = CreateShadowsocksProfile();
