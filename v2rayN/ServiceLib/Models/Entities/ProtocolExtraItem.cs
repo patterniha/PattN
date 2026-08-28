@@ -27,6 +27,7 @@ public record ProtocolExtraItem
     public string? WgInterfaceAddress { get; init; }
     public string? WgReserved { get; init; }
     public int? WgMtu { get; init; }
+    public string? WgDns { get; init; }
 
     // hysteria2
     public string? SalamanderPass { get; init; }

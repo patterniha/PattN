@@ -31,6 +31,7 @@ public class WireguardFmt : BaseFmt
             WgReserved = GetQueryDecoded(query, "reserved"),
             WgInterfaceAddress = GetQueryDecoded(query, "address"),
             WgMtu = int.TryParse(GetQueryDecoded(query, "mtu"), out var mtuVal) ? mtuVal : null,
+            WgDns = GetQueryDecoded(query, "dns"),
         });
 
         return item;
@@ -70,6 +71,10 @@ public class WireguardFmt : BaseFmt
         if (protoExtra.WgMtu > 0)
         {
             dicQuery.Add("mtu", protoExtra.WgMtu.ToString());
+        }
+        if (!protoExtra.WgDns.IsNullOrEmpty())
+        {
+            dicQuery.Add("dns", Utils.UrlEncode(protoExtra.WgDns));
         }
         return ToUri(EConfigType.WireGuard, item.Address, item.Port, item.Password, dicQuery, remark);
     }
@@ -133,6 +138,7 @@ public class WireguardFmt : BaseFmt
 
         var wgMtu = interfaceDic.TryGetValue("MTU", out var mtuStr) && int.TryParse(mtuStr, out var mtuVal) ? mtuVal : 0;
         var wgInterfaceAddress = interfaceDic.TryGetValue("Address", out var interfaceAddress) ? interfaceAddress : string.Empty;
+        var wgDns = interfaceDic.TryGetValue("DNS", out var dns) ? dns : string.Empty;
 
         var index = 0;
         var resultList = new List<ProfileItem>();
@@ -156,6 +162,7 @@ public class WireguardFmt : BaseFmt
                 WgInterfaceAddress = wgInterfaceAddress,
                 WgReserved = (peerDic.TryGetValue("Reserved", out var reserved) ? reserved : string.Empty).NullIfEmpty(),
                 WgMtu = wgMtu > 0 ? wgMtu : null,
+                WgDns = wgDns,
             };
 
             var item = new ProfileItem

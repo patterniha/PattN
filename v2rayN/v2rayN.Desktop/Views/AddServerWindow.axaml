@@ -580,7 +580,7 @@
                     Grid.Row="2"
                     ColumnDefinitions="300,Auto"
                     IsVisible="False"
-                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                     <TextBlock
                         Grid.Row="1"
@@ -649,7 +649,7 @@
                         Grid.Column="1"
                         Width="400"
                         Margin="{StaticResource Margin4}"
-                        PlaceholderText="Ipv4,Ipv6" />
+                        PlaceholderText="Ipv4, Ipv6" />
 
                     <TextBlock
                         Grid.Row="6"
@@ -665,6 +665,21 @@
                         Margin="{StaticResource Margin4}"
                         HorizontalAlignment="Left"
                         PlaceholderText="1280" />
+
+                    <TextBlock
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Text="{x:Static resx:ResUI.TbDNS}" />
+                    <TextBox
+                        x:Name="txtDns"
+                        Grid.Row="7"
+                        Grid.Column="1"
+                        Width="400"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left"
+                        PlaceholderText="1.1.1.1, 2606:4700:4700::1111" />
                 </Grid>
                 <Grid
                     x:Name="gridAnytls"

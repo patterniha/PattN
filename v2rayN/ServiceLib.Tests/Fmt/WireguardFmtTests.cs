@@ -11,6 +11,7 @@ public class WireguardFmtTests
             PrivateKey = interface-private-key
             Address = 10.0.0.2/32, fd00::2/128 ; inline comment
             MTU = 1420
+            DNS = 2001::db8::53, 1.2.3.4, 2001:db8::54
 
             [Peer]
             PublicKey = peer-public-key
@@ -35,6 +36,7 @@ public class WireguardFmtTests
         await first.GetProtocolExtra().WgReserved.Should().BeEqualTo("1, 2, 3");
         await first.GetProtocolExtra().WgInterfaceAddress.Should().BeEqualTo("10.0.0.2/32, fd00::2/128");
         await first.GetProtocolExtra().WgMtu.Should().BeEqualTo(1420);
+        await first.GetProtocolExtra().WgDns.Should().BeEqualTo("2001::db8::53, 1.2.3.4, 2001:db8::54");
 
         var second = resolved[1];
         await second.Address.Should().BeEqualTo("example.com");

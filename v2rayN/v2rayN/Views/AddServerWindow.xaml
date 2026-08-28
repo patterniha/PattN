@@ -748,6 +748,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="300" />
@@ -830,7 +831,7 @@
                         Grid.Column="1"
                         Width="400"
                         Margin="{StaticResource Margin4}"
-                        materialDesign:HintAssist.Hint="Ipv4,Ipv6"
+                        materialDesign:HintAssist.Hint="Ipv4, Ipv6"
                         Style="{StaticResource DefTextBox}" />
 
                     <TextBlock
@@ -848,6 +849,23 @@
                         Margin="{StaticResource Margin4}"
                         HorizontalAlignment="Left"
                         materialDesign:HintAssist.Hint="1280"
+                        Style="{StaticResource DefTextBox}" />
+
+                    <TextBlock
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ToolbarTextBlock}"
+                        Text="{x:Static resx:ResUI.TbDNS}" />
+                    <TextBox
+                        x:Name="txtDns"
+                        Grid.Row="7"
+                        Grid.Column="1"
+                        Width="400"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left"
+                        materialDesign:HintAssist.Hint="1.1.1.1, 2606:4700:4700::1111"
                         Style="{StaticResource DefTextBox}" />
                 </Grid>
                 <Grid
