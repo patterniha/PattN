@@ -1875,4 +1875,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="TbBlockAAAAQueriesTips" xml:space="preserve">
     <value>Block IPv6 queries when enabled</value>
   </data>
+  <data name="TbDNS" xml:space="preserve">
+    <value>DNS</value>
+  </data>
 </root>

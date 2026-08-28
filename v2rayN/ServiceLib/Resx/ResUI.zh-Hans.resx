@@ -1876,4 +1876,7 @@
   <data name="TbBlockAAAAQueriesTips" xml:space="preserve">
     <value>开启后将阻止 IPv6 查询</value>
   </data>
+  <data name="TbDNS" xml:space="preserve">
+    <value>DNS</value>
+  </data>
 </root>

@@ -71,6 +71,9 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
     public partial int WgMtu { get; set; }
 
     [Reactive]
+    public partial string WgDns { get; set; }
+
+    [Reactive]
     public partial bool Uot { get; set; }
 
     [Reactive]
@@ -310,6 +313,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         WgInterfaceAddress = protocolExtra.WgInterfaceAddress ?? string.Empty;
         WgReserved = protocolExtra.WgReserved ?? string.Empty;
         WgMtu = protocolExtra.WgMtu ?? 1280;
+        WgDns = protocolExtra.WgDns ?? string.Empty;
         Uot = protocolExtra.Uot ?? false;
         CongestionControl = protocolExtra.CongestionControl ?? string.Empty;
         InsecureConcurrency = protocolExtra.InsecureConcurrency > 0 ? protocolExtra.InsecureConcurrency : null;
@@ -431,6 +435,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             WgInterfaceAddress = WgInterfaceAddress.NullIfEmpty(),
             WgReserved = WgReserved.NullIfEmpty(),
             WgMtu = WgMtu >= 576 ? WgMtu : null,
+            WgDns = WgDns.NullIfEmpty(),
             Uot = Uot ? true : null,
             CongestionControl = CongestionControl.NullIfEmpty(),
             InsecureConcurrency = InsecureConcurrency > 0 ? InsecureConcurrency : null,
