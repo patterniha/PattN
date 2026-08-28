@@ -43,7 +43,8 @@ public class CoreConfigV2rayServiceTests
         await outbound.settings.port.Should().BeEqualTo(8080);
         await outbound.settings.user.Should().BeEqualTo("user");
         await outbound.settings.pass.Should().BeEqualTo("pass");
-        await outbound.settings.level.Should().BeEqualTo(1);
+        // PattN removes user levels from outbounds; all sessions run at level 0 (policy "0")
+        await outbound.settings.level.Should().BeNull();
         await outbound.settings.headers.Should().NotBeNull();
         var headers = JsonUtils.ParseJson(outbound.settings.headers!.ToString());
         await headers["User-Agent"]!.GetValue<string>().Should().BeEqualTo("v2rayN");
