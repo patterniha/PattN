@@ -2631,6 +2631,23 @@ public static class ConfigHandler
             await SQLiteHelper.Instance.UpdateAsync(iranDirectItem);
         }
 
+        //PattN TODO Temporary code to be removed later: the Iran template shipped an "8.8.8.8 -> direct"
+        //rule for domestic DNS; remove it once for updaters, the direct-dns routing rule covers this now
+        var iranTemplateItem = items?.FirstOrDefault(t => t.Remarks == "IR-ایران مستقیم، بقیه پراکسی");
+        if (iranTemplateItem != null)
+        {
+            var iranRules = JsonUtils.Deserialize<List<RulesItem>>(iranTemplateItem.RuleSet) ?? [];
+            var removedCount = iranRules.RemoveAll(t => t.Remarks == "تبدیل نام دامنه های ایران - مستقیم"
+                && t.OutboundTag == Global.DirectTag
+                && t.Ip is ["8.8.8.8"]);
+            if (removedCount > 0)
+            {
+                iranTemplateItem.RuleNum = iranRules.Count;
+                iranTemplateItem.RuleSet = JsonUtils.Serialize(iranRules, false);
+                await SQLiteHelper.Instance.UpdateAsync(iranTemplateItem);
+            }
+        }
+
         if (!blImportAdvancedRules && items.Count() > 0) // items.Count(u => u.Remarks.StartsWith(ver)) > 0)
         {
             //migrate
