@@ -25,7 +25,7 @@ public partial class CoreConfigV2rayService
 
                 dnsObj["tag"] = Global.DnsTag;
                 _coreConfig.dns = JsonUtils.Deserialize<Dns4Ray>(JsonUtils.Serialize(dnsObj));
-                _coreConfig.routing.rules.Add(new RulesItem4Ray
+                _coreConfig.routing.rules.Insert(0, new RulesItem4Ray
                 {
                     type = "field",
                     inboundTag = [Global.DnsTag],
@@ -87,7 +87,8 @@ public partial class CoreConfigV2rayService
                 dnsItem.queryStrategy = "UseIPv4";
             }
 
-            // DNS routing
+            // DNS routing, inserted at the top so user rules cannot hijack DNS module queries
+            var dnsRouteRules = new List<RulesItem4Ray>();
             var directDnsTags = dnsItem.servers
                 .Select(server =>
                 {
@@ -99,7 +100,7 @@ public partial class CoreConfigV2rayService
                 .ToList();
             if (directDnsTags.Count > 0)
             {
-                _coreConfig.routing.rules.Add(new()
+                dnsRouteRules.Add(new()
                 {
                     type = "field",
                     inboundTag = directDnsTags,
@@ -109,13 +110,14 @@ public partial class CoreConfigV2rayService
 
             var finalRule = BuildFinalRule();
             dnsItem.tag = Global.DnsTag;
-            _coreConfig.routing.rules.Add(new()
+            dnsRouteRules.Add(new()
             {
                 type = "field",
                 inboundTag = [Global.DnsTag],
                 outboundTag = finalRule.outboundTag,
                 balancerTag = finalRule.balancerTag,
             });
+            _coreConfig.routing.rules.InsertRange(0, dnsRouteRules);
 
             _coreConfig.dns = dnsItem;
         }
