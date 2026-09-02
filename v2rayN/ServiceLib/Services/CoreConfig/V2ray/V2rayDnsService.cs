@@ -275,7 +275,7 @@ public partial class CoreConfigV2rayService
 
         if (dnsServerDomains.Count > 0)
         {
-            AddDnsServers(bootstrapDNSAddress, dnsServerDomains);
+            AddDnsServers(bootstrapDNSAddress, dnsServerDomains, finalQuery: true);
         }
         if (context.ProtectDomainList.Count > 0)
         {
@@ -297,15 +297,15 @@ public partial class CoreConfigV2rayService
             if (fakeIPMatchDomain.Count > 0)
             {
                 GenFakeDns();
-                AddDnsServers(["fakedns"], fakeIPMatchDomain);
+                AddDnsServers(["fakedns"], fakeIPMatchDomain, skipFallback: false);
             }
         }
 
         AddDnsServers(remoteDNSAddress, proxyDomainList);
-        AddDnsServers(directDNSAddress, directDomainList, true);
+        AddDnsServers(directDNSAddress, directDomainList, true, finalQuery: true);
         AddDnsServers(remoteDNSAddress, proxyGeositeList);
-        AddDnsServers(directDNSAddress, directGeositeList, true);
-        AddDnsServers(directDNSAddress, expectedDomainList, true, expectedIPs);
+        AddDnsServers(directDNSAddress, directGeositeList, true, finalQuery: true);
+        AddDnsServers(directDNSAddress, expectedDomainList, true, expectedIPs, finalQuery: true);
 
         var useDirectDns = false;
 
@@ -373,7 +373,7 @@ public partial class CoreConfigV2rayService
             return dnsServer;
         }
 
-        void AddDnsServers(List<string> dnsAddresses, HashSet<string> domains, bool isDirectDns = false, HashSet<string>? expectedIPs = null, bool finalQuery = false)
+        void AddDnsServers(List<string> dnsAddresses, HashSet<string> domains, bool isDirectDns = false, HashSet<string>? expectedIPs = null, bool finalQuery = false, bool skipFallback = true)
         {
             if (domains.Count <= 0)
             {
@@ -389,6 +389,10 @@ public partial class CoreConfigV2rayService
                 if (finalQuery)
                 {
                     dnsServer.finalQuery = true;
+                }
+                if (!skipFallback)
+                {
+                    dnsServer.skipFallback = null;
                 }
                 var dnsServerNode = JsonUtils.SerializeToNode(dnsServer,
                     new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
