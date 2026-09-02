@@ -93,7 +93,7 @@ public static class ConfigHandler
             EnableTun = false,
             Mtu = 9000,
             IcmpRouting = Global.TunIcmpRoutingPolicies.First(),
-            EnableLegacyProtect = true,
+            EnableLegacyProtect = false,
         };
         config.GuiItem ??= new();
         if (!Global.RootCertProviders.Contains(config.GuiItem.RootCertProvider))
