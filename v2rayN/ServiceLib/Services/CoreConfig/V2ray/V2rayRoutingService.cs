@@ -28,9 +28,10 @@ public partial class CoreConfigV2rayService
                         outboundTag = Global.DirectTag,
                     });
                 }
+                // "socks" is included for setups that feed TUN traffic in via tun2socks
                 _coreConfig.routing.rules.Add(new()
                 {
-                    inboundTag = ["tun"],
+                    inboundTag = ["tun", "socks"],
                     port = "53",
                     outboundTag = Global.DnsOutboundTag,
                 });
