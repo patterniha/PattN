@@ -262,6 +262,7 @@ public class DnsServer4Ray
     public int? port { get; set; }
     public List<string>? domains { get; set; }
     public bool? skipFallback { get; set; }
+    public bool? finalQuery { get; set; }
     public List<string>? expectedIPs { get; set; }
     public string? tag { get; set; }
 }

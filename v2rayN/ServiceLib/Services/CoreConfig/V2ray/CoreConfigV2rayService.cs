@@ -54,6 +54,19 @@ public partial class CoreConfigV2rayService(CoreConfigContext context)
 
             GenDns();
 
+            if (context.IsTunEnabled)
+            {
+                // PattN: with the TUN inbound, freedom must resolve domain targets via the built-in
+                // DNS instead of the OS resolver, whose queries would detour back through the tun
+                var directOutbound = _coreConfig.outbounds.FirstOrDefault(t => t is { protocol: "freedom", tag: Global.DirectTag });
+                if (directOutbound != null)
+                {
+                    directOutbound.streamSettings ??= new();
+                    directOutbound.streamSettings.sockopt ??= new();
+                    directOutbound.streamSettings.sockopt.domainStrategy ??= "ForceIP";
+                }
+            }
+
             GenStatistic();
 
             if (_config.CoreBasicItem.EnableFragment)

@@ -279,7 +279,9 @@ public partial class CoreConfigV2rayService
         }
         if (context.ProtectDomainList.Count > 0)
         {
-            AddDnsServers(directDNSAddress, context.ProtectDomainList, true);
+            // finalQuery: the protected (proxy server) domains must be answered by this direct
+            // server alone, never falling through to resolvers that dial through the proxy itself
+            AddDnsServers(directDNSAddress, context.ProtectDomainList, true, finalQuery: true);
         }
 
         if (simpleDNSItem.FakeIP == true)
@@ -371,7 +373,7 @@ public partial class CoreConfigV2rayService
             return dnsServer;
         }
 
-        void AddDnsServers(List<string> dnsAddresses, HashSet<string> domains, bool isDirectDns = false, HashSet<string>? expectedIPs = null)
+        void AddDnsServers(List<string> dnsAddresses, HashSet<string> domains, bool isDirectDns = false, HashSet<string>? expectedIPs = null, bool finalQuery = false)
         {
             if (domains.Count <= 0)
             {
@@ -383,6 +385,10 @@ public partial class CoreConfigV2rayService
                 if (isDirectDns)
                 {
                     dnsServer.tag = $"{Global.DirectDnsTag}-{directDnsTagIndex++}";
+                }
+                if (finalQuery)
+                {
+                    dnsServer.finalQuery = true;
                 }
                 var dnsServerNode = JsonUtils.SerializeToNode(dnsServer,
                     new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });

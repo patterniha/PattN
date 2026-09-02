@@ -29,7 +29,8 @@ public class InItem
     public string Protocol { get; set; }
     public bool UdpEnabled { get; set; }
     public bool SniffingEnabled { get; set; } = true;
-    public List<string>? DestOverride { get; set; } = ["http", "tls"];
+    // PattN: quic sniffing is on by default
+    public List<string>? DestOverride { get; set; } = ["http", "tls", "quic"];
     public bool RouteOnly { get; set; }
     public bool AllowLANConn { get; set; }
     public bool NewPort4LAN { get; set; }
