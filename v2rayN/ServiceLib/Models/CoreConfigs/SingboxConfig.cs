@@ -8,6 +8,7 @@ public class SingboxConfig
     public List<Outbound4Sbox> outbounds { get; set; }
     public List<Endpoints4Sbox>? endpoints { get; set; }
     public Route4Sbox route { get; set; }
+    public List<HttpClient4Sbox>? http_clients { get; set; }
     public Experimental4Sbox? experimental { get; set; }
 }
 
@@ -24,6 +25,7 @@ public class Dns4Sbox
     public List<Server4Sbox> servers { get; set; }
     public List<Rule4Sbox> rules { get; set; }
     public string? final { get; set; }
+    public bool? optimistic { get; set; }
     public string? strategy { get; set; }
     public bool? disable_cache { get; set; }
     public bool? disable_expire { get; set; }
@@ -94,6 +96,11 @@ public class Rule4Sbox
     public bool? rule_set_ip_cidr_match_source { get; set; }
     public bool? rule_set_ip_cidr_accept_empty { get; set; }
     public bool? tls_record_fragment { get; set; }
+    public string? preferred_by { get; set; }
+    public string? match_response { get; set; } // or bool
+    public string? tag { get; set; }
+    public bool? race { get; set; }
+    public bool? speculative { get; set; }
 }
 
 [Serializable]
@@ -108,7 +115,6 @@ public class Inbound4Sbox
     public int? mtu { get; set; }
     public bool? auto_route { get; set; }
     public bool? strict_route { get; set; }
-    public bool? endpoint_independent_nat { get; set; }
     public string? stack { get; set; }
     public List<User4Sbox> users { get; set; }
     public List<string>? route_exclude_address { get; set; }
@@ -319,9 +325,11 @@ public class Ruleset4Sbox
     public string? format { get; set; }
     public string? path { get; set; }
     public string? url { get; set; }
-    public string? download_detour { get; set; }
+    public string? http_client { get; set; }
     public string? update_interval { get; set; }
 }
+
+public class HttpClient4Sbox : BaseServer4Sbox;
 
 public abstract class DialFields4Sbox
 {
