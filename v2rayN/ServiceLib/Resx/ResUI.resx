@@ -693,6 +693,9 @@
   <data name="TbSettingsEnableCheckPreReleaseUpdate" xml:space="preserve">
     <value>Check for pre-release</value>
   </data>
+  <data name="TbSettingsEnableUpdateViaProxy" xml:space="preserve">
+    <value>Update via proxy</value>
+  </data>
   <data name="TbSettingsException" xml:space="preserve">
     <value>Exception</value>
   </data>

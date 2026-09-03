@@ -29,6 +29,16 @@
                     Margin="{StaticResource Margin4}"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
+                    Text="{x:Static resx:ResUI.TbSettingsEnableUpdateViaProxy}" />
+                <ToggleSwitch
+                    x:Name="togEnableUpdateViaProxy"
+                    Margin="{StaticResource Margin4}"
+                    HorizontalAlignment="Left" />
+
+                <TextBlock
+                    Margin="{StaticResource Margin4}"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.TbSettingsEnableCheckPreReleaseUpdate}" />
                 <ToggleSwitch
                     x:Name="togEnableCheckPreReleaseUpdate"

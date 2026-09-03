@@ -693,6 +693,9 @@
   <data name="TbSettingsEnableCheckPreReleaseUpdate" xml:space="preserve">
     <value>检查 Pre-Release</value>
   </data>
+  <data name="TbSettingsEnableUpdateViaProxy" xml:space="preserve">
+    <value>通过代理更新</value>
+  </data>
   <data name="TbSettingsException" xml:space="preserve">
     <value>例外</value>
   </data>

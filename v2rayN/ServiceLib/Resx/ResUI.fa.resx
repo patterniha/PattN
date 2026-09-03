@@ -693,6 +693,9 @@
   <data name="TbSettingsEnableCheckPreReleaseUpdate" xml:space="preserve">
     <value>به روز رسانی های پیش از انتشار را بررسی شود</value>
   </data>
+  <data name="TbSettingsEnableUpdateViaProxy" xml:space="preserve">
+    <value>به‌روزرسانی از طریق پروکسی</value>
+  </data>
   <data name="TbSettingsException" xml:space="preserve">
     <value>استثنا</value>
   </data>
