@@ -124,6 +124,8 @@ public static class ConfigHandler
 
         config.SimpleDNSItem ??= InitBuiltinSimpleDNS();
         config.SimpleDNSItem.BlockAAAAQuery ??= false;
+        // PattN: FakeIP is on by default
+        config.SimpleDNSItem.FakeIP ??= true;
         config.SimpleDNSItem.FakeIPRange ??= Global.FakeIPRanges.FirstOrDefault();
         config.SimpleDNSItem.GlobalFakeIp ??= true;
         config.SimpleDNSItem.BootstrapDNS ??= Global.DomainPureIPDNSAddress.FirstOrDefault();
@@ -2861,7 +2863,8 @@ public static class ConfigHandler
         {
             UseSystemHosts = false,
             AddCommonHosts = true,
-            FakeIP = false,
+            // PattN: FakeIP is on by default
+            FakeIP = true,
             GlobalFakeIp = true,
             BlockBindingQuery = true,
             DirectDNS = Global.DomainDirectDNSAddress.FirstOrDefault(),
