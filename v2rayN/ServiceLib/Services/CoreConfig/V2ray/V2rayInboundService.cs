@@ -158,7 +158,8 @@ public partial class CoreConfigV2rayService
         inbound.protocol = nameof(EInboundProtocol.mixed);
         inbound.settings.udp = inItem.UdpEnabled;
         inbound.sniffing.enabled = inItem.SniffingEnabled;
-        inbound.sniffing.destOverride = inItem.DestOverride;
+        // PattN: copy the list; adding "fakedns" below must not leak into the saved settings
+        inbound.sniffing.destOverride = inItem.DestOverride?.ToList();
         inbound.sniffing.routeOnly = inItem.RouteOnly;
 
         if (_config.SimpleDNSItem.FakeIP == true)
@@ -169,6 +170,11 @@ public partial class CoreConfigV2rayService
             {
                 inbound.sniffing.destOverride.Add("fakedns");
             }
+        }
+        else
+        {
+            // PattN: drop "fakedns" that older builds persisted into the settings while FakeIP was on
+            inbound.sniffing.destOverride?.Remove("fakedns");
         }
 
         return inbound;
