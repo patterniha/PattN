@@ -136,7 +136,7 @@ public class TaskManager
 
         var updateService = new UpdateService(_config, async (success, msg) => await Task.CompletedTask);
 
-        var msgs = await updateService.CheckHasUpdateOnlyAll(_config.CheckUpdateItem.CheckPreReleaseUpdate);
+        var msgs = await updateService.CheckHasUpdateOnlyAll(_config.CheckUpdateItem.CheckPreReleaseUpdate, _config.CheckUpdateItem.UpdateViaProxy);
         foreach (var msg in msgs)
         {
             await _updateFunc?.Invoke(false, msg);
