@@ -36,10 +36,11 @@ public partial class CheckUpdateViewModel : MyReactiveObject
         EnableCheckPreReleaseUpdate = _config.CheckUpdateItem.CheckPreReleaseUpdate;
         EnableUpdateViaProxy = _config.CheckUpdateItem.UpdateViaProxy;
 
-        this.WhenAnyValue(
-        x => x.EnableCheckPreReleaseUpdate,
-        y => y == true)
-            .Subscribe(c => _ = OnCheckPreReleaseUpdateChanged());
+        this.WhenAnyValue(x => x.EnableCheckPreReleaseUpdate)
+            .SubscribeAsync(async _ => await OnCheckPreReleaseUpdateChanged());
+
+        this.WhenAnyValue(x => x.EnableUpdateViaProxy)
+            .Subscribe(c => _ = OnUpdateViaProxyChanged());
 
         this.WhenAnyValue(
         x => x.EnableUpdateViaProxy,
@@ -57,8 +58,7 @@ public partial class CheckUpdateViewModel : MyReactiveObject
 
         models.Add(GetGeoFileCheckUpdateModel());
 
-        CheckUpdateModels.Clear();
-        CheckUpdateModels.AddRange(models);
+        CheckUpdateModels.ReplaceRange(models);
     }
 
     private CheckUpdateModel GetCheckUpdateModel(ECoreType coreType)
@@ -210,7 +210,7 @@ public partial class CheckUpdateViewModel : MyReactiveObject
                 }
                 await CheckUpdateN(EnableCheckPreReleaseUpdate);
             }
-            else if (item.CoreType == ECoreType.Xray)
+            else if (item.CoreType is ECoreType.Xray or ECoreType.sing_box)
             {
                 await CheckUpdateCore(item, EnableCheckPreReleaseUpdate);
             }

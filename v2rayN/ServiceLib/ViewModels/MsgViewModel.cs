@@ -22,18 +22,16 @@ public partial class MsgViewModel : MyReactiveObject
         AutoRefresh = _config.MsgUIItem.AutoRefresh ?? true;
 
         this.WhenAnyValue(
-           x => x.MsgFilter)
-               .Subscribe(c => DoMsgFilter());
+                x => x.MsgFilter)
+            .Subscribe(c => DoMsgFilter());
 
-        this.WhenAnyValue(
-          x => x.AutoRefresh,
-          y => y == true)
-              .Subscribe(c => _config.MsgUIItem.AutoRefresh = AutoRefresh);
+        this.WhenAnyValue(x => x.AutoRefresh)
+            .Subscribe(_ => _config.MsgUIItem.AutoRefresh = AutoRefresh);
 
         AppEvents.SendMsgViewRequested
-         .AsObservable()
-         //.ObserveOn(RxSchedulers.MainThreadScheduler)
-         .Subscribe(content => _ = AppendQueueMsg(content));
+            .AsObservable()
+            //.ObserveOn(RxSchedulers.MainThreadScheduler)
+            .Subscribe(content => _ = AppendQueueMsg(content));
     }
 
     public void FlushQueueMsg()
@@ -74,9 +72,9 @@ public partial class MsgViewModel : MyReactiveObject
             {
                 try
                 {
-                    await DispatcherShowMsgInteraction.HandleSafe(sb.ToString());
+                    await DispatcherShowMsgInteraction.Handle(sb.ToString());
                 }
-                catch (Exception)
+                catch
                 {
                     _queueMsg.Enqueue(sb.ToString());
                 }

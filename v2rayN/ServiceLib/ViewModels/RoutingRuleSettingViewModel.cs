@@ -100,8 +100,6 @@ public partial class RoutingRuleSettingViewModel : MyReactiveObject, ICloseable
 
     public void RefreshRulesItems()
     {
-        RulesItems.Clear();
-
         var models = new List<RulesItemModel>();
         foreach (var item in _rules)
         {
@@ -120,7 +118,7 @@ public partial class RoutingRuleSettingViewModel : MyReactiveObject, ICloseable
             };
             models.Add(it);
         }
-        RulesItems.AddRange(models);
+        RulesItems.ReplaceRange(models);
     }
 
     public async Task RuleEditAsync(bool blNew)

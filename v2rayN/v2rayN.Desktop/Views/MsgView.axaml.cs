@@ -50,6 +50,9 @@ public partial class MsgView : ReactiveUserControl<MsgViewModel>
         if (togScrollToEnd.IsChecked ?? true)
         {
             txtMsg.ScrollToEnd();
+            Dispatcher.UIThread.Invoke(() =>
+                    txtMsg.ScrollTo(txtMsg.LineCount, 0, AvaloniaEdit.Rendering.VisualYPosition.TextBottom, txtMsg.Bounds.Height, 0),
+                DispatcherPriority.Background);
         }
     }
 

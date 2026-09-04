@@ -1,6 +1,6 @@
 namespace ServiceLib.Services;
 
-public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
+public partial class UpdateService(Config config, Func<bool, string, Task> updateFunc)
 {
     private readonly Config? _config = config;
     private readonly Func<bool, string, Task>? _updateFunc = updateFunc;
@@ -181,7 +181,7 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
     {
         var coreInfo = CoreInfoManager.Instance.GetCoreInfo(type);
         var tagName = string.Empty;
-        if (preRelease)
+        if (preRelease || coreInfo?.LockedMaxVersion != null)
         {
             var url = coreInfo?.ReleaseApiUrl;
             var result = await downloadHandle.TryDownloadString(url, blProxy, Global.AppName);
@@ -194,6 +194,24 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
             var gitHubRelease = preRelease ? gitHubReleases?.First() : gitHubReleases?.First(r => r.Prerelease == false);
             tagName = gitHubRelease?.TagName;
             //var body = gitHubRelease?.Body;
+
+            if (coreInfo?.LockedMaxVersion != null)
+            {
+                var lockedMaxVersion = coreInfo.LockedMaxVersion;
+                var remoteVersion = new SemanticVersion(tagName);
+                if (remoteVersion > lockedMaxVersion)
+                {
+                    var fallbackRelease = gitHubReleases?
+                        .Where(r => preRelease || !r.Prerelease)
+                        .Select(r => new { Release = r, IsValid = SemanticVersion.TryParse(r.TagName, out var v), Version = v })
+                        .Where(x => x.IsValid && x.Version <= coreInfo.LockedMaxVersion)
+                        .MaxBy(x => x.Version)?
+                        .Release;
+
+                    gitHubRelease = fallbackRelease;
+                    tagName = gitHubRelease?.TagName;
+                }
+            }
         }
         else
         {
@@ -208,6 +226,9 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
         }
         return new UpdateResult(true, new SemanticVersion(tagName));
     }
+
+    [GeneratedRegex(@"v?(?<version>\d+\.\d+\.\d+(?:-[0-9a-zA-Z.-]+)?(?:\+[0-9a-zA-Z.-]+)?)", RegexOptions.IgnoreCase)]
+    private static partial Regex SemVerRegex();
 
     private async Task<SemanticVersion> GetCoreVersion(ECoreType type)
     {
@@ -234,23 +255,7 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
 
             var result = await Utils.GetCliWrapOutput(filePath, coreInfo.VersionArg);
             var echo = result ?? "";
-            var version = string.Empty;
-            switch (type)
-            {
-                case ECoreType.v2fly:
-                case ECoreType.Xray:
-                case ECoreType.v2fly_v5:
-                    version = Regex.Match(echo, $"{coreInfo.Match} ([0-9.]+) \\(").Groups[1].Value;
-                    break;
-
-                case ECoreType.mihomo:
-                    version = Regex.Match(echo, $"v[0-9.]+").Groups[0].Value;
-                    break;
-
-                case ECoreType.sing_box:
-                    version = Regex.Match(echo, $"([0-9.]+)").Groups[1].Value;
-                    break;
-            }
+            var version = SemVerRegex().Match(echo).Groups["version"].Value;
             return new SemanticVersion(version);
         }
         catch (Exception ex)
@@ -276,30 +281,25 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
                 case ECoreType.v2fly:
                 case ECoreType.Xray:
                 case ECoreType.v2fly_v5:
-                    {
-                        curVersion = await GetCoreVersion(type);
-                        message = string.Format(ResUI.IsLatestCore, type, curVersion.ToVersionString("v"));
-                        url = string.Format(coreUrl, version.ToVersionString("v"));
-                        break;
-                    }
                 case ECoreType.mihomo:
                     {
                         curVersion = await GetCoreVersion(type);
-                        message = string.Format(ResUI.IsLatestCore, type, curVersion);
-                        url = string.Format(coreUrl, version.ToVersionString("v"));
+                        message = string.Format(ResUI.IsLatestCore, type, curVersion.ToStandardVersionString("v"));
+                        url = string.Format(coreUrl, version);
                         break;
                     }
+
                 case ECoreType.sing_box:
                     {
                         curVersion = await GetCoreVersion(type);
-                        message = string.Format(ResUI.IsLatestCore, type, curVersion.ToVersionString("v"));
-                        url = string.Format(coreUrl, version.ToVersionString("v"), version);
+                        message = string.Format(ResUI.IsLatestCore, type, curVersion.ToStandardVersionString("v"));
+                        url = string.Format(coreUrl, version, version.ToString().RemovePrefix("v"));
                         break;
                     }
                 case ECoreType.v2rayN:
                     {
                         curVersion = new SemanticVersion(Utils.GetVersionInfo());
-                        message = string.Format(ResUI.IsLatestN, Global.AppName, curVersion);
+                        message = string.Format(ResUI.IsLatestN, Global.AppName, curVersion.ToStandardVersionString("v"));
                         url = string.Format(coreUrl, version);
                         break;
                     }
@@ -307,7 +307,7 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
                     throw new ArgumentException("Type");
             }
 
-            if (curVersion >= version && version != new SemanticVersion(0, 0, 0))
+            if (curVersion >= version && !version.Equals(new SemanticVersion(0, 0, 0)))
             {
                 return new UpdateResult(false, message);
             }

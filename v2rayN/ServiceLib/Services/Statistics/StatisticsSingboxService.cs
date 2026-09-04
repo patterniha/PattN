@@ -17,7 +17,11 @@ public class StatisticsSingboxService
         _updateFunc = updateFunc;
         _exitFlag = false;
 
-        _ = Task.Run(Run);
+        _ = Task.Factory.StartNew(
+            Run,
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
     }
 
     private async Task Init()

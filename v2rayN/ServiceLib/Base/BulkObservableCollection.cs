@@ -73,18 +73,16 @@ public class BulkObservableCollection<T> : ObservableCollection<T>
 
     public void ReplaceRange(IEnumerable<T>? collection)
     {
-        if (collection == null)
-        {
-            return;
-        }
-
         _suppressNotification = true;
         try
         {
             Items.Clear();
-            foreach (var item in collection)
+            if (collection != null)
             {
-                Items.Add(item);
+                foreach (var item in collection)
+                {
+                    Items.Add(item);
+                }
             }
         }
         finally

@@ -15,7 +15,11 @@ public class StatisticsXrayService
         _updateFunc = updateFunc;
         _exitFlag = false;
 
-        _ = Task.Run(Run);
+        _ = Task.Factory.StartNew(
+            Run,
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
     }
 
     public void Close()

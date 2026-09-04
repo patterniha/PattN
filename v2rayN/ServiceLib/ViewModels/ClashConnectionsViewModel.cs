@@ -59,8 +59,6 @@ public partial class ClashConnectionsViewModel : MyReactiveObject
 
     public async Task RefreshConnections(List<ConnectionItem>? connections)
     {
-        ConnectionItems.Clear();
-
         var dtNow = DateTime.Now;
         var lstModel = new List<ClashConnectionModel>();
         foreach (var item in connections ?? [])
@@ -85,12 +83,8 @@ public partial class ClashConnectionsViewModel : MyReactiveObject
 
             lstModel.Add(model);
         }
-        if (lstModel.Count <= 0)
-        {
-            return;
-        }
 
-        ConnectionItems.AddRange(lstModel);
+        ConnectionItems.ReplaceRange(lstModel);
         await Task.CompletedTask;
     }
 

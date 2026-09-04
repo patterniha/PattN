@@ -22,6 +22,7 @@ global using ReactiveUI;
 global using ReactiveUI.Avalonia;
 global using ReactiveUI.Primitives;
 global using ReactiveUI.Primitives.Disposables;
+global using ReactiveUI.Primitives.Extensions;
 global using ReactiveUI.SourceGenerators;
 global using ServiceLib;
 global using ServiceLib.Base;

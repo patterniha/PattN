@@ -263,19 +263,19 @@ public partial class MainWindowViewModel : MyReactiveObject
         AppEvents.AddServerViaClipboardRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async _ => await AddServerViaClipboardAsync(null));
+            .SubscribeAsync(async _ => await AddServerViaClipboardAsync(null));
 
         AppEvents.HasUpdateNotified
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async bl => BlNewUpdate = bl);
+            .Subscribe(bl => BlNewUpdate = bl);
 
         #endregion AppEvents
 
         ProfilesViewModel.RefreshServersRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async _ => await RefreshServers());
+            .SubscribeAsync(async _ => await RefreshServers());
 
         var vmReloadRequestedList = new List<IObservable<RxVoid>>
         {
@@ -288,23 +288,23 @@ public partial class MainWindowViewModel : MyReactiveObject
         {
             reloadRequested
                 .ObserveOn(RxSchedulers.MainThreadScheduler)
-                .Subscribe(async _ => await Reload());
+                .SubscribeAsync(async _ => await Reload());
         }
 
         StatusBarViewModel.AddServerViaScanRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async _ => await AddServerViaScanAsync());
+            .SubscribeAsync(async _ => await AddServerViaScanAsync());
 
         StatusBarViewModel.AddServerViaClipboardRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async _ => await AddServerViaClipboardAsync(null));
+            .SubscribeAsync(async _ => await AddServerViaClipboardAsync(null));
 
         StatusBarViewModel.ShowHideWindowRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async blShow =>
+            .SubscribeAsync(async blShow =>
             {
                 await ShowHideWindowInteraction.HandleSafe(blShow);
             });
@@ -312,12 +312,12 @@ public partial class MainWindowViewModel : MyReactiveObject
         StatusBarViewModel.SetDefaultServerRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async indexId => await ProfilesViewModel.SetDefaultServer(indexId));
+            .SubscribeAsync(async indexId => await ProfilesViewModel.SetDefaultServer(indexId));
 
         StatusBarViewModel.SubscriptionsUpdateRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async blProxy => await UpdateSubscriptionProcess("", blProxy));
+            .SubscribeAsync(async blProxy => await UpdateSubscriptionProcess("", blProxy));
 
         _ = Init();
     }

@@ -16,6 +16,7 @@ public class CoreInfo
     public string? DownloadUrlLinuxLoong64 { get; set; }
     public string? DownloadUrlOSX64 { get; set; }
     public string? DownloadUrlOSXArm64 { get; set; }
+    public SemanticVersion? LockedMaxVersion { get; set; }
     public string? Match { get; set; }
     public string? VersionArg { get; set; }
     public bool AbsolutePath { get; set; }

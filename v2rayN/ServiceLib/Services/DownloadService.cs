@@ -11,6 +11,8 @@ public class DownloadService
 
     public event ErrorEventHandler? Error;
 
+    public string? AcceptHeader { get; init; }
+
     private static readonly string _tag = "DownloadService";
 
     /// <summary>
@@ -248,6 +250,10 @@ public class DownloadService
                 userAgent = Utils.GetVersion(false);
             }
             client.DefaultRequestHeaders.UserAgent.TryParseAdd(userAgent);
+            if (AcceptHeader.IsNotEmpty())
+            {
+                client.DefaultRequestHeaders.Accept.ParseAdd(AcceptHeader);
+            }
 
             Uri uri = new(url);
             //Authorization Header

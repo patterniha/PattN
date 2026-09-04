@@ -55,23 +55,21 @@ public partial class ThemeSettingViewModel : MyReactiveObject
         CurrentFontSize = _config.UiItem.CurrentFontSize;
         CurrentLanguage = _config.UiItem.CurrentLanguage;
 
-        this.WhenAnyValue(
-                x => x.CurrentTheme,
-                y => y != null && !y.IsNullOrEmpty())
-            .Subscribe(c =>
+        this.WhenAnyValue(x => x.CurrentTheme)
+            .Where(y => y != null && !y.IsNullOrEmpty())
+            .SubscribeAsync(async _ =>
              {
                  if (_config.UiItem.CurrentTheme != CurrentTheme)
                  {
                      _config.UiItem.CurrentTheme = CurrentTheme;
                      ModifyTheme();
-                     _ = ConfigHandler.SaveConfig(_config);
+                     await ConfigHandler.SaveConfig(_config);
                  }
              });
 
-        this.WhenAnyValue(
-          x => x.SelectedSwatch,
-          y => y != null && !y.Name.IsNullOrEmpty())
-             .Subscribe(c =>
+        this.WhenAnyValue(x => x.SelectedSwatch)
+             .Where(y => y != null && !y.Name.IsNullOrEmpty())
+             .SubscribeAsync(async _ =>
              {
                  if (SelectedSwatch == null
                  || SelectedSwatch.Name.IsNullOrEmpty()
@@ -84,33 +82,31 @@ public partial class ThemeSettingViewModel : MyReactiveObject
                  {
                      _config.UiItem.ColorPrimaryName = SelectedSwatch?.Name;
                      ChangePrimaryColor(SelectedSwatch.ExemplarHue.Color);
-                     _ = ConfigHandler.SaveConfig(_config);
+                     await ConfigHandler.SaveConfig(_config);
                  }
              });
 
-        this.WhenAnyValue(
-           x => x.CurrentFontSize,
-           y => y > 0)
-              .Subscribe(c =>
+        this.WhenAnyValue(x => x.CurrentFontSize)
+              .Where(y => y > 0)
+              .SubscribeAsync(async _ =>
               {
                   if (_config.UiItem.CurrentFontSize != CurrentFontSize)
                   {
                       _config.UiItem.CurrentFontSize = CurrentFontSize;
                       ModifyFontSize();
-                      _ = ConfigHandler.SaveConfig(_config);
+                      await ConfigHandler.SaveConfig(_config);
                   }
               });
 
-        this.WhenAnyValue(
-         x => x.CurrentLanguage,
-         y => y != null && !y.IsNullOrEmpty())
-            .Subscribe(c =>
+        this.WhenAnyValue(x => x.CurrentLanguage)
+            .Where(y => y != null && !y.IsNullOrEmpty())
+            .SubscribeAsync(async _ =>
             {
                 if (CurrentLanguage.IsNotEmpty() && _config.UiItem.CurrentLanguage != CurrentLanguage)
                 {
                     _config.UiItem.CurrentLanguage = CurrentLanguage;
                     Thread.CurrentThread.CurrentUICulture = new(CurrentLanguage);
-                    _ = ConfigHandler.SaveConfig(_config);
+                    await ConfigHandler.SaveConfig(_config);
                     NoticeManager.Instance.Enqueue(ResUI.NeedRebootTips);
                 }
             });

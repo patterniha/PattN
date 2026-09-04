@@ -35,39 +35,38 @@ public partial class ThemeSettingViewModel : MyReactiveObject
         CurrentLanguage = _config.UiItem.CurrentLanguage;
 
         this.WhenAnyValue(x => x.CurrentTheme)
-            .Subscribe(c =>
+            .Where(y => y.IsNotEmpty())
+            .SubscribeAsync(async _ =>
             {
                 if (_config.UiItem.CurrentTheme != CurrentTheme)
                 {
                     _config.UiItem.CurrentTheme = CurrentTheme;
                     ModifyTheme();
-                    _ = ConfigHandler.SaveConfig(_config);
+                    await ConfigHandler.SaveConfig(_config);
                 }
             });
 
-        this.WhenAnyValue(
-                x => x.CurrentFontSize,
-                y => y > 0)
-            .Subscribe(c =>
+        this.WhenAnyValue(x => x.CurrentFontSize)
+            .Where(y => y > 0)
+            .SubscribeAsync(async _ =>
             {
                 if (_config.UiItem.CurrentFontSize != CurrentFontSize && CurrentFontSize >= Global.MinFontSize)
                 {
                     _config.UiItem.CurrentFontSize = CurrentFontSize;
                     ModifyFontSize();
-                    _ = ConfigHandler.SaveConfig(_config);
+                    await ConfigHandler.SaveConfig(_config);
                 }
             });
 
-        this.WhenAnyValue(
-                x => x.CurrentLanguage,
-                y => y != null && !y.IsNullOrEmpty())
-            .Subscribe(c =>
+        this.WhenAnyValue(x => x.CurrentLanguage)
+            .Where(y => !y.IsNullOrEmpty())
+            .SubscribeAsync(async _ =>
             {
                 if (CurrentLanguage.IsNotEmpty() && _config.UiItem.CurrentLanguage != CurrentLanguage)
                 {
                     _config.UiItem.CurrentLanguage = CurrentLanguage;
                     Thread.CurrentThread.CurrentUICulture = new(CurrentLanguage);
-                    _ = ConfigHandler.SaveConfig(_config);
+                    await ConfigHandler.SaveConfig(_config);
                     NoticeManager.Instance.Enqueue(ResUI.NeedRebootTips);
                 }
             });
