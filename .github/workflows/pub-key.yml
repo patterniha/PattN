@@ -44,5 +44,7 @@ jobs:
       with:
         file: PattN-public-key.asc
         tag: ${{ inputs.release_tag }}
+        release_name: PattN v${{ inputs.release_tag }}
+        body: "."
         prerelease: true
         overwrite: true

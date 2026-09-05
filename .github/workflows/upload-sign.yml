@@ -62,6 +62,8 @@ jobs:
       with:
         file: dist/${{ inputs.file_pattern }}
         tag: ${{ inputs.release_tag }}
+        release_name: PattN v${{ inputs.release_tag }}
+        body: "."
         file_glob: true
         prerelease: true
         overwrite: true
@@ -71,6 +73,8 @@ jobs:
       with:
         file: dist/${{ inputs.file_pattern }}.sig
         tag: ${{ inputs.release_tag }}
+        release_name: PattN v${{ inputs.release_tag }}
+        body: "."
         file_glob: true
         prerelease: true
         overwrite: true
