@@ -281,7 +281,8 @@ public partial class CoreConfigV2rayService
         {
             // finalQuery: the protected (proxy server) domains must be answered by this direct
             // server alone, never falling through to resolvers that dial through the proxy itself
-            AddDnsServers(directDNSAddress, context.ProtectDomainList, true, finalQuery: true);
+            // full: so only the proxy host itself matches, a plain entry is a substring match in Xray DNS
+            AddDnsServers(directDNSAddress, context.ProtectDomainList.Select(d => $"full:{d}").ToHashSet(), true, finalQuery: true);
         }
 
         if (simpleDNSItem.FakeIP == true)
@@ -536,7 +537,7 @@ public partial class CoreConfigV2rayService
         {
             address = string.IsNullOrEmpty(dnsItem?.DomainDNSAddress) ? Global.DomainPureIPDNSAddress.FirstOrDefault() : dnsItem?.DomainDNSAddress,
             skipFallback = true,
-            domains = domainList.ToList(),
+            domains = domainList.Select(d => $"full:{d}").ToList(),
         };
         servers.AsArray().Add(JsonUtils.SerializeToNode(dnsServer));
     }
