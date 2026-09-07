@@ -77,6 +77,13 @@ public partial class SubEditViewModel : MyReactiveObject, ICloseable
             }
         }
 
+        SelectedSource.OverrideAddress = SelectedSource.OverrideAddress.IsNullOrEmpty() ? null : SelectedSource.OverrideAddress.Trim();
+        if (SelectedSource.OverridePort is int overridePort && overridePort is not (> 0 and <= 65535))
+        {
+            NoticeManager.Instance.Enqueue(ResUI.FillCorrectServerPort);
+            return;
+        }
+
         SelectedSource.CustomCoreType = Enum.TryParse<ECoreType>(CustomCoreType, out var coreType) ? coreType : null;
         SelectedSource.PrevProfile = PrevProfile;
         SelectedSource.NextProfile = NextProfile;

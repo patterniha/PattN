@@ -900,6 +900,18 @@
   <data name="LvFilter" xml:space="preserve">
     <value>Remarks regular filter</value>
   </data>
+  <data name="LvOverrideAddress" xml:space="preserve">
+    <value>Override address</value>
+  </data>
+  <data name="LvOverridePort" xml:space="preserve">
+    <value>Override port</value>
+  </data>
+  <data name="TipOverrideAddress" xml:space="preserve">
+    <value>Leave empty to keep the address from the subscription</value>
+  </data>
+  <data name="TipOverridePort" xml:space="preserve">
+    <value>Leave empty to keep the port from the subscription</value>
+  </data>
   <data name="TbDisplayLog" xml:space="preserve">
     <value>Display Log</value>
   </data>

@@ -1648,11 +1648,8 @@ public static class ConfigHandler
             return -1;
         }
 
-        var subFilter = string.Empty;
-        if (isSub && subid.IsNotEmpty())
-        {
-            subFilter = (await AppManager.Instance.GetSubItem(subid))?.Filter ?? "";
-        }
+        var subItem = await GetSubItemForImport(subid, isSub);
+        var subFilter = subItem?.Filter ?? "";
 
         var countServers = 0;
         List<ProfileItem> lstAdd = [];
@@ -1688,6 +1685,7 @@ public static class ConfigHandler
             }
             profileItem.Subid = subid;
             profileItem.IsSub = isSub;
+            ApplySubOverrides(profileItem, subItem);
 
             var addStatus = profileItem.ConfigType switch
             {
@@ -1944,11 +1942,13 @@ public static class ConfigHandler
         var lstSsServer = ShadowsocksFmt.ResolveSip008(strData);
         if (lstSsServer?.Count > 0)
         {
+            var subItem = await GetSubItemForImport(subid, isSub);
             var counter = 0;
             foreach (var ssItem in lstSsServer)
             {
                 ssItem.Subid = subid;
                 ssItem.IsSub = isSub;
+                ApplySubOverrides(ssItem, subItem);
                 if (await AddShadowsocksServer(config, ssItem) == 0)
                 {
                     counter++;
@@ -1975,11 +1975,13 @@ public static class ConfigHandler
         var lstServer = WireguardFmt.ResolveConfig(strData);
         if (lstServer?.Count > 0)
         {
+            var subItem = await GetSubItemForImport(subid, isSub);
             var counter = 0;
             foreach (var item in lstServer)
             {
                 item.Subid = subid;
                 item.IsSub = isSub;
+                ApplySubOverrides(item, subItem);
                 if (await AddWireguardServer(config, item) == 0)
                 {
                     counter++;
@@ -2001,12 +2003,17 @@ public static class ConfigHandler
         var lstServer = InnerFmt.Resolve(strData, subid);
         if (lstServer?.Count > 0)
         {
+            var subItem = await GetSubItemForImport(subid, isSub);
             var counter = 0;
             List<ProfileItem> lstAdd = [];
             foreach (var profileItem in lstServer)
             {
                 profileItem.Subid = subid;
                 profileItem.IsSub = isSub;
+                if (!profileItem.ConfigType.IsComplexType())
+                {
+                    ApplySubOverrides(profileItem, subItem);
+                }
 
                 var addStatus = profileItem.ConfigType switch
                 {
@@ -2040,6 +2047,40 @@ public static class ConfigHandler
         }
 
         return -1;
+    }
+
+    /// <summary>
+    /// Get the subscription an import belongs to, or null when the import is not a subscription update
+    /// </summary>
+    private static async Task<SubItem?> GetSubItemForImport(string subid, bool isSub)
+    {
+        if (!isSub || subid.IsNullOrEmpty())
+        {
+            return null;
+        }
+        return await AppManager.Instance.GetSubItem(subid);
+    }
+
+    /// <summary>
+    /// Replace the address and/or port of a profile imported from a subscription with the
+    /// override values configured on that subscription. Empty override values leave the profile unchanged.
+    /// </summary>
+    /// <param name="profileItem">Profile imported from the subscription</param>
+    /// <param name="subItem">Subscription the profile belongs to, or null</param>
+    public static void ApplySubOverrides(ProfileItem profileItem, SubItem? subItem)
+    {
+        if (subItem is null)
+        {
+            return;
+        }
+        if (subItem.OverrideAddress.IsNotEmpty())
+        {
+            profileItem.Address = subItem.OverrideAddress!.Trim();
+        }
+        if (subItem.OverridePort is > 0 and <= 65535)
+        {
+            profileItem.Port = subItem.OverridePort.Value;
+        }
     }
 
     /// <summary>
@@ -2225,6 +2266,8 @@ public static class ConfigHandler
             item.PreSocksPort = subItem.PreSocksPort;
             item.Memo = subItem.Memo;
             item.CustomCoreType = subItem.CustomCoreType;
+            item.OverrideAddress = subItem.OverrideAddress;
+            item.OverridePort = subItem.OverridePort;
         }
 
         if (item.Id.IsNullOrEmpty())

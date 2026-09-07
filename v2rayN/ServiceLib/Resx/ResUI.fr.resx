@@ -897,6 +897,18 @@
   <data name="LvFilter" xml:space="preserve">
     <value>Filtrage par alias (regex)</value>
   </data>
+  <data name="LvOverrideAddress" xml:space="preserve">
+    <value>Remplacer l'adresse</value>
+  </data>
+  <data name="LvOverridePort" xml:space="preserve">
+    <value>Remplacer le port</value>
+  </data>
+  <data name="TipOverrideAddress" xml:space="preserve">
+    <value>Laisser vide pour conserver l'adresse de l'abonnement</value>
+  </data>
+  <data name="TipOverridePort" xml:space="preserve">
+    <value>Laisser vide pour conserver le port de l'abonnement</value>
+  </data>
   <data name="TbDisplayLog" xml:space="preserve">
     <value>Afficher les logs</value>
   </data>

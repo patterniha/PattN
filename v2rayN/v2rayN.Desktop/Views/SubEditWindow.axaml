@@ -34,7 +34,7 @@
         </StackPanel>
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
 
-            <Grid ColumnDefinitions="Auto,400,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,400,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <TextBlock
                     Grid.Row="0"
@@ -158,24 +158,55 @@
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
-                    Text="{x:Static resx:ResUI.LvConvertTarget}" />
-                <ComboBox
-                    x:Name="cmbConvertTarget"
+                    Text="{x:Static resx:ResUI.LvOverrideAddress}" />
+                <TextBox
+                    x:Name="txtOverrideAddress"
                     Grid.Row="6"
                     Grid.Column="1"
-                    Width="200"
                     Margin="{StaticResource Margin4}"
-                    ToolTip.Tip="{x:Static resx:ResUI.LvConvertTargetTip}" />
+                    VerticalAlignment="Center"
+                    PlaceholderText="{x:Static resx:ResUI.TipOverrideAddress}"
+                    ToolTip.Tip="{x:Static resx:ResUI.TipOverrideAddress}" />
 
                 <TextBlock
                     Grid.Row="7"
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
+                    Text="{x:Static resx:ResUI.LvOverridePort}" />
+                <TextBox
+                    x:Name="txtOverridePort"
+                    Grid.Row="7"
+                    Grid.Column="1"
+                    Width="200"
+                    Margin="{StaticResource Margin4}"
+                    HorizontalAlignment="Left"
+                    PlaceholderText="{x:Static resx:ResUI.TipOverridePort}"
+                    ToolTip.Tip="{x:Static resx:ResUI.TipOverridePort}" />
+
+                <TextBlock
+                    Grid.Row="8"
+                    Grid.Column="0"
+                    Margin="{StaticResource Margin4}"
+                    VerticalAlignment="Center"
+                    Text="{x:Static resx:ResUI.LvConvertTarget}" />
+                <ComboBox
+                    x:Name="cmbConvertTarget"
+                    Grid.Row="8"
+                    Grid.Column="1"
+                    Width="200"
+                    Margin="{StaticResource Margin4}"
+                    ToolTip.Tip="{x:Static resx:ResUI.LvConvertTargetTip}" />
+
+                <TextBlock
+                    Grid.Row="9"
+                    Grid.Column="0"
+                    Margin="{StaticResource Margin4}"
+                    VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.LvUserAgent}" />
                 <TextBox
                     x:Name="txtUserAgent"
-                    Grid.Row="7"
+                    Grid.Row="9"
                     Grid.Column="1"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
@@ -183,82 +214,82 @@
                     TextWrapping="Wrap" />
 
                 <TextBlock
-                    Grid.Row="8"
+                    Grid.Row="10"
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.LvSort}" />
                 <TextBox
                     x:Name="txtSort"
-                    Grid.Row="8"
+                    Grid.Row="10"
                     Grid.Column="1"
                     Width="100"
                     Margin="{StaticResource Margin4}"
                     HorizontalAlignment="Left" />
 
                 <TextBlock
-                    Grid.Row="9"
+                    Grid.Row="11"
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.LvPrevProfile}" />
                 <TextBox
                     x:Name="txtPrevProfile"
-                    Grid.Row="9"
+                    Grid.Row="11"
                     Grid.Column="1"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     PlaceholderText="{x:Static resx:ResUI.LvPrevProfileTip}" />
                 <Button
                     x:Name="btnSelectPrevProfile"
-                    Grid.Row="9"
+                    Grid.Row="11"
                     Grid.Column="2"
                     Margin="{StaticResource Margin4}"
                     Content="{x:Static resx:ResUI.TbSelectProfile}" />
 
                 <TextBlock
-                    Grid.Row="10"
+                    Grid.Row="12"
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.LvNextProfile}" />
                 <TextBox
                     x:Name="txtNextProfile"
-                    Grid.Row="10"
+                    Grid.Row="12"
                     Grid.Column="1"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     PlaceholderText="{x:Static resx:ResUI.LvPrevProfileTip}" />
                 <Button
                     x:Name="btnSelectNextProfile"
-                    Grid.Row="10"
+                    Grid.Row="12"
                     Grid.Column="2"
                     Margin="{StaticResource Margin4}"
                     Content="{x:Static resx:ResUI.TbSelectProfile}" />
 
                 <TextBlock
-                    Grid.Row="11"
+                    Grid.Row="13"
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.LvCustomCoreType}" />
                 <ComboBox
                     x:Name="cmbCustomCoreType"
-                    Grid.Row="11"
+                    Grid.Row="13"
                     Grid.Column="1"
                     Width="200"
                     Margin="{StaticResource Margin4}"
                     HorizontalAlignment="Left" />
 
                 <TextBlock
-                    Grid.Row="12"
+                    Grid.Row="14"
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.TbPreSocksPort4Sub}" />
                 <TextBox
                     x:Name="txtPreSocksPort"
-                    Grid.Row="12"
+                    Grid.Row="14"
                     Grid.Column="1"
                     Width="200"
                     Margin="{StaticResource Margin4}"
@@ -267,14 +298,14 @@
                     ToolTip.Tip="{x:Static resx:ResUI.TipPreSocksPort}" />
 
                 <TextBlock
-                    Grid.Row="13"
+                    Grid.Row="15"
                     Grid.Column="0"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"
                     Text="{x:Static resx:ResUI.LvMemo}" />
                 <TextBox
                     x:Name="txtMemo"
-                    Grid.Row="13"
+                    Grid.Row="15"
                     Grid.Column="1"
                     Margin="{StaticResource Margin4}"
                     VerticalAlignment="Center"

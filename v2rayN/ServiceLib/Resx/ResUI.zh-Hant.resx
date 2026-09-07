@@ -900,6 +900,18 @@
   <data name="LvFilter" xml:space="preserve">
     <value>別名正則過濾</value>
   </data>
+  <data name="LvOverrideAddress" xml:space="preserve">
+    <value>覆蓋位址</value>
+  </data>
+  <data name="LvOverridePort" xml:space="preserve">
+    <value>覆蓋連接埠</value>
+  </data>
+  <data name="TipOverrideAddress" xml:space="preserve">
+    <value>留空則保留訂閱中的位址</value>
+  </data>
+  <data name="TipOverridePort" xml:space="preserve">
+    <value>留空則保留訂閱中的連接埠</value>
+  </data>
   <data name="TbDisplayLog" xml:space="preserve">
     <value>顯示日誌</value>
   </data>

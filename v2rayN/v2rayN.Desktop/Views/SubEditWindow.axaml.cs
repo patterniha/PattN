@@ -24,6 +24,8 @@ public partial class SubEditWindow : WindowBase<SubEditViewModel>
             this.Bind(ViewModel, vm => vm.SelectedSource.UserAgent, v => v.txtUserAgent.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSource.Sort, v => v.txtSort.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSource.Filter, v => v.txtFilter.Text).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.SelectedSource.OverrideAddress, v => v.txtOverrideAddress.Text).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.SelectedSource.OverridePort, v => v.txtOverridePort.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSource.ConvertTarget, v => v.cmbConvertTarget.SelectedValue).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.PrevProfile, v => v.txtPrevProfile.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.NextProfile, v => v.txtNextProfile.Text).DisposeWith(disposables);

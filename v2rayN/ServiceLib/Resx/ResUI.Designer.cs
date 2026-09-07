@@ -520,6 +520,24 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 Override address 的本地化字符串。
+        /// </summary>
+        public static string LvOverrideAddress {
+            get {
+                return ResourceManager.GetString("LvOverrideAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Override port 的本地化字符串。
+        /// </summary>
+        public static string LvOverridePort {
+            get {
+                return ResourceManager.GetString("LvOverridePort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Port 的本地化字符串。
         /// </summary>
         public static string LvPort {
@@ -5217,6 +5235,24 @@ namespace ServiceLib.Resx {
         public static string TipNetwork {
             get {
                 return ResourceManager.GetString("TipNetwork", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Leave empty to keep the address from the subscription 的本地化字符串。
+        /// </summary>
+        public static string TipOverrideAddress {
+            get {
+                return ResourceManager.GetString("TipOverrideAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Leave empty to keep the port from the subscription 的本地化字符串。
+        /// </summary>
+        public static string TipOverridePort {
+            get {
+                return ResourceManager.GetString("TipOverridePort", resourceCulture);
             }
         }
         

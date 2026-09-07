@@ -897,6 +897,18 @@
   <data name="LvFilter" xml:space="preserve">
     <value>Megjegyzések reguláris szűrője</value>
   </data>
+  <data name="LvOverrideAddress" xml:space="preserve">
+    <value>Cím felülírása</value>
+  </data>
+  <data name="LvOverridePort" xml:space="preserve">
+    <value>Port felülírása</value>
+  </data>
+  <data name="TipOverrideAddress" xml:space="preserve">
+    <value>Hagyja üresen az előfizetés címének megtartásához</value>
+  </data>
+  <data name="TipOverridePort" xml:space="preserve">
+    <value>Hagyja üresen az előfizetés portjának megtartásához</value>
+  </data>
   <data name="TbDisplayLog" xml:space="preserve">
     <value>Napló megjelenítése</value>
   </data>

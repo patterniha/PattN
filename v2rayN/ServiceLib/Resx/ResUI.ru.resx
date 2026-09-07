@@ -897,6 +897,18 @@
   <data name="LvFilter" xml:space="preserve">
     <value>Фильтр по псевдониму (регулярные выражения)</value>
   </data>
+  <data name="LvOverrideAddress" xml:space="preserve">
+    <value>Заменить адрес</value>
+  </data>
+  <data name="LvOverridePort" xml:space="preserve">
+    <value>Заменить порт</value>
+  </data>
+  <data name="TipOverrideAddress" xml:space="preserve">
+    <value>Оставьте пустым, чтобы сохранить адрес из подписки</value>
+  </data>
+  <data name="TipOverridePort" xml:space="preserve">
+    <value>Оставьте пустым, чтобы сохранить порт из подписки</value>
+  </data>
   <data name="TbDisplayLog" xml:space="preserve">
     <value>Отображать журнал</value>
   </data>
