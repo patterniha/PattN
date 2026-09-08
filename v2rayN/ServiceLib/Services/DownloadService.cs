@@ -231,6 +231,7 @@ public class DownloadService
             {
                 Proxy = webProxy,
                 UseProxy = webProxy != null,
+                AutomaticDecompression = DecompressionMethods.All,
                 ConnectTimeout = TimeSpan.FromSeconds(connectTimeout)
             };
             var certificateChainPolicy = CertPemManager.Instance.BuildCertificateChainPolicy();
