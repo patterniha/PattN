@@ -275,7 +275,7 @@ public partial class MainWindowViewModel : MyReactiveObject
         ProfilesViewModel.RefreshServersRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .SubscribeAsync(async _ => await RefreshServers());
+            .SubscribeAsync(async _ => await RefreshServersDispatcherAsync());
 
         var vmReloadRequestedList = new List<IObservable<RxVoid>>
         {
@@ -406,6 +406,8 @@ public partial class MainWindowViewModel : MyReactiveObject
 
     #region Servers && Groups
 
+    private readonly SemaphoreSlim _refreshServersSemaphore = new(1, 1);
+
     private async Task RefreshServers()
     {
         await ProfilesViewModel.RefreshServersBiz();
@@ -417,13 +419,21 @@ public partial class MainWindowViewModel : MyReactiveObject
     private async Task RefreshServersDispatcherAsync()
     {
         //await Observable.Start(async () => await RefreshServers(), RxSchedulers.MainThreadScheduler);
-        await Signal.FromAsync(async () =>
+        await _refreshServersSemaphore.WaitAsync();
+        try
+        {
+            await Signal.FromAsync(async () =>
             {
                 await RefreshServers();
                 return RxVoid.Default;
             })
-            .SubscribeOn(RxSchedulers.MainThreadScheduler)
-            .ToTask();
+                .SubscribeOn(RxSchedulers.MainThreadScheduler)
+                .ToTask();
+        }
+        finally
+        {
+            _refreshServersSemaphore.Release();
+        }
     }
 
     private async Task RefreshSubscriptions()
