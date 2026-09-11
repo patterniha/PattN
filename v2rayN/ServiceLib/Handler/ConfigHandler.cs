@@ -2650,6 +2650,40 @@ public static class ConfigHandler
     }
 
     /// <summary>
+    /// PattN: rewrite the Iran direct-domain rule from "geosite:ir" (Chocolate4U only) to
+    /// "domain:ir" + "geosite:category-ir" (present in every geosite source), as custom_routing_white_iran has now
+    /// </summary>
+    /// <param name="rules">Rules of the stored Iran routing</param>
+    /// <returns>true when a rule was changed</returns>
+    public static bool MigrateIranDirectDomains(List<RulesItem> rules)
+    {
+        var changed = false;
+        foreach (var rule in rules)
+        {
+            if (rule.Domain is null || rule.OutboundTag != Global.DirectTag)
+            {
+                continue;
+            }
+            var index = rule.Domain.FindIndex(t => string.Equals(t, "geosite:ir", StringComparison.OrdinalIgnoreCase));
+            if (index < 0)
+            {
+                continue;
+            }
+            rule.Domain.RemoveAt(index);
+            if (!rule.Domain.Contains("geosite:category-ir", StringComparer.OrdinalIgnoreCase))
+            {
+                rule.Domain.Insert(index, "geosite:category-ir");
+            }
+            if (!rule.Domain.Contains("domain:ir", StringComparer.OrdinalIgnoreCase))
+            {
+                rule.Domain.Insert(index, "domain:ir");
+            }
+            changed = true;
+        }
+        return changed;
+    }
+
+    /// <summary>
     /// Initialize built-in routing rules
     /// Creates default routing configurations (whitelist, blacklist, global)
     /// </summary>
@@ -2679,7 +2713,9 @@ public static class ConfigHandler
         }
 
         //PattN TODO Temporary code to be removed later: the Iran template shipped an "8.8.8.8 -> direct"
-        //rule for domestic DNS; remove it once for updaters, the direct-dns routing rule covers this now
+        //rule for domestic DNS; remove it once for updaters, the direct-dns routing rule covers this now.
+        //Releases up to 7.25.1-P24 also shipped the Iran direct rule as "geosite:ir" (Chocolate4U only);
+        //rewrite it once to "domain:ir" + "geosite:category-ir" like custom_routing_white_iran has now
         var iranTemplateItem = items?.FirstOrDefault(t => t.Remarks == "IR-ایران مستقیم، بقیه پراکسی");
         if (iranTemplateItem != null)
         {
@@ -2687,7 +2723,8 @@ public static class ConfigHandler
             var removedCount = iranRules.RemoveAll(t => t.Remarks == "تبدیل نام دامنه های ایران - مستقیم"
                 && t.OutboundTag == Global.DirectTag
                 && t.Ip is ["8.8.8.8"]);
-            if (removedCount > 0)
+            var domainsMigrated = MigrateIranDirectDomains(iranRules);
+            if (removedCount > 0 || domainsMigrated)
             {
                 iranTemplateItem.RuleNum = iranRules.Count;
                 iranTemplateItem.RuleSet = JsonUtils.Serialize(iranRules, false);
