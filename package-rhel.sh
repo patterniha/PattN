@@ -383,7 +383,7 @@ download_geo_assets() {
     curl -fsSL -o "$srss_dir/$f" "https://raw.githubusercontent.com/2dust/sing-box-rules/refs/heads/rule-set-geosite/$f"
   done
 
-  for f in geosite-ir.srs geoip-ir.srs; do
+  for f in geosite-category-ir.srs geoip-ir.srs; do
     curl -fsSL -o "$srss_dir/$f" "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/$f"
   done
 

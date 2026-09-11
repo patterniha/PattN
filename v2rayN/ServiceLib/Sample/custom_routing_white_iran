@@ -41,7 +41,7 @@
   {
     "outboundTag":"direct",
     "domain":[
-      "geosite:ir"
+      "geosite:category-ir"
     ],
     "enabled":true,
     "remarks":"\u062f\u0627\u0645\u0646\u0647\u0020\u0647\u0627\u06cc\u0020\u0627\u06cc\u0631\u0627\u0646\u0020\u002d\u0020\u0645\u0633\u062a\u0642\u06cc\u0645"

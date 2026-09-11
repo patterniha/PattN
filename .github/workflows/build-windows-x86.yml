@@ -220,7 +220,7 @@ jobs:
             Invoke-WebRequest -Uri "https://raw.githubusercontent.com/2dust/sing-box-rules/refs/heads/rule-set-geosite/$f" -OutFile "$srssDir/$f"
           }
 
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geosite-ir.srs" -OutFile "$srssDir/geosite-ir.srs"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geosite-category-ir.srs" -OutFile "$srssDir/geosite-category-ir.srs"
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geoip-ir.srs" -OutFile "$srssDir/geoip-ir.srs"
 
       - name: Package zip

@@ -3070,7 +3070,7 @@ public static class ConfigHandler
         }
 
         // Activate a routing that matches the preset's geo data.
-        // The IR rule-sets need geosite "ir" (Chocolate4U only) and geosite:gfw only exists on Loyalsoldier/runetfreedom;
+        // The IR rule-sets need geosite "category-ir" and geoip "ir", and geosite:gfw only exists on Loyalsoldier/runetfreedom;
         // an active routing with categories missing from the new dats would stop the core from starting.
         // Derived from the effective geo source so the mapping follows whatever the built-in default is.
         var effectiveGeoUrl = config.ConstItem.GeoSourceUrl.IsNullOrEmpty() ? Global.GeoUrl : config.ConstItem.GeoSourceUrl;
