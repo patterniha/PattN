@@ -89,12 +89,20 @@ jobs:
     - name: Build v2rayN
       shell: bash
       working-directory: ./v2rayN
-      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true $ExtOpt ${Version:+-p:Version=$Version} -o $Output
+      run: |
+        args=(-c Release -r "$RID" -p:SelfContained=true)
+        if [[ -n "$ExtOpt" ]]; then args+=("$ExtOpt"); fi
+        if [[ -n "$Version" ]]; then args+=("-p:Version=$Version"); fi
+        dotnet publish "$Project" "${args[@]}" -o "$Output"
 
     - name: Build AmazTool
       shell: bash
       working-directory: ./v2rayN
-      run: dotnet publish ./AmazTool/AmazTool.csproj -c Release -r $RID -p:SelfContained=true -p:PublishTrimmed=true $ExtOpt ${Version:+-p:Version=$Version} -o $Output
+      run: |
+        args=(-c Release -r "$RID" -p:SelfContained=true -p:PublishTrimmed=true)
+        if [[ -n "$ExtOpt" ]]; then args+=("$ExtOpt"); fi
+        if [[ -n "$Version" ]]; then args+=("-p:Version=$Version"); fi
+        dotnet publish ./AmazTool/AmazTool.csproj "${args[@]}" -o "$Output"
 
     - name: Remove Debug Symbols
       shell: bash

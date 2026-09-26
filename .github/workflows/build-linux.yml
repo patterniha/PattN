@@ -268,7 +268,7 @@ jobs:
         VIRTIOFSD_PID=$!
         trap 'sudo kill "$VIRTIOFSD_PID" 2>/dev/null || true; rm -f "$VIRTIOFSD_SOCKET"' EXIT
 
-        for i in {1..100}; do
+        for _ in {1..100}; do
           [[ -S "$VIRTIOFSD_SOCKET" ]] && break
           sleep 0.1
         done
@@ -418,7 +418,7 @@ jobs:
         VIRTIOFSD_PID=$!
         trap 'sudo kill "$VIRTIOFSD_PID" 2>/dev/null || true; rm -f "$VIRTIOFSD_SOCKET"' EXIT
 
-        for i in {1..100}; do
+        for _ in {1..100}; do
           [[ -S "$VIRTIOFSD_SOCKET" ]] && break
           sleep 0.1
         done

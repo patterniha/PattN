@@ -1,52 +1,129 @@
 name: Code Test
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
+      - my-releases
     paths:
       - 'v2rayN/ServiceLib/**'
       - 'v2rayN/ServiceLib.UdpTest/**'
       - 'v2rayN/ServiceLib.Tests/**'
+      - 'v2rayN/v2rayN/**'
+      - 'v2rayN/v2rayN.Desktop/**'
       - 'v2rayN/Directory.Build.*'
       - 'v2rayN/Directory.Packages.props'
+      - 'pattn-discovery/**'
       - 'global.json'
-      - '.github/workflows/test.yml'
+      - '.github/workflows/**'
   pull_request:
-    branches:
-      - master
     paths:
       - 'v2rayN/ServiceLib/**'
       - 'v2rayN/ServiceLib.UdpTest/**'
       - 'v2rayN/ServiceLib.Tests/**'
+      - 'v2rayN/v2rayN/**'
+      - 'v2rayN/v2rayN.Desktop/**'
       - 'v2rayN/Directory.Build.*'
       - 'v2rayN/Directory.Packages.props'
+      - 'pattn-discovery/**'
       - 'global.json'
-      - '.github/workflows/test.yml'
+      - '.github/workflows/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   checks: write
   pull-requests: write
 
 jobs:
-  test:
+  workflow-lint:
+    name: Validate GitHub Actions workflows
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v6
-      with:
-        dotnet-version: '10.x'
-        dotnet-quality: 'ga'
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
 
-    - name: Test Code
-      run: dotnet test --project ./v2rayN/ServiceLib.Tests -c Release --results-directory ./TestResults -- --report-trx
+  test:
+    name: Test ServiceLib and discovery runtime
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
 
-    - name: Comment PR with results
-      if: always()
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      with:
-        files: ./TestResults/*.trx
-        comment_mode: failures
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.x'
+          dotnet-quality: 'ga'
+
+      - name: Setup Go
+        if: ${{ hashFiles('pattn-discovery/go.mod') != '' }}
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: './pattn-discovery/go.mod'
+          cache: false
+
+      - name: Test and vet pattn-discovery
+        if: ${{ hashFiles('pattn-discovery/go.mod') != '' }}
+        working-directory: ./pattn-discovery
+        run: |
+          go test ./...
+          go vet ./...
+
+      - name: Race-test pattn-discovery
+        if: ${{ hashFiles('pattn-discovery/go.mod') != '' }}
+        working-directory: ./pattn-discovery
+        run: go test -race ./...
+
+      - name: Smoke pattn-discovery executable protocol
+        if: ${{ hashFiles('pattn-discovery/go.mod') != '' }}
+        working-directory: ./pattn-discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          helper="$RUNNER_TEMP/pattn-discovery"
+          go build -trimpath -o "$helper" ./cmd/pattn-discovery
+          output="$(printf '%s\n' '{"v":1,"id":"smoke","method":"engine.version"}' | timeout 5s "$helper")"
+          grep -F '"id":"smoke"' <<<"$output"
+          grep -F '"engine":"pattn-discovery"' <<<"$output"
+
+      - name: Test ServiceLib
+        run: dotnet test --project ./v2rayN/ServiceLib.Tests -c Release --results-directory ./TestResults -- --report-trx
+
+      - name: Comment PR with results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: ./TestResults/*.trx
+          comment_mode: failures
+
+  ui-build:
+    name: Build WPF and Avalonia UI
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.x'
+          dotnet-quality: 'ga'
+
+      - name: Build WPF
+        shell: pwsh
+        run: dotnet build ./v2rayN/v2rayN/v2rayN.csproj -c Release -p:EnableWindowsTargeting=true
+
+      - name: Build Avalonia
+        shell: pwsh
+        run: dotnet build ./v2rayN/v2rayN.Desktop/v2rayN.Desktop.csproj -c Release

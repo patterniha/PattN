@@ -39,6 +39,7 @@ jobs:
         arch: [ x64, arm64 ]
     runs-on: macos-latest
     env:
+      ReleaseTag: ${{ inputs.release_tag }}
       Arch: |-
         ${{
           case(
@@ -63,7 +64,7 @@ jobs:
       run: chmod 755 package-osx.sh
 
     - name: Package dmg
-      run: ./package-osx.sh macos-$Arch PattN-macos-$Arch ${{ inputs.release_tag }}
+      run: ./package-osx.sh "macos-$Arch" "PattN-macos-$Arch" "$ReleaseTag"
 
     - name: Upload dmg artifact
       uses: actions/upload-artifact@v7

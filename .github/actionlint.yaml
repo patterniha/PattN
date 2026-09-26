@@ -1,0 +1,11 @@
+# actionlint 1.7.12 predates GitHub's Ubuntu 26.04 hosted-runner labels.
+# RISE's RISC-V runner is a third-party ephemeral GitHub Actions runner.
+self-hosted-runner:
+  labels:
+    - ubuntu-24.04-riscv
+
+paths:
+  ".github/workflows/**/*.yml":
+    ignore:
+      - 'label "ubuntu-26\.04" is unknown'
+      - 'label "ubuntu-26\.04-arm" is unknown'
