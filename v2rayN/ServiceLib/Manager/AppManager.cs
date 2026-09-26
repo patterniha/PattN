@@ -88,6 +88,50 @@ public sealed class AppManager
         SQLiteHelper.Instance.CreateTable<RoutingItem>();
         SQLiteHelper.Instance.CreateTable<ProfileExItem>();
         SQLiteHelper.Instance.CreateTable<DNSItem>();
+        SQLiteHelper.Instance.CreateTable<DnsRepairHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<DnsResolverTelemetryItem>();
+        SQLiteHelper.Instance.CreateTable<DnsResolverCatalogAuditItem>();
+        SQLiteHelper.Instance.CreateTable<DnsSettingsRepairHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<EndpointObservationHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<EndpointPoolItem>();
+        SQLiteHelper.Instance.RunInTransaction(db =>
+        {
+            // Keep the newest logical endpoint row before installing the uniqueness
+            // invariant. This makes the migration safe for databases produced by
+            // earlier builds that could race duplicate IDs for the same endpoint.
+            db.Execute("""
+                DELETE FROM EndpointPoolItem
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM EndpointPoolItem AS newer
+                    WHERE newer.LogicalHost = EndpointPoolItem.LogicalHost
+                      AND newer.HttpHost = EndpointPoolItem.HttpHost
+                      AND newer.Port = EndpointPoolItem.Port
+                      AND newer.Network = EndpointPoolItem.Network
+                      AND newer.StreamSecurity = EndpointPoolItem.StreamSecurity
+                      AND newer.Address = EndpointPoolItem.Address
+                      AND (
+                          newer.UpdatedAtUnixMs > EndpointPoolItem.UpdatedAtUnixMs
+                          OR (
+                              newer.UpdatedAtUnixMs = EndpointPoolItem.UpdatedAtUnixMs
+                              AND newer.Id < EndpointPoolItem.Id
+                          )
+                      )
+                )
+                """);
+            db.Execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS IX_EndpointPool_LogicalIdentity
+                ON EndpointPoolItem (
+                    LogicalHost,
+                    HttpHost,
+                    Port,
+                    Network,
+                    StreamSecurity,
+                    Address
+                )
+                """);
+        });
+        SQLiteHelper.Instance.CreateTable<RepairPromotionHistoryItem>();
         SQLiteHelper.Instance.CreateTable<FullConfigTemplateItem>();
 #pragma warning disable CS0618
         SQLiteHelper.Instance.CreateTable<ProfileGroupItem>();
