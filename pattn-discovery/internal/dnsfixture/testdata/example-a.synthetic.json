@@ -1,0 +1,11 @@
+{
+  "name": "example.com A synthetic response",
+  "captureKind": "synthetic",
+  "source": "repository deterministic seed",
+  "queryName": "example.com",
+  "queryType": 1,
+  "transactionId": 4660,
+  "packetHex": "123484000001000100000000076578616d706c6503636f6d0000010001c00c000100010000012c00045db8d822",
+  "sha256": "29545e4482348cb30c3c7c1671ac4c99bd422aeaa5b0ffb5c7ed998ef0bf3de2",
+  "notes": "Synthetic authoritative seed fixture (QR+AA, RD/RA clear) used to verify iterative replay. Do not cite this as a real network capture."
+}

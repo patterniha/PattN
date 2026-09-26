@@ -81,6 +81,22 @@ public class JsonUtils
     }
 
     /// <summary>
+    /// Deserialize persisted/security-sensitive JSON without the legacy permissive fallback.
+    /// Empty, malformed, or JSON-null payloads are data-integrity errors for callers that
+    /// explicitly opt into this method.
+    /// </summary>
+    public static T DeserializeStrict<T>(string strJson)
+    {
+        if (string.IsNullOrWhiteSpace(strJson))
+        {
+            throw new JsonException("JSON payload is empty.");
+        }
+
+        return JsonSerializer.Deserialize<T>(strJson, _defaultDeserializeOptions)
+               ?? throw new JsonException("JSON payload decoded to null.");
+    }
+
+    /// <summary>
     /// parse
     /// </summary>
     /// <param name="strJson"></param>

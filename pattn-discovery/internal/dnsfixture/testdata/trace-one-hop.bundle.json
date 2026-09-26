@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "rootServers": ["192.0.2.53"],
+  "port": 53,
+  "exchanges": [
+    {
+      "address": "192.0.2.53",
+      "domain": "example.com",
+      "queryType": 1,
+      "transport": "udp",
+      "recursionDesired": false,
+      "fixture": "example-a.synthetic.json",
+      "latencyMs": 2
+    }
+  ]
+}

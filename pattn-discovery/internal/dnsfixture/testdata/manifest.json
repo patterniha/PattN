@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "path": "example-a.synthetic.json",
+      "tags": ["synthetic", "positive", "a"],
+      "expected": {
+        "rcode": 0,
+        "answerCount": 1,
+        "answerTypes": [1]
+      }
+    },
+    {
+      "path": "example-aaaa-nodata-nsec.synthetic.json",
+      "tags": ["synthetic", "nodata", "nsec"],
+      "expected": {
+        "rcode": 0,
+        "answerCount": 0,
+        "denialMechanism": "nsec",
+        "denialStatus": "nodata-evidence"
+      }
+    }
+  ]
+}

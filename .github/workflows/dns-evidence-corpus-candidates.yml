@@ -1,0 +1,140 @@
+name: DNSSEC corpus candidate captures
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '29 2 8,22 * *'
+  pull_request:
+    paths:
+      - 'pattn-discovery/internal/dnsfixture/**'
+      - 'pattn-discovery/internal/dnssec/**'
+      - 'pattn-discovery/cmd/dns-fixture-*/**'
+      - '.github/workflows/dns-evidence-corpus-candidates.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: capture review candidates
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: './pattn-discovery/go.mod'
+        cache: false
+
+    - name: Capture deterministic public DNSSEC candidates
+      working-directory: ./pattn-discovery
+      shell: bash
+      run: |
+        set -u -o pipefail
+        root="$RUNNER_TEMP/dnssec-corpus-candidates"
+        mkdir -p "$root"
+
+        capture_one() {
+          label="$1"
+          review_case="$2"
+          name="$3"
+          qtype="$4"
+          expectation="$5"
+          out="$root/$label"
+          mkdir -p "$out"
+
+          {
+            echo "label=$label"
+            echo "review_case=$review_case"
+            echo "name=$name"
+            echo "qtype=$qtype"
+            echo "expectation=$expectation"
+            echo "server=1.1.1.1:53"
+            echo "commit=$GITHUB_SHA"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "captured_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > "$out/request.txt"
+
+          if go run ./cmd/dns-fixture-capture \
+              -server 1.1.1.1:53 \
+              -name "$name" \
+              -type "$qtype" \
+              -transport auto \
+              -dnssec=true \
+              -recursive=true \
+              -timeout 8s \
+              -notes "automated review candidate: $label" \
+              -out "$out/capture.json" > "$out/capture.log" 2>&1 \
+            && go run ./cmd/dns-fixture-replay \
+              -fixture "$out/capture.json" > "$out/replay.json" 2> "$out/replay.stderr" \
+            && go run ./cmd/dns-fixture-review-template \
+              -fixture "$out/capture.json" \
+              -case "$review_case" \
+              -expectation "$expectation" > "$out/manifest-entry.review-template.json" \
+            && sha256sum "$out/capture.json" "$out/replay.json" > "$out/artifact-sha256.txt"; then
+            echo success > "$out/status.txt"
+          else
+            echo failed > "$out/status.txt"
+          fi
+        }
+
+        # These are review candidates only. Successful capture/replay never
+        # promotes a packet into the trusted repository corpus automatically.
+        capture_one a a test.naughty-nameserver.com. 1 \
+          'NOERROR positive A answer with DNSSEC signature evidence'
+        capture_one aaaa aaaa www.iana.org. 28 \
+          'positive AAAA answer, directly or through an authenticated alias chain'
+        capture_one cname cname www.iana.org. 1 \
+          'answer contains CNAME alias evidence and a valid terminal answer'
+        capture_one dname-rfc8027 dname good-a.dname-good-ns.test.dnssec-tools.org. 1 \
+          'answer contains DNAME plus an RRSIG covering the DNAME'
+        capture_one dname-caa dname dname-permit.deny.basic.caatestsuite.com. 39 \
+          'positive DNAME RRset; promote only if a corresponding DNSSEC RRSIG is present'
+        capture_one dname-as112 dname 1.2.0.192.in-addr.arpa. 12 \
+          'answer contains an AS112 DNAME redirection and DNSSEC authentication evidence'
+        capture_one nxdomain nxdomain test.three-nsec3-nxdomain.naughty-nameserver.com. 1 \
+          'NXDOMAIN with authenticated NSEC3 denial-of-existence evidence'
+        capture_one nodata nodata test.nsec-nodata.naughty-nameserver.com. 1 \
+          'NOERROR with an empty answer and authenticated NODATA proof'
+        capture_one nsec nsec test.nsec-nodata.naughty-nameserver.com. 1 \
+          'NODATA response contains signed NSEC denial evidence'
+        capture_one nsec-dnssec-tools nsec nonexistent.test.dnssec-tools.org. 1 \
+          'NXDOMAIN response contains valid signed NSEC denial evidence'
+        capture_one nsec3 nsec3 test.three-nsec3-nxdomain.naughty-nameserver.com. 1 \
+          'negative response contains valid signed NSEC3 denial evidence'
+        capture_one ds ds naughty-nameserver.com. 43 \
+          'positive DS RRset with DNSSEC signature evidence'
+        capture_one dnskey dnskey naughty-nameserver.com. 48 \
+          'positive DNSKEY RRset with DNSSEC signature evidence'
+        capture_one rrsig rrsig test.naughty-nameserver.com. 1 \
+          'positive RRset includes a corresponding RRSIG'
+
+        successful="$(find "$root" -mindepth 2 -maxdepth 2 -name status.txt -exec grep -l '^success$' {} \; | wc -l)"
+        failed="$(find "$root" -mindepth 2 -maxdepth 2 -name status.txt -exec grep -l '^failed$' {} \; | wc -l)"
+        {
+          echo "candidate_successes=$successful"
+          echo "candidate_failures=$failed"
+          echo "Candidates are never auto-promoted. A success means only that the"
+          echo "captured packet replayed and satisfied the named semantic case."
+          echo "Human review of provenance, packet semantics, and replay expectation"
+          echo "is still mandatory before repository promotion."
+        } | tee "$root/summary.txt"
+
+        # Network/test-zone availability is evidence, not a PR correctness gate.
+        # Preserve partial results even when a public candidate is unavailable.
+        exit 0
+
+    - name: Upload candidate corpus evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: dnssec-corpus-candidates-${{ github.run_id }}
+        path: ${{ runner.temp }}/dnssec-corpus-candidates/
+        if-no-files-found: error
+        retention-days: 90

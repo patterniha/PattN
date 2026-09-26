@@ -1,0 +1,31 @@
+name: Resolver Catalog Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  resolver-catalog-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pattn-discovery
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: pattn-discovery/go.mod
+          cache: false
+
+      - name: Unit tests
+        run: go test ./internal/resolvercatalog ./cmd/catalog-audit
+
+      - name: Enforce resolver catalog freshness
+        run: go run ./cmd/catalog-audit -max-age-days 120

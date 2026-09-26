@@ -95,6 +95,11 @@ public sealed class AppManager
         SQLiteHelper.Instance.CreateTable<EndpointObservationHistoryItem>();
         SQLiteHelper.Instance.CreateTable<EndpointPoolItem>();
         SQLiteHelper.Instance.CreateTable<RepairPromotionHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRegistryItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRevisionItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteSourceItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteSourceRevisionItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteApplyProvenanceItem>();
         SQLiteHelper.Instance.CreateTable<FullConfigTemplateItem>();
 #pragma warning disable CS0618
         SQLiteHelper.Instance.CreateTable<ProfileGroupItem>();
