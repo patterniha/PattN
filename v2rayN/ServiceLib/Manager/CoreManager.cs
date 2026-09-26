@@ -124,7 +124,13 @@ public class CoreManager
 
     public async Task<ProcessService?> LoadCoreConfigSpeedtest(ServerTestItem testItem)
     {
-        var node = await AppManager.Instance.GetProfileItem(testItem.IndexId);
+        // Prefer the caller-provided profile. Reviver uses this path for ephemeral candidates that must be
+        // validated without first writing them to SQLite. Existing speed-test callers already populate Profile.
+        var node = testItem.Profile;
+        if (node is null && !testItem.IndexId.IsNullOrEmpty())
+        {
+            node = await AppManager.Instance.GetProfileItem(testItem.IndexId);
+        }
         if (node is null)
         {
             return null;
@@ -140,6 +146,8 @@ public class CoreManager
         }
 
         var coreType = context.RunCoreType;
+        testItem.CoreType = coreType;
+        testItem.Profile = node;
         var coreInfo = CoreInfoManager.Instance.GetCoreInfo(coreType);
         return await RunProcess(coreInfo, fileName, true, false);
     }
