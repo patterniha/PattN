@@ -525,29 +525,24 @@ public partial class CoreConfigSingboxService
                     transport.type = nameof(ETransport.ws);
                     var wsPath = transportExtra.Path;
 
-                    // Parse eh and ed parameters from path using regex
+                    // Early-data metadata is encoded in the URI path by several subscription formats.
+                    // Parse it as query components rather than regex text so unrelated/encoded parameters survive
+                    // byte-for-byte and metadata never leaks into the actual WebSocket request path.
                     if (!wsPath.IsNullOrEmpty())
                     {
-                        var edRegex = new Regex(@"[?&]ed=(\d+)");
-                        var edMatch = edRegex.Match(wsPath);
-                        if (edMatch.Success && int.TryParse(edMatch.Groups[1].Value, out var edValue))
+                        var edMetadata = TransportPathParameters.Extract(wsPath, "ed");
+                        wsPath = edMetadata.Path;
+                        if (int.TryParse(edMetadata.Value, out var edValue) && edValue >= 0)
                         {
                             transport.max_early_data = edValue;
                             transport.early_data_header_name = "Sec-WebSocket-Protocol";
-
-                            wsPath = edRegex.Replace(wsPath, "");
-                            wsPath = wsPath.Replace("?&", "?");
-                            if (wsPath.EndsWith('?'))
-                            {
-                                wsPath = wsPath.TrimEnd('?');
-                            }
                         }
 
-                        var ehRegex = new Regex(@"[?&]eh=([^&]+)");
-                        var ehMatch = ehRegex.Match(wsPath);
-                        if (ehMatch.Success)
+                        var ehMetadata = TransportPathParameters.Extract(wsPath, "eh");
+                        wsPath = ehMetadata.Path;
+                        if (ehMetadata.Value.IsNotEmpty())
                         {
-                            transport.early_data_header_name = Uri.UnescapeDataString(ehMatch.Groups[1].Value);
+                            transport.early_data_header_name = ehMetadata.Value;
                         }
                     }
 

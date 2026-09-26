@@ -96,9 +96,8 @@ public sealed class AppManager
         SQLiteHelper.Instance.CreateTable<EndpointPoolItem>();
         SQLiteHelper.Instance.RunInTransaction(db =>
         {
-            // Keep the newest logical endpoint row before installing the uniqueness
-            // invariant. This makes the migration safe for databases produced by
-            // earlier builds that could race duplicate IDs for the same endpoint.
+            // Coalesce rows produced by older builds before enforcing the logical
+            // endpoint identity at the database boundary.
             db.Execute("""
                 DELETE FROM EndpointPoolItem
                 WHERE EXISTS (
@@ -132,6 +131,11 @@ public sealed class AppManager
                 """);
         });
         SQLiteHelper.Instance.CreateTable<RepairPromotionHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRegistryItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRevisionItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteSourceItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteSourceRevisionItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteApplyProvenanceItem>();
         SQLiteHelper.Instance.CreateTable<FullConfigTemplateItem>();
 #pragma warning disable CS0618
         SQLiteHelper.Instance.CreateTable<ProfileGroupItem>();

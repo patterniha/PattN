@@ -1,0 +1,11 @@
+{
+  "name": "example.com AAAA synthetic NODATA with NSEC",
+  "captureKind": "synthetic",
+  "source": "repository deterministic seed",
+  "queryName": "example.com",
+  "queryType": 28,
+  "transactionId": 22136,
+  "packetHex": "567881800001000000010000076578616d706c6503636f6d00001c0001c00c002f00010000012c0015046e657874076578616d706c6503636f6d00000140",
+  "sha256": "25a0eb5b1fd5f5f87b67765bc868c265aed7f72d9e477156ceab3fbb64a3d600",
+  "notes": "Synthetic NOERROR/NODATA seed with an exact-name NSEC bitmap containing A but not AAAA or CNAME."
+}

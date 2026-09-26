@@ -1,0 +1,38 @@
+name: Resolver Catalog Audit
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/resolver-catalog-audit.yml'
+      - 'pattn-discovery/cmd/catalog-audit/**'
+      - 'pattn-discovery/internal/resolvercatalog/**'
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  resolver-catalog-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pattn-discovery
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: pattn-discovery/go.mod
+          cache: false
+
+      - name: Unit tests
+        run: go test ./internal/resolvercatalog ./cmd/catalog-audit
+
+      - name: Enforce resolver catalog freshness
+        run: go run ./cmd/catalog-audit -max-age-days 120
