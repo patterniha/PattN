@@ -1,0 +1,59 @@
+name: Verify IANA DNS root trust anchors
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 1,15 * *'
+    # Daily around the October rollover window. The local audit intentionally
+    # fails after 2026-10-11 until a post-rollover review updates VerifiedDate.
+    - cron: '17 6 10-20 10 *'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: './pattn-discovery/go.mod'
+        cache: false
+
+    - name: Verify IANA detached CMS signature
+      shell: bash
+      run: |
+        set -euo pipefail
+        work="$RUNNER_TEMP/iana-root-anchors"
+        mkdir -p "$work"
+        curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://data.iana.org/root-anchors/root-anchors.xml -o "$work/root-anchors.xml"
+        curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://data.iana.org/root-anchors/root-anchors.p7s -o "$work/root-anchors.p7s"
+        curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://data.iana.org/root-anchors/icannbundle.pem -o "$work/icannbundle.pem"
+        openssl cms -verify -inform DER -in "$work/root-anchors.p7s" -content "$work/root-anchors.xml" -CAfile "$work/icannbundle.pem" -out /dev/null
+        {
+          echo "run_id=$GITHUB_RUN_ID"
+          echo "commit=$GITHUB_SHA"
+          echo "captured_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          sha256sum "$work/root-anchors.xml" "$work/root-anchors.p7s" "$work/icannbundle.pem"
+        } | tee "$work/source-evidence.txt"
+
+    - name: Compare embedded snapshot with the CMS-verified IANA source
+      working-directory: ./pattn-discovery
+      run: go run ./cmd/dns-trust-anchor-source-check -source-file "$RUNNER_TEMP/iana-root-anchors/root-anchors.xml"
+
+    - name: Audit local rollover/freshness policy
+      working-directory: ./pattn-discovery
+      run: go run ./cmd/dns-trust-anchor-audit -max-age-days 90
+
+    - name: Retain exact IANA rollover evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: iana-root-anchor-source-${{ github.run_id }}
+        path: ${{ runner.temp }}/iana-root-anchors/
+        if-no-files-found: error
+        retention-days: 180

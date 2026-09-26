@@ -1,0 +1,121 @@
+name: DNS fuzz corpus campaign
+
+on:
+  workflow_dispatch:
+    inputs:
+      fuzz_time:
+        description: Per-target fuzz duration
+        required: true
+        type: string
+        default: 2m
+      minimize_time:
+        description: Failing-input minimization budget
+        required: true
+        type: string
+        default: 30s
+  pull_request:
+    paths:
+      - 'pattn-discovery/internal/dnswire/**'
+      - 'pattn-discovery/internal/dnssec/**'
+      - 'pattn-discovery/internal/dnstrace/**'
+      - 'pattn-discovery/cmd/pattn-discovery/**'
+      - 'pattn-discovery/cmd/fuzz-corpus-audit/**'
+      - '.github/workflows/dns-fuzz-corpus.yml'
+  schedule:
+    - cron: '41 3 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: ./internal/dnswire
+            target: FuzzParseMessage
+          - package: ./internal/dnswire
+            target: FuzzReadName
+          - package: ./internal/dnssec
+            target: FuzzParseDNSSECRData
+          - package: ./internal/dnstrace
+            target: FuzzDnameSynthesis
+          - package: ./cmd/pattn-discovery
+            target: FuzzNDJSONFraming
+    env:
+      FUZZ_TIME: ${{ inputs.fuzz_time || '2m' }}
+      MINIMIZE_TIME: ${{ inputs.minimize_time || '30s' }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: './pattn-discovery/go.mod'
+        cache: false
+
+    - name: Audit committed regression corpus
+      working-directory: ./pattn-discovery
+      run: go run ./cmd/fuzz-corpus-audit -root .
+
+    - name: Coverage-guided fuzz with minimization
+      id: fuzz
+      continue-on-error: true
+      working-directory: ./pattn-discovery
+      shell: bash
+      run: |
+        set -euo pipefail
+        go test "${{ matrix.package }}" \
+          -run=^$ \
+          -fuzz="^${{ matrix.target }}$" \
+          -fuzztime="$FUZZ_TIME" \
+          -fuzzminimizetime="$MINIMIZE_TIME"
+
+    - name: Collect fuzz evidence
+      if: always()
+      working-directory: ./pattn-discovery
+      shell: bash
+      run: |
+        set -euo pipefail
+        out="$RUNNER_TEMP/fuzz-evidence"
+        mkdir -p "$out/committed-or-failing" "$out/cache"
+        find . -path '*/testdata/fuzz/*' -type f -print -exec cp --parents {} "$out/committed-or-failing/" \; || true
+        cache="$(go env GOCACHE)"
+        if [[ -d "$cache/fuzz" ]]; then
+          cp -a "$cache/fuzz/." "$out/cache/"
+        fi
+        {
+          echo "commit=$GITHUB_SHA"
+          echo "run_id=$GITHUB_RUN_ID"
+          echo "package=${{ matrix.package }}"
+          echo "target=${{ matrix.target }}"
+          echo "fuzz_time=$FUZZ_TIME"
+          echo "minimize_time=$MINIMIZE_TIME"
+          echo "go=$(go version)"
+          echo "runner_os=$RUNNER_OS"
+          echo "runner_arch=$RUNNER_ARCH"
+        } > "$out/provenance.txt"
+        git status --short > "$out/git-status.txt"
+
+    - name: Upload minimized/corpus evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: fuzz-${{ matrix.target }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/fuzz-evidence/
+        if-no-files-found: error
+        retention-days: 90
+
+    - name: Fail when fuzzing found a regression
+      if: steps.fuzz.outcome == 'failure'
+      shell: bash
+      run: |
+        echo "::error::Fuzz target failed. Download the artifact, review the minimized testdata/fuzz input, fix the bug, and commit the minimized input as a permanent regression seed."
+        exit 1

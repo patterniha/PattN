@@ -88,6 +88,18 @@ public sealed class AppManager
         SQLiteHelper.Instance.CreateTable<RoutingItem>();
         SQLiteHelper.Instance.CreateTable<ProfileExItem>();
         SQLiteHelper.Instance.CreateTable<DNSItem>();
+        SQLiteHelper.Instance.CreateTable<DnsRepairHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<DnsResolverTelemetryItem>();
+        SQLiteHelper.Instance.CreateTable<DnsResolverCatalogAuditItem>();
+        SQLiteHelper.Instance.CreateTable<DnsSettingsRepairHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<EndpointObservationHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<EndpointPoolItem>();
+        SQLiteHelper.Instance.CreateTable<RepairPromotionHistoryItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRegistryItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRevisionItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteSourceItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteSourceRevisionItem>();
+        SQLiteHelper.Instance.CreateTable<ProviderAsnCatalogRemoteApplyProvenanceItem>();
         SQLiteHelper.Instance.CreateTable<FullConfigTemplateItem>();
 #pragma warning disable CS0618
         SQLiteHelper.Instance.CreateTable<ProfileGroupItem>();

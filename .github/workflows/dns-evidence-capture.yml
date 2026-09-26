@@ -1,0 +1,122 @@
+name: Capture reviewed DNS evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      server:
+        description: DNS server host:port
+        required: true
+        type: string
+        default: 1.1.1.1:53
+      name:
+        description: DNS query name
+        required: true
+        type: string
+        default: cloudflare.com
+      qtype:
+        description: Numeric DNS query type
+        required: true
+        type: string
+        default: "1"
+      recursive:
+        description: Set the RD bit
+        required: true
+        type: boolean
+        default: true
+      notes:
+        description: Review notes stored with the capture
+        required: false
+        type: string
+        default: ""
+      review_case:
+        description: Intended human-review case (A/AAAA/CNAME/DNAME/NXDOMAIN/NODATA/NSEC/NSEC3/DS/DNSKEY/RRSIG)
+        required: true
+        type: string
+        default: A
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    env:
+      DNS_SERVER: ${{ inputs.server }}
+      DNS_NAME: ${{ inputs.name }}
+      DNS_QTYPE: ${{ inputs.qtype }}
+      DNS_RECURSIVE: ${{ inputs.recursive }}
+      DNS_NOTES: ${{ inputs.notes }}
+      DNS_REVIEW_CASE: ${{ inputs.review_case }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: './pattn-discovery/go.mod'
+        cache: false
+
+    - name: Validate capture inputs
+      shell: bash
+      run: |
+        set -euo pipefail
+        [[ "$DNS_QTYPE" =~ ^[0-9]+$ ]] || { echo "::error::qtype must be numeric"; exit 1; }
+        (( DNS_QTYPE >= 1 && DNS_QTYPE <= 65535 )) || { echo "::error::qtype must be 1..65535"; exit 1; }
+        [[ -n "$DNS_SERVER" && -n "$DNS_NAME" ]] || { echo "::error::server and name are required"; exit 1; }
+
+    - name: Capture DNS response with DNSSEC requested
+      working-directory: ./pattn-discovery
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/pattn-dns-evidence"
+        recursive=true
+        [[ "$DNS_RECURSIVE" == "true" ]] || recursive=false
+        go run ./cmd/dns-fixture-capture           -server "$DNS_SERVER"           -name "$DNS_NAME"           -type "$DNS_QTYPE"           -recursive="$recursive"           -dnssec=true           -timeout 5s           -notes "$DNS_NOTES"           -out "$RUNNER_TEMP/pattn-dns-evidence/capture.json"
+
+    - name: Replay captured evidence through production parser
+      working-directory: ./pattn-discovery
+      shell: bash
+      run: |
+        set -euo pipefail
+        go run ./cmd/dns-fixture-replay           -fixture "$RUNNER_TEMP/pattn-dns-evidence/capture.json"           | tee "$RUNNER_TEMP/pattn-dns-evidence/replay.json"
+
+    - name: Generate human-review manifest template
+      working-directory: ./pattn-discovery
+      shell: bash
+      run: |
+        set -euo pipefail
+        go run ./cmd/dns-fixture-review-template \
+          -fixture "$RUNNER_TEMP/pattn-dns-evidence/capture.json" \
+          -case "$DNS_REVIEW_CASE" \
+          > "$RUNNER_TEMP/pattn-dns-evidence/manifest-entry.review-template.json"
+
+    - name: Record capture metadata
+      shell: bash
+      run: |
+        set -euo pipefail
+        cat >"$RUNNER_TEMP/pattn-dns-evidence/review.txt" <<EOF
+        CapturedAtUtc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        Server=$DNS_SERVER
+        Name=$DNS_NAME
+        QType=$DNS_QTYPE
+        Recursive=$DNS_RECURSIVE
+        Commit=$GITHUB_SHA
+
+        This artifact is evidence for human review only. Promote a capture into
+        pattn-discovery/internal/dnsfixture/testdata only after checking the DNS
+        semantics, provenance, stability, and expected replay assertions.
+        EOF
+
+    - name: Upload review artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: dns-evidence-${{ github.run_id }}
+        path: |
+          ${{ runner.temp }}/pattn-dns-evidence/capture.json
+          ${{ runner.temp }}/pattn-dns-evidence/replay.json
+          ${{ runner.temp }}/pattn-dns-evidence/review.txt
+          ${{ runner.temp }}/pattn-dns-evidence/manifest-entry.review-template.json
+        if-no-files-found: error

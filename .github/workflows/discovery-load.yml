@@ -1,0 +1,86 @@
+name: Discovery load characterization
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'pattn-discovery/internal/targets/**'
+      - 'pattn-discovery/internal/scheduler/**'
+      - '.github/workflows/discovery-load.yml'
+  schedule:
+    - cron: '23 4 * * 6'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  characterize:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: './pattn-discovery/go.mod'
+        cache: false
+
+    - name: Baseline tests and race detector
+      working-directory: ./pattn-discovery
+      run: |
+        go test ./...
+        go test -race ./...
+
+    - name: Capture runner provenance
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/pattn-load"
+        {
+          echo "commit=$GITHUB_SHA"
+          echo "run_id=$GITHUB_RUN_ID"
+          echo "runner_os=$RUNNER_OS"
+          echo "runner_arch=$RUNNER_ARCH"
+          echo "go=$(go version)"
+          echo "kernel=$(uname -a)"
+          echo "--- cpu ---"
+          lscpu || true
+        } | tee "$RUNNER_TEMP/pattn-load/environment.txt"
+
+    - name: Large-range streaming benchmark
+      working-directory: ./pattn-discovery
+      run: |
+        set -euo pipefail
+        go test ./internal/targets \
+          -run=^$ \
+          -bench=^BenchmarkStreamIPv6PrefixBounded$ \
+          -benchmem \
+          -count=10 \
+          | tee "$RUNNER_TEMP/pattn-load/targets-bench.txt"
+
+    - name: Summarize characterization
+      shell: bash
+      run: |
+        {
+          echo '## Discovery load characterization'
+          echo
+          echo 'Treat this run as measurement evidence, not an optimization mandate.'
+          echo 'Only optimize a reproduced regression or measured bottleneck; preserve raw benchmark output and runner provenance for comparison.'
+          echo
+          echo '~~~text'
+          tail -n 20 "$RUNNER_TEMP/pattn-load/targets-bench.txt"
+          echo '~~~'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload characterization evidence
+      uses: actions/upload-artifact@v7
+      with:
+        name: discovery-load-${{ github.run_id }}
+        path: ${{ runner.temp }}/pattn-load/
+        if-no-files-found: error
+        retention-days: 90
