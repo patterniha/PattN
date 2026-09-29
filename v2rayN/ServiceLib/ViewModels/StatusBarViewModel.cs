@@ -284,7 +284,7 @@ public partial class StatusBarViewModel : MyReactiveObject
 
     private string GetRunningServerToolTipText(string serverInfo)
     {
-        return Utils.IsLinux() ? Global.AppName : serverInfo;
+        return Utils.IsLinux() ? Global.AppName : (serverInfo ?? string.Empty);
     }
 
     private async Task RefreshServersMenu()

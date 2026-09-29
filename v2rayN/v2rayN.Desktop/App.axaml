@@ -37,7 +37,7 @@
             <TrayIcon
                 Command="{Binding NotifyLeftClickCmd}"
                 Icon="/Assets/NotifyIcon1.ico"
-                ToolTipText="{Binding RunningServerToolTipText}">
+                ToolTipText="{Binding RunningServerToolTipText, FallbackValue=PattN, TargetNullValue=PattN}">
                 <TrayIcon.Menu>
                     <NativeMenu>
                         <NativeMenuItem
