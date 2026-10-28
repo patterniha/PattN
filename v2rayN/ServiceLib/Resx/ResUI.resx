@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -425,6 +425,18 @@
   </data>
   <data name="menuReload" xml:space="preserve">
     <value>Reload</value>
+  </data>
+  <data name="menuConnect" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="menuDisconnect" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="TipConnected" xml:space="preserve">
+    <value>Connected to VPN</value>
+  </data>
+  <data name="TipDisconnected" xml:space="preserve">
+    <value>Disconnected from VPN</value>
   </data>
   <data name="menuRoutingSetting" xml:space="preserve">
     <value>Routing Setting</value>
@@ -923,6 +935,9 @@
   </data>
   <data name="TbEnableTunAs" xml:space="preserve">
     <value>Enable Tun</value>
+  </data>
+  <data name="TbEnableWinDivertAs" xml:space="preserve">
+    <value>Enable WinDivert</value>
   </data>
   <data name="TbSettingsNewPort4LAN" xml:space="preserve">
     <value>New Port for LAN</value>

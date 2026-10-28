@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 
 namespace ServiceLib.Handler;
 
@@ -98,6 +98,13 @@ public static class ConfigHandler
             Mtu = 9000,
             IcmpRouting = Global.TunIcmpRoutingPolicies.First(),
             EnableLegacyProtect = false,
+        };
+                config.WinDivertItem ??= new WinDivertItem
+        {
+            Enable = false,
+            EnableDnsHijack = true,
+            DropQuic = true,
+            BypassLan = true,
         };
         config.GuiItem ??= new();
         if (!Global.RootCertProviders.Contains(config.GuiItem.RootCertProvider))

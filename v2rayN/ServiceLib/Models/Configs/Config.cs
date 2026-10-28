@@ -1,4 +1,4 @@
-namespace ServiceLib.Models.Configs;
+﻿namespace ServiceLib.Models.Configs;
 
 [Serializable]
 public class Config
@@ -14,6 +14,7 @@ public class Config
 
     public CoreBasicItem CoreBasicItem { get; set; }
     public TunModeItem TunModeItem { get; set; }
+    public WinDivertItem WinDivertItem { get; set; }
     public KcpItem KcpItem { get; set; }
     public GrpcItem GrpcItem { get; set; }
     public RoutingBasicItem RoutingBasicItem { get; set; }
@@ -41,3 +42,4 @@ public class Config
 
     #endregion other entities
 }
+

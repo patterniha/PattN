@@ -1,4 +1,4 @@
-namespace ServiceLib.Manager;
+﻿namespace ServiceLib.Manager;
 
 /// <summary>
 /// Core process processing class
@@ -65,6 +65,7 @@ public class CoreManager
 
     public async Task Init(Config config, Func<bool, string, Task> updateFunc)
     {
+        KillLingeringCores();
         _config = config;
         _updateFunc = updateFunc;
 
@@ -214,6 +215,12 @@ public class CoreManager
         }
         await WaitForProxyPort(preContext);
         await CoreStartPreService(preContext);
+        // the WinDivert mode forwards the diverted traffic to the local inbound of the core
+        WinDivertService.Instance.UpdateProxyPort(AppManager.Instance.GetLocalPort(EInboundProtocol.socks));
+        if (_config.WinDivertItem.Enable && Utils.IsWindows() && Utils.IsAdministrator())
+        {
+            WinDivertService.Instance.Start(_config);
+        }
         // PattN: sing-box's TUN in front of Xray runs with the pre core (IsTunRunning), which names its interface on macOS
         // itself (TunInterface)
         if (preContext?.IsTunEnabled == true)
@@ -294,6 +301,7 @@ public class CoreManager
     // PattN: CoreStop's own work, from inside a turn
     private async Task CoreStopInTurn()
     {
+            KillLingeringCores();
         // PattN: no TUN runs from here on (IsTunRunning, TunInterface)
         _tunProcess = null;
         _tunInterface = null;
@@ -332,6 +340,7 @@ public class CoreManager
 
     private async Task CoreStart(CoreConfigContext context)
     {
+        KillLingeringCores();
         var node = context.Node;
         var coreType = AppManager.Instance.GetCoreType(node, node.ConfigType);
         var coreInfo = CoreInfoManager.Instance.GetCoreInfo(coreType);
@@ -404,7 +413,7 @@ public class CoreManager
 
                 var read = await stream.ReadAsync(buf.AsMemory(0, 2), linkedToken);
 
-                // Server selection: VER=5, METHOD=0x00 — proxy is fully ready
+                // Server selection: VER=5, METHOD=0x00 â€” proxy is fully ready
                 if (read == 2 && buf[0] == 0x05)
                 {
                     return;
@@ -436,6 +445,41 @@ public class CoreManager
             {
                 // Ignore other exceptions and continue
             }
+        }
+    }
+    
+    public static void KillLingeringCores()
+    {
+        if (!Utils.IsWindows())
+        {
+            return;
+        }
+
+        var coreNames = new[] { "p-xray-p", "xray", "sing-box", "mihomo", "aether", "lyrebird", "psiphon-tunnel-core" };
+        var currentPid = Environment.ProcessId;
+
+        foreach (var name in coreNames)
+        {
+            try
+            {
+                foreach (var p in System.Diagnostics.Process.GetProcessesByName(name))
+                {
+                    try
+                    {
+                        if (p.Id != currentPid)
+                        {
+                            p.Kill();
+                            p.WaitForExit(300);
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        p.Dispose();
+                    }
+                }
+            }
+            catch { }
         }
     }
 
@@ -608,3 +652,4 @@ public class CoreManager
 
     #endregion PattN: Aether
 }
+

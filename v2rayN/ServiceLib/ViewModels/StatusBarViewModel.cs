@@ -41,6 +41,10 @@ public partial class StatusBarViewModel : MyReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> NotifyLeftClickCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> ShowWindowCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> HideWindowCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> EnableWinDivertCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ToggleConnectCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ConnectCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> DisconnectCmd { get; }
 
     #region System Proxy
 
@@ -99,6 +103,15 @@ public partial class StatusBarViewModel : MyReactiveObject
     public partial bool EnableTun { get; set; }
 
     [Reactive]
+    public partial bool EnableWinDivert { get; set; }
+
+    [Reactive]
+    public partial bool BlWinDivert { get; set; }
+
+    [Reactive]
+    public partial bool IsConnected { get; set; } = true;
+
+    [Reactive]
     public partial bool BlIsNonWindows { get; set; }
 
     #endregion UI
@@ -121,6 +134,17 @@ public partial class StatusBarViewModel : MyReactiveObject
             _config.TunModeItem.EnableTun = EnableTun = false;
         }
 
+        if (_config.WinDivertItem.Enable && AllowEnableWinDivert())
+        {
+            EnableWinDivert = true;
+            BlWinDivert = true;
+        }
+        else
+        {
+            _config.WinDivertItem.Enable = EnableWinDivert = false;
+            BlWinDivert = false;
+        }
+
         #region WhenAnyValue && ReactiveCommand
 
         this.WhenAnyValue(x => x.SelectedRouting)
@@ -138,6 +162,9 @@ public partial class StatusBarViewModel : MyReactiveObject
 
         this.WhenAnyValue(x => x.EnableTun)
             .SubscribeAsync(async _ => await DoEnableTun());
+
+        this.WhenAnyValue(x => x.EnableWinDivert)
+            .SubscribeAsync(async _ => await DoEnableWinDivert());
 
         CopyProxyCmdToClipboardCmd = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -158,6 +185,25 @@ public partial class StatusBarViewModel : MyReactiveObject
         {
             ShowHideWindowRequested.Publish(false);
             await Task.CompletedTask;
+        });
+
+        EnableWinDivertCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            EnableWinDivert = !EnableWinDivert;
+            await Task.CompletedTask;
+        });
+
+        ToggleConnectCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await DoToggleConnect();
+        });
+        ConnectCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await DoConnect();
+        });
+        DisconnectCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await DoDisconnect();
         });
 
         AddServerViaClipboardCmd = ReactiveCommand.CreateFromTask(async () =>
@@ -467,7 +513,14 @@ public partial class StatusBarViewModel : MyReactiveObject
         }
 
         await ConfigHandler.SaveConfig(_config);
-        ReloadRequested.Publish();
+        if (EnableTun && !IsConnected)
+        {
+            await DoConnect();
+        }
+        else
+        {
+            ReloadRequested.Publish();
+        }
     }
 
     private bool AllowEnableTun()
@@ -485,6 +538,157 @@ public partial class StatusBarViewModel : MyReactiveObject
             return AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
         }
         return false;
+    }
+
+    private bool AllowEnableWinDivert()
+    {
+        // WinDivert is a windows only feature and needs administrator rights
+        return Utils.IsWindows() && Utils.IsAdministrator();
+    }
+
+    private bool StartWinDivert()
+    {
+        var result = WinDivertService.Instance.Start(_config);
+        BlWinDivert = result;
+        if (!result)
+        {
+            Logging.SaveLog($"StatusBarViewModel, WinDivert: {WinDivertService.Instance.LastError}");
+        }
+        return result;
+    }
+
+    private async Task DoEnableWinDivert()
+    {
+        if (_config.WinDivertItem.Enable == EnableWinDivert)
+        {
+            return;
+        }
+
+        if (EnableWinDivert)
+        {
+            if (!Utils.IsWindows())
+            {
+                _config.WinDivertItem.Enable = false;
+                EnableWinDivert = false;
+                BlWinDivert = false;
+                return;
+            }
+
+            if (!AllowEnableWinDivert())
+            {
+                // When running as a non-administrator, reboot to administrator mode
+                _config.WinDivertItem.Enable = false;
+                EnableWinDivert = false;
+                BlWinDivert = false;
+                await AppManager.Instance.RebootAsAdmin();
+                return;
+            }
+
+            // The tun mode and the WinDivert mode can not be used at the same time
+            if (_config.TunModeItem.EnableTun)
+            {
+                _config.TunModeItem.EnableTun = false;
+                EnableTun = false;
+            }
+
+            if (!IsConnected)
+            {
+                _config.WinDivertItem.Enable = true;
+                await ConfigHandler.SaveConfig(_config);
+                await DoConnect();
+                return;
+            }
+
+            if (!StartWinDivert())
+            {
+                _config.WinDivertItem.Enable = false;
+                EnableWinDivert = false;
+                BlWinDivert = false;
+                await ConfigHandler.SaveConfig(_config);
+                return;
+            }
+        }
+        else
+        {
+            WinDivertService.Instance.Stop();
+            BlWinDivert = false;
+        }
+
+        _config.WinDivertItem.Enable = EnableWinDivert;
+        await ConfigHandler.SaveConfig(_config);
+    }
+
+    public async Task DoToggleConnect()
+    {
+        if (IsConnected)
+        {
+            await DoDisconnect();
+        }
+        else
+        {
+            await DoConnect();
+        }
+    }
+
+    public async Task DoDisconnect()
+    {
+        if (!IsConnected)
+        {
+            return;
+        }
+
+        try
+        {
+            WinDivertService.Instance.Stop();
+            await CoreManager.Instance.CoreStop();
+            await SysProxyHandler.UpdateSysProxy(_config, true);
+
+            IsConnected = false;
+            SpeedProxyDisplay = string.Empty;
+            SpeedDirectDisplay = string.Empty;
+            RunningInfoDisplay = ResUI.TipDisconnected;
+            RunningServerToolTipText = $"{Global.AppName} - {ResUI.TipDisconnected}";
+
+            NoticeManager.Instance.SendMessageEx(ResUI.TipDisconnected);
+            NoticeManager.Instance.Enqueue(ResUI.TipDisconnected);
+
+            await DispatcherRefreshIconInteraction.HandleSafe(RxVoid.Default);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("StatusBarViewModel.DoDisconnect", ex);
+        }
+    }
+
+    public async Task DoConnect()
+    {
+        try
+        {
+            var server = await ConfigHandler.GetDefaultServer(_config);
+            if (server == null)
+            {
+                NoticeManager.Instance.Enqueue(ResUI.CheckServerSettings);
+                return;
+            }
+
+            IsConnected = true;
+
+            ReloadRequested.Publish();
+
+            if (_config.WinDivertItem.Enable && AllowEnableWinDivert())
+            {
+                StartWinDivert();
+            }
+
+            NoticeManager.Instance.SendMessageEx(ResUI.TipConnected);
+            NoticeManager.Instance.Enqueue(ResUI.TipConnected);
+
+            await DispatcherRefreshIconInteraction.HandleSafe(RxVoid.Default);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("StatusBarViewModel.DoConnect", ex);
+        }
     }
 
     #endregion System proxy and Routings
@@ -518,7 +722,7 @@ public partial class StatusBarViewModel : MyReactiveObject
 
     public async Task UpdateStatistics(ServerSpeedItem update)
     {
-        if (!_config.GuiItem.DisplayRealTimeSpeed)
+        if (!_config.GuiItem.DisplayRealTimeSpeed || !IsConnected)
         {
             return;
         }

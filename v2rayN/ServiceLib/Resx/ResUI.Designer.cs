@@ -1579,6 +1579,41 @@ namespace ServiceLib.Resx {
             get {
                 return ResourceManager.GetString("menuReload", resourceCulture);
             }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Connect.
+        /// </summary>
+        public static string menuConnect {
+            get {
+                return ResourceManager.GetString("menuConnect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Disconnect.
+        /// </summary>
+        public static string menuDisconnect {
+            get {
+                return ResourceManager.GetString("menuDisconnect", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Connected to VPN.
+        /// </summary>
+        public static string TipConnected {
+            get {
+                return ResourceManager.GetString("TipConnected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Disconnected from VPN.
+        /// </summary>
+        public static string TipDisconnected {
+            get {
+                return ResourceManager.GetString("TipDisconnected", resourceCulture);
+            }
         }
         
         /// <summary>
@@ -5127,6 +5162,15 @@ namespace ServiceLib.Resx {
         public static string TbEnableTunAs {
             get {
                 return ResourceManager.GetString("TbEnableTunAs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enable WinDivert.
+        /// </summary>
+        public static string TbEnableWinDivertAs {
+            get {
+                return ResourceManager.GetString("TbEnableWinDivertAs", resourceCulture);
             }
         }
         

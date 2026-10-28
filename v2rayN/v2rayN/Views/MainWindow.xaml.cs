@@ -1,4 +1,4 @@
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
 using v2rayN.Base;
@@ -81,6 +81,15 @@ public partial class MainWindow
             this.BindCommand(ViewModel, vm => vm.RegionalPresetChinaCmd, v => v.menuRegionalPresetsChina).DisposeWith(disposables);
 
             this.BindCommand(ViewModel, vm => vm.ReloadCmd, v => v.menuReload).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.StatusBarViewModel.ToggleConnectCmd, v => v.menuConnectDisconnect).DisposeWith(disposables);
+            this.WhenAnyValue(x => x.ViewModel.StatusBarViewModel.IsConnected)
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
+                .Subscribe(connected =>
+                {
+                    txtConnectDisconnect.Text = connected ? ResUI.menuDisconnect : ResUI.menuConnect;
+                    iconConnectDisconnect.Kind = connected ? MaterialDesignThemes.Wpf.PackIconKind.PowerOff : MaterialDesignThemes.Wpf.PackIconKind.Power;
+                })
+                .DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.BlReloadEnabled, v => v.menuReload.IsEnabled).DisposeWith(disposables);
 
             this.OneWayBind(ViewModel, vm => vm.BlNewUpdate, v => v.btnNewUpdate.Visibility).DisposeWith(disposables);

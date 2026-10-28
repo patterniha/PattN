@@ -1,4 +1,4 @@
-<base:WindowBase
+﻿<base:WindowBase
     x:Class="v2rayN.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -291,6 +291,23 @@
                                             VerticalAlignment="Center"
                                             Kind="Reload" />
                                         <TextBlock Text="{x:Static resx:ResUI.menuReload}" />
+                                    </StackPanel>
+                                </MenuItem.Header>
+                            </MenuItem>
+                        </Menu>
+                        <Separator />
+                        <Menu Margin="0,1" Style="{StaticResource ToolbarMenu}">
+                            <MenuItem
+                                x:Name="menuConnectDisconnect"
+                                Padding="{StaticResource MarginLeftRight8}">
+                                <MenuItem.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon
+                                            x:Name="iconConnectDisconnect"
+                                            Margin="{StaticResource MarginRight8}"
+                                            VerticalAlignment="Center"
+                                            Kind="Power" />
+                                        <TextBlock x:Name="txtConnectDisconnect" Text="{x:Static resx:ResUI.menuDisconnect}" />
                                     </StackPanel>
                                 </MenuItem.Header>
                             </MenuItem>

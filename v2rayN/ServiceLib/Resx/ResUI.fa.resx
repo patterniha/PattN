@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -422,6 +422,18 @@
   </data>
   <data name="menuReload" xml:space="preserve">
     <value>بارگذاری مجدد</value>
+  </data>
+  <data name="menuConnect" xml:space="preserve">
+    <value>u0627u062au0635u0627u0644</value>
+  </data>
+  <data name="menuDisconnect" xml:space="preserve">
+    <value>u0642u0637u0639 u0627u062au0635u0627u0644</value>
+  </data>
+  <data name="TipConnected" xml:space="preserve">
+    <value>u0627u0631u062au0628u0627u0637 u0628u0627 u0648u06ccu200cu067eu06ccu200cu0627u0646 u0628u0631u0642u0631u0627u0631 u0634u062f</value>
+  </data>
+  <data name="TipDisconnected" xml:space="preserve">
+    <value>u0627u0631u062au0628u0627u0637 u0628u0627 u0648u06ccu200cu067eu06ccu200cu0627u0646 u0642u0637u0639 u0634u062f</value>
   </data>
   <data name="menuRoutingSetting" xml:space="preserve">
     <value>تنظیم مسیریابی</value>
@@ -920,6 +932,9 @@
   </data>
   <data name="TbEnableTunAs" xml:space="preserve">
     <value>فعال سازی Tun</value>
+  </data>
+  <data name="TbEnableWinDivertAs" xml:space="preserve">
+    <value>u0641u0639u0627u0644 u0633u0627u0632u06cc WinDivert</value>
   </data>
   <data name="TbSettingsNewPort4LAN" xml:space="preserve">
     <value>پورت جدید برای LAN</value>

@@ -1,4 +1,4 @@
-namespace ServiceLib.Models.Configs;
+﻿namespace ServiceLib.Models.Configs;
 
 [Serializable]
 public class CoreBasicItem
@@ -306,4 +306,15 @@ public class HappyEyeballs4RayItem
     public bool? PrioritizeIPv6 { get; set; }
     public int? Interleave { get; set; }
     public int? MaxConcurrentTry { get; set; }
+}
+
+[Serializable]
+public class WinDivertItem
+{
+    public bool Enable { get; set; }
+    public bool EnableDnsHijack { get; set; } = true;
+    public bool DropQuic { get; set; } = true;
+    public bool BypassLan { get; set; } = true;
+    public bool BypassProxyCore { get; set; } = true;
+    public string DnsUrl { get; set; } = "https://cloudflare-dns.com/dns-query";
 }

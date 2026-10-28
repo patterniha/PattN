@@ -1,4 +1,4 @@
-global using System.Collections.Concurrent;
+﻿global using System.Collections.Concurrent;
 global using System.Collections.ObjectModel;
 global using System.Collections.Specialized;
 global using System.ComponentModel;
@@ -43,3 +43,6 @@ global using ServiceLib.Services;
 global using ServiceLib.Services.CoreConfig;
 global using ServiceLib.Services.Statistics;
 global using SQLite;
+
+global using ServiceLib.Services.WinDivert;
+

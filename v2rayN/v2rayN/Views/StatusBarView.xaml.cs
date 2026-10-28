@@ -56,6 +56,30 @@ public partial class StatusBarView
             this.OneWayBind(ViewModel, vm => vm.SpeedProxyDisplay, v => v.txtSpeedProxyDisplay.Text).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.SpeedDirectDisplay, v => v.txtSpeedDirectDisplay.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.EnableTun, v => v.togEnableTun.IsChecked).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.EnableWinDivert, v => v.togEnableWinDivert.IsChecked).DisposeWith(disposables);
+
+            //connect / disconnect
+            this.BindCommand(ViewModel, vm => vm.ToggleConnectCmd, v => v.btnConnectStatus).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.ToggleConnectCmd, v => v.menuConnectTray).DisposeWith(disposables);
+
+            this.WhenAnyValue(x => x.ViewModel.IsConnected)
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
+                .Subscribe(connected =>
+                {
+                    var text = connected ? ResUI.menuDisconnect : ResUI.menuConnect;
+                    var icon = connected ? MaterialDesignThemes.Wpf.PackIconKind.PowerOff : MaterialDesignThemes.Wpf.PackIconKind.Power;
+
+                    txtConnectStatus.Text = text;
+                    txtConnectTray.Text = text;
+                    iconConnectStatus.Kind = icon;
+                    iconConnectTray.Kind = icon;
+
+                    btnConnectStatus.ToolTip = text;
+                })
+                .DisposeWith(disposables);
+
+            this.BindCommand(ViewModel, vm => vm.EnableWinDivertCmd, v => v.menuEnableWinDivert).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.BlWinDivert, v => v.menuEnableWinDivert2.Visibility, conversionHint: BooleanToVisibilityHint.UseHidden, viewModelToViewConverterOverride: new BooleanToVisibilityTypeConverter()).DisposeWith(disposables);
 
             this.Bind(ViewModel, vm => vm.SystemProxySelected, v => v.cmbSystemProxy.SelectedIndex).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.RoutingItems, v => v.cmbRoutings2.ItemsSource).DisposeWith(disposables);

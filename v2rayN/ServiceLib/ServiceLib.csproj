@@ -23,6 +23,9 @@
 		<PackageReference Include="CliWrap" />
 		<PackageReference Include="ZXing.Net.Bindings.SkiaSharp" />
 		<PackageReference Include="TaskScheduler" />
+		<PackageReference Include="WinDivertSharp">
+			<ExcludeAssets>build</ExcludeAssets>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -104,3 +107,4 @@
     </ItemGroup>
 
 </Project>
+

@@ -1,4 +1,4 @@
-namespace ServiceLib.Manager;
+﻿namespace ServiceLib.Manager;
 
 public sealed class AppManager
 {
@@ -133,6 +133,7 @@ public sealed class AppManager
             await ProfileExManager.Instance.SaveTo();
             await StatisticsManager.Instance.SaveTo();
             await CoreManager.Instance.CoreStop();
+            WinDivertService.Instance.Stop();
             // PattN: a scan, latency test or WARP key run of the Aether core still going
             await AetherCoreManager.Instance.StopAllAsync();
             StatisticsManager.Instance.Close();
@@ -698,3 +699,4 @@ public sealed class AppManager
 
     #endregion Core Type
 }
+

@@ -66,6 +66,55 @@
                 </StackPanel>
 
                 <StackPanel
+                    x:Name="spEnableWinDivert"
+                    Width="Auto"
+                    Margin="{StaticResource MarginLeftRight8}"
+                    VerticalAlignment="Center"
+                    DockPanel.Dock="Left"
+                    Orientation="Horizontal">
+                    <TextBlock
+                        Margin="{StaticResource MarginLeftRight8}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource StatusbarItem}"
+                        Text="{x:Static resx:ResUI.TbEnableWinDivertAs}" />
+                    <ToggleButton
+                        x:Name="togEnableWinDivert"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="{x:Static resx:ResUI.TbEnableWinDivertAs}" />
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="spConnectStatus"
+                    Width="Auto"
+                    Margin="{StaticResource MarginLeftRight8}"
+                    VerticalAlignment="Center"
+                    DockPanel.Dock="Left"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="btnConnectStatus"
+                        Height="26"
+                        Padding="8,0"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource DefButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon
+                                x:Name="iconConnectStatus"
+                                Width="16"
+                                Height="16"
+                                Margin="0,0,4,0"
+                                VerticalAlignment="Center"
+                                Kind="Power" />
+                            <TextBlock
+                                x:Name="txtConnectStatus"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource StatusbarItem}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel
                     Margin="{StaticResource MarginLeftRight8}"
                     VerticalAlignment="Center"
                     DockPanel.Dock="Left"
@@ -110,6 +159,21 @@
             ToolTipText="PattN">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu Style="{StaticResource DefContextMenu}">
+                    <MenuItem
+                        x:Name="menuConnectTray"
+                        Height="{StaticResource MenuItemHeight}">
+                        <MenuItem.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon
+                                    x:Name="iconConnectTray"
+                                    Margin="{StaticResource MarginRight8}"
+                                    VerticalAlignment="Center"
+                                    Kind="Power" />
+                                <TextBlock x:Name="txtConnectTray" />
+                            </StackPanel>
+                        </MenuItem.Header>
+                    </MenuItem>
+                    <Separator />
                     <MenuItem
                         x:Name="menuSystemProxyClear"
                         Height="{StaticResource MenuItemHeight}"
@@ -171,6 +235,22 @@
                         </MenuItem.Header>
                     </MenuItem>
                     <Separator x:Name="sepRoutings" />
+                    <MenuItem
+                        x:Name="menuEnableWinDivert"
+                        Height="{StaticResource MenuItemHeight}"
+                        AutomationProperties.Name="{x:Static resx:ResUI.TbEnableWinDivertAs}">
+                        <MenuItem.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon
+                                    x:Name="menuEnableWinDivert2"
+                                    Margin="{StaticResource MarginRight8}"
+                                    VerticalAlignment="Center"
+                                    Kind="Check" />
+                                <TextBlock Text="{x:Static resx:ResUI.TbEnableWinDivertAs}" />
+                            </StackPanel>
+                        </MenuItem.Header>
+                    </MenuItem>
+                    <Separator />
                     <MenuItem
                         x:Name="menuRoutings"
                         Height="Auto"

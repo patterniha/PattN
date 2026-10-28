@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
@@ -42,4 +42,25 @@
 		<ProjectReference Include="..\ServiceLib\ServiceLib.csproj" />
 	</ItemGroup>
 
+	<!-- WinDivert driver, required by the WinDivert mode (windows only) -->
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+		<WinDivertPath>$(NuGetPackageRoot)windivertsharp\1.4.3.2\build\</WinDivertPath>
+		<WinDivertArch Condition="'$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.Contains('x86'))">x86</WinDivertArch>
+		<WinDivertArch Condition="'$(WinDivertArch)' == ''">x64</WinDivertArch>
+		<WinDivertSys Condition="'$(WinDivertArch)' == 'x86'">WinDivert32.sys</WinDivertSys>
+		<WinDivertSys Condition="'$(WinDivertSys)' == ''">WinDivert64.sys</WinDivertSys>
+	</PropertyGroup>
+	<ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+		<None Include="$(WinDivertPath)$(WinDivertArch)\WinDivert.dll" Link="WinDivert.dll" Condition="Exists('$(WinDivertPath)$(WinDivertArch)\WinDivert.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		<None Include="$(WinDivertPath)$(WinDivertArch)\$(WinDivertSys)" Link="$(WinDivertSys)" Condition="Exists('$(WinDivertPath)$(WinDivertArch)\$(WinDivertSys)')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+	</ItemGroup>
 </Project>
+

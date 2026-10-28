@@ -402,3 +402,8 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# Archives and release folders
+*.rar
+*.7z
+PattN-WinDivert-Release*/
