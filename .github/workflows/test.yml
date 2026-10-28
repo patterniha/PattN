@@ -8,6 +8,8 @@ on:
       - 'v2rayN/ServiceLib/**'
       - 'v2rayN/ServiceLib.UdpTest/**'
       - 'v2rayN/ServiceLib.Tests/**'
+      - 'v2rayN/AmazTool/**'
+      - 'v2rayN/AmazTool.Tests/**'
       - 'v2rayN/Directory.Build.*'
       - 'v2rayN/Directory.Packages.props'
       - 'global.json'
@@ -19,6 +21,8 @@ on:
       - 'v2rayN/ServiceLib/**'
       - 'v2rayN/ServiceLib.UdpTest/**'
       - 'v2rayN/ServiceLib.Tests/**'
+      - 'v2rayN/AmazTool/**'
+      - 'v2rayN/AmazTool.Tests/**'
       - 'v2rayN/Directory.Build.*'
       - 'v2rayN/Directory.Packages.props'
       - 'global.json'
@@ -43,6 +47,9 @@ jobs:
 
     - name: Test Code
       run: dotnet test --project ./v2rayN/ServiceLib.Tests -c Release --results-directory ./TestResults -- --report-trx
+
+    - name: Test AmazTool
+      run: dotnet test --project ./v2rayN/AmazTool.Tests -c Release --results-directory ./TestResults -- --report-trx
 
     - name: Comment PR with results
       if: always()

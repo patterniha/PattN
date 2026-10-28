@@ -17,4 +17,8 @@
 		</Compile>
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="AmazTool.Tests" />
+	</ItemGroup>
+
 </Project>
