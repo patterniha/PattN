@@ -1346,4 +1346,30 @@ public class CoreConfigV2rayServiceTests
         await proxyOutbound.Should().NotBeNull();
         await proxyOutbound!.protocol.Should().BeEqualTo("shadowsocks");
     }
+
+    [Test]
+    [Arguments("unsafe", "chrome", "chrome")]
+    [Arguments("Unsafe", "safari", "safari")]
+    [Arguments("", "unsafe", "chrome")]
+    [Arguments("firefox", "unsafe", "firefox")]
+    public async Task GenerateClientConfigContent_Reality_ShouldNotGetTheUnsafeFingerprint(
+        string fingerprint, string defaultFingerprint, string expected)
+    {
+        // PattN: the Xray fork refuses unsafe for REALITY, and the whole configuration with it.
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
+        config.CoreBasicItem.DefFingerprint = defaultFingerprint;
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.Xray);
+        node.StreamSecurity = Global.StreamSecurityReality;
+        node.Fingerprint = fingerprint;
+        node.PublicKey = "Z84J2IelR9ch3k8VtlVhhs5ycBUlXA7wHBWcBrjqnAw";
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.Xray);
+
+        var result = new CoreConfigV2rayService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<V2rayConfig>(result.Data!.ToString())!;
+        var proxyOutbound = cfg.outbounds.Single(o => o.tag == Global.ProxyTag);
+        await proxyOutbound.streamSettings!.realitySettings!.fingerprint.Should().BeEqualTo(expected);
+    }
 }

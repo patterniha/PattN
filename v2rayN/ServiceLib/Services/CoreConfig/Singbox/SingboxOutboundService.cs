@@ -468,16 +468,20 @@ public partial class CoreConfigSingboxService
                 tls.fragment = true;
                 tls.record_fragment = true;
             }
+            // REALITY runs on uTLS alone in sing-box, so it gets a fingerprint uTLS takes in place of unsafe or none
+            var fingerprint = _node.StreamSecurity == Global.StreamSecurityReality
+                ? TlsSettingsCheck.RealityFingerprint(_node.Fingerprint, _config.CoreBasicItem.DefFingerprint)
+                : _node.Fingerprint;
             // "unsafe" is an Xray-only fingerprint; sing-box's uTLS rejects it, so fall back to plain TLS
-            if (_node.Fingerprint.IsNotEmpty() && _node.Fingerprint != "unsafe")
+            if (fingerprint.IsNotEmpty() && !TlsSettingsCheck.IsUnsafe(fingerprint))
             {
                 tls.utls = new Utls4Sbox()
                 {
                     enabled = true,
-                    fingerprint = _node.Fingerprint.IsNullOrEmpty() ? _config.CoreBasicItem.DefFingerprint : _node.Fingerprint
+                    fingerprint = fingerprint.IsNullOrEmpty() ? _config.CoreBasicItem.DefFingerprint : fingerprint
                 };
                 // "hellochrome_120" is an Xray-only fingerprint; sing-box's uTLS rejects it, so use sing-box's Chrome
-                if (tls.utls.fingerprint == "hellochrome_120")
+                if (string.Equals(tls.utls.fingerprint, "hellochrome_120", StringComparison.OrdinalIgnoreCase))
                 {
                     tls.utls.fingerprint = "chrome";
                 }
@@ -486,12 +490,14 @@ public partial class CoreConfigSingboxService
             {
                 if (_node.CipherSuites.IsNotEmpty())
                 {
-                    // Xray stores cipher suites as a colon-separated string; sing-box wants a list of the same Go TLS names
-                    tls.cipher_suites = _node.CipherSuites
+                    // Xray stores cipher suites as a colon-separated string; sing-box wants a list of the same Go TLS names,
+                    // and refuses to start on a name Go keeps among its insecure ones, which Xray takes, so those are left out
+                    var cipherSuites = _node.CipherSuites
                         .Split([':', ','], StringSplitOptions.RemoveEmptyEntries)
                         .Select(c => c.Trim())
-                        .Where(c => c.IsNotEmpty())
+                        .Where(c => Global.SingboxCipherSuites.Contains(c))
                         .ToList();
+                    tls.cipher_suites = cipherSuites.Count > 0 ? cipherSuites : null;
                 }
                 var certs = CertPemManager.ParsePemChain(_node.Cert);
                 if (certs.Count > 0)

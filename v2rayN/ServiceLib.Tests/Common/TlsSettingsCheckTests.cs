@@ -252,4 +252,16 @@ public class TlsSettingsCheckTests
             await imported.Alpn.Should().BeEqualTo(alpn).Because($"{imported.ConfigType} {imported.Network} {imported.StreamSecurity}");
         }
     }
+
+    [Test]
+    public async Task RealityGetsAFingerprintUtlsTakesInPlaceOfUnsafeOrNone()
+    {
+        // REALITY needs uTLS: the fork refuses unsafe for it, and sing-box will not run it without uTLS.
+        await TlsSettingsCheck.RealityFingerprint("firefox", "unsafe").Should().BeEqualTo("firefox");
+        await TlsSettingsCheck.RealityFingerprint("unsafe", "safari").Should().BeEqualTo("safari");
+        await TlsSettingsCheck.RealityFingerprint("Unsafe", "unsafe").Should().BeEqualTo("chrome");
+        await TlsSettingsCheck.RealityFingerprint("", "unsafe").Should().BeEqualTo("chrome");
+        await TlsSettingsCheck.RealityFingerprint(null, "ios").Should().BeEqualTo("ios");
+        await TlsSettingsCheck.RealityFingerprint(null, null).Should().BeEqualTo("chrome");
+    }
 }

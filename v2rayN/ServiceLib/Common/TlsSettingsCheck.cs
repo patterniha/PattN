@@ -39,6 +39,33 @@ public static class TlsSettingsCheck
     /// <summary>The one alpn WebSocket and HTTPUpgrade connect with, and the one the fork offers for them when there is none.</summary>
     private const string Http1 = "http/1.1";
 
+    /// <summary>The fingerprint REALITY falls back on where the profile and the settings name none it can use.</summary>
+    private const string RealityFallbackFingerprint = "chrome";
+
+    /// <summary>Whether <paramref name="fingerprint" /> is unsafe, as the fork reads it: lowercased.</summary>
+    public static bool IsUnsafe(string? fingerprint)
+    {
+        return string.Equals(fingerprint, UnsafeFingerprint, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// The fingerprint a REALITY profile connects with: <paramref name="fingerprint" />, the profile's, or else
+    /// <paramref name="defaultFingerprint" />, the default of the settings, or else Chrome's, passing over unsafe and
+    /// none. REALITY needs uTLS: the fork refuses unsafe for it (infra/conf/transport_security.go), and sing-box will not
+    /// run it without uTLS (common/tls/reality_client.go).
+    /// </summary>
+    public static string RealityFingerprint(string? fingerprint, string? defaultFingerprint)
+    {
+        foreach (var candidate in new[] { fingerprint, defaultFingerprint })
+        {
+            if (!string.IsNullOrEmpty(candidate) && !IsUnsafe(candidate))
+            {
+                return candidate;
+            }
+        }
+        return RealityFallbackFingerprint;
+    }
+
     /// <summary>
     /// Whether the check applies to <paramref name="profile" />, which is where PattN's editor shows cipherSuites, alpn and
     /// the fingerprint: under TLS on VMess, VLESS, Shadowsocks, Trojan, SOCKS and HTTP, as for the ECH outbound

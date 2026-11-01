@@ -1303,7 +1303,8 @@ public static class ConfigHandler
             {
                 if (profileItem.Fingerprint.IsNullOrEmpty() && profileItem.StreamSecurity == Global.StreamSecurityReality)
                 {
-                    profileItem.Fingerprint = config.CoreBasicItem.DefFingerprint;
+                    // PattN: not unsafe, a default REALITY cannot connect with, which the profile would then keep and share
+                    profileItem.Fingerprint = TlsSettingsCheck.RealityFingerprint(null, config.CoreBasicItem.DefFingerprint);
                 }
             }
         }

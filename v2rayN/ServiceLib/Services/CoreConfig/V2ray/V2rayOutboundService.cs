@@ -395,7 +395,8 @@ public partial class CoreConfigV2rayService
 
                 TlsSettings4Ray realitySettings = new()
                 {
-                    fingerprint = _node.Fingerprint.IsNullOrEmpty() ? _config.CoreBasicItem.DefFingerprint : _node.Fingerprint,
+                    // PattN: the fork refuses unsafe for REALITY, which needs uTLS
+                    fingerprint = TlsSettingsCheck.RealityFingerprint(_node.Fingerprint, _config.CoreBasicItem.DefFingerprint),
                     serverName = sni,
                     publicKey = _node.PublicKey,
                     shortId = _node.ShortId,

@@ -817,4 +817,70 @@ public class CoreConfigSingboxServiceTests
         await proxyOutbound.method.Should().BeEqualTo("aes-128-gcm");
         await proxyOutbound.password.Should().BeEqualTo("custom_password");
     }
+
+    // PattN: the TLS of the proxy outbound sing-box gets for a VMess profile under security, with these settings.
+    private static async Task<Tls4Sbox> ProxyTls(string security, string fingerprint, string cipherSuites = "",
+        string defaultFingerprint = "chrome")
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        config.CoreBasicItem.DefFingerprint = defaultFingerprint;
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.sing_box);
+        node.StreamSecurity = security;
+        node.Fingerprint = fingerprint;
+        node.CipherSuites = cipherSuites;
+        node.PublicKey = "Z84J2IelR9ch3k8VtlVhhs5ycBUlXA7wHBWcBrjqnAw";
+        node.ShortId = "6ba85179e30d4fc2";
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box);
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        return cfg.outbounds.Single(o => o.tag == Global.ProxyTag).tls!;
+    }
+
+    [Test]
+    public async Task GenerateClientConfigContent_CipherSuites_ShouldLeaveOutTheNamesSingboxRefuses()
+    {
+        // PattN: sing-box takes the names of Go's crypto/tls.CipherSuites() alone and refuses to start on any other, such
+        // as the TLS_RSA_* and *_CBC_SHA256 names of both presets, which the Xray fork takes.
+        foreach (var (name, value) in Global.CipherSuitesPresets)
+        {
+            var tls = await ProxyTls(Global.StreamSecurity, "unsafe", value);
+            var kept = value.Split(':').Where(Global.SingboxCipherSuites.Contains).ToList();
+            await (kept.Count < value.Split(':').Length).Should().BeTrue().Because(name);
+            await string.Join(":", tls.cipher_suites!).Should().BeEqualTo(string.Join(":", kept)).Because(name);
+        }
+        // With none sing-box takes, the field is left out, for Go's own.
+        var none = await ProxyTls(Global.StreamSecurity, "unsafe", "TLS_RSA_WITH_AES_128_CBC_SHA");
+        await none.cipher_suites.Should().BeNull();
+    }
+
+    [Test]
+    [Arguments("unsafe", "chrome", "chrome")]
+    [Arguments("Unsafe", "safari", "safari")]
+    [Arguments("", "unsafe", "chrome")]
+    [Arguments("firefox", "unsafe", "firefox")]
+    public async Task GenerateClientConfigContent_Reality_ShouldRunOnUtlsWhateverTheFingerprint(
+        string fingerprint, string defaultFingerprint, string expected)
+    {
+        // PattN: sing-box runs REALITY on uTLS alone, which the unsafe fingerprint turns off.
+        var tls = await ProxyTls(Global.StreamSecurityReality, fingerprint, defaultFingerprint: defaultFingerprint);
+
+        await tls.reality.Should().NotBeNull();
+        await tls.utls.Should().NotBeNull();
+        await tls.utls!.fingerprint.Should().BeEqualTo(expected);
+    }
+
+    [Test]
+    [Arguments("unsafe")]
+    [Arguments("Unsafe")]
+    public async Task GenerateClientConfigContent_UnsafeFingerprint_ShouldRunTlsOnGo(string fingerprint)
+    {
+        // PattN: unsafe is Xray's alone; sing-box's uTLS refuses it, so TLS falls back on Go's.
+        var tls = await ProxyTls(Global.StreamSecurity, fingerprint);
+
+        await tls.utls.Should().BeNull();
+    }
 }
