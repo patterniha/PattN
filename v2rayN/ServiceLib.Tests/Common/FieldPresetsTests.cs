@@ -64,6 +64,15 @@ public class FieldPresetsTests
         }
         """.ReplaceLineEndings("\n");
 
+    private static readonly string Merge =
+        """
+        {
+          "tcp": [
+            {"type": "merge", "settings": {"times": 100, "delayMs": 30, "maxBytes": 16384}}
+          ]
+        }
+        """.ReplaceLineEndings("\n");
+
     private static bool Asks(FieldPresets presets, string text)
     {
         return FieldPresets.AsksBeforeReplacing(text, presets.HeldOf(text));
@@ -177,8 +186,8 @@ public class FieldPresetsTests
     {
         var names = Global.FinalMaskPresets.Select(preset => preset.Name).ToList();
         var values = Global.FinalMaskPresets.Select(preset => preset.Value).ToList();
-        await names.SequenceEqual(["tlshello-0-len (0-104-1-0-0-114-1-1-11)", "tlshello (6-98-1-0-0-114-1-1-11)", "udp-noise (rnd-24-1200-1230)"]).Should().BeTrue();
-        await values.SequenceEqual([Tlshello0Len, Tlshello, UdpNoise]).Should().BeTrue();
+        await names.SequenceEqual(["tlshello-0-len (0-104-1-0-0-114-1-1-11)", "tlshello (6-98-1-0-0-114-1-1-11)", "udp-noise (rnd-24-1200-1230)", "merge"]).Should().BeTrue();
+        await values.SequenceEqual([Tlshello0Len, Tlshello, UdpNoise, Merge]).Should().BeTrue();
         // Each is one an exit-node takes, as an outbound does, and the list tells each apart from the others.
         var listed = new FieldPresets(values, EPresetMatch.Json);
         for (var index = 0; index < values.Count; index++)

@@ -499,6 +499,14 @@ public class Global
               ]
             }
             """.ReplaceLineEndings("\n")),
+        ("merge",
+            """
+            {
+              "tcp": [
+                {"type": "merge", "settings": {"times": 100, "delayMs": 30, "maxBytes": 16384}}
+              ]
+            }
+            """.ReplaceLineEndings("\n")),
     ];
 
     // PattN: the lists the cipherSuites field offers (PattNG arrays.xml cipher_suites_preset_names/values): the name the
