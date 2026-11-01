@@ -124,6 +124,21 @@ public class FieldPresetsTests
     }
 
     [Test]
+    public async Task ADialModeFieldHoldsOneOfTheListOnlyWithExactlyItsText()
+    {
+        var modes = new FieldPresets(["oob.0", "oob.1,2"], EPresetMatch.Exact);
+        await modes.IndexOf("oob.0").Should().BeEqualTo(0);
+        await modes.IndexOf("oob.1,2").Should().BeEqualTo(1);
+        // Xray reads a dialMode as it is written, neither trimmed nor folded: anything else is one of the user's own.
+        await modes.IndexOf(" oob.0").Should().BeEqualTo(FieldPresets.None);
+        await modes.IndexOf("oob.0\n").Should().BeEqualTo(FieldPresets.None);
+        await modes.IndexOf("OOB.0").Should().BeEqualTo(FieldPresets.None);
+        await modes.IndexOf("oob.1, 2").Should().BeEqualTo(FieldPresets.None);
+        await modes.HeldOf(" ").Should().BeEqualTo(FieldPresets.Default);
+        await modes.HeldOf("oob.0 ").Should().BeEqualTo(FieldPresets.None);
+    }
+
+    [Test]
     public async Task APickAsksFirstOnlyWhenItWouldTakeThePlaceOfAValueOfTheUsersOwn()
     {
         await Asks(Masks, "").Should().BeFalse();
@@ -218,6 +233,24 @@ public class FieldPresetsTests
         await FieldPresets.CipherSuites.Values.SequenceEqual(values).Should().BeTrue();
         await FieldPresets.CipherSuites.Match.Should().BeEqualTo(EPresetMatch.Names);
         await FieldPresets.CipherSuites.Setting.Should().BeEqualTo("cipherSuites");
+    }
+
+    [Test]
+    public async Task TheDialModeFieldsOfferTheGivenDialModesUnderTheirNames()
+    {
+        var names = Global.DialModePresets.Select(preset => preset.Name).ToList();
+        var values = Global.DialModePresets.Select(preset => preset.Value).ToList();
+        await names.SequenceEqual(["oob"]).Should().BeTrue();
+        await values.SequenceEqual(["oob.0"]).Should().BeTrue();
+        var listed = new FieldPresets(values, EPresetMatch.Exact);
+        for (var index = 0; index < values.Count; index++)
+        {
+            await listed.IndexOf(values[index]).Should().BeEqualTo(index);
+        }
+        await FieldPresets.DialMode.Names.SequenceEqual(names).Should().BeTrue();
+        await FieldPresets.DialMode.Values.SequenceEqual(values).Should().BeTrue();
+        await FieldPresets.DialMode.Match.Should().BeEqualTo(EPresetMatch.Exact);
+        await FieldPresets.DialMode.Setting.Should().BeEqualTo("dialMode");
     }
 
     // PattN: JsonNode.DeepEquals is what ignores the key order (a risk the port design names); pinned at every depth,

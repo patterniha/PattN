@@ -202,7 +202,8 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
             // PattN: the flyout's finalMask text is the preset field's, whose arrow and name sit beside the flyout's button (design 3.3)
             this.Bind(ViewModel, vm => vm.FinalmaskPreset.Text, v => v.txtFinalmask.Text).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.FinalmaskPreset, v => v.presetFinalmask.ViewModel).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.SelectedSource.DialMode, v => v.txtDialMode.Text).DisposeWith(disposables);
+            // PattN: dialMode as a preset field (design 3.3)
+            this.OneWayBind(ViewModel, vm => vm.DialModePreset, v => v.presetDialMode.ViewModel).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TargetStrategy, v => v.cmbTargetStrategy.SelectedValue).DisposeWith(disposables);
 
             this.BindCommand(ViewModel, vm => vm.FetchCertCmd, v => v.btnFetchCert).DisposeWith(disposables);

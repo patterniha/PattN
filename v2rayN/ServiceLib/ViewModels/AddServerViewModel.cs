@@ -139,12 +139,15 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
     [Reactive]
     public partial int? KcpMtu { get; set; }
 
-    // PattN: finalMask and cipherSuites as preset fields (design 3.3, PattNG PresetField): an arrow lists ready-made
-    // values by name, and the name of the one a field holds shows with it. ProfileItem raises no change notification,
-    // so a value a pick puts in would not reach the text box: the fields hold the text, and the save writes it back.
+    // PattN: finalMask, cipherSuites and dialMode as preset fields (design 3.3, PattNG PresetField): an arrow lists
+    // ready-made values by name, and the name of the one a field holds shows with it. ProfileItem raises no change
+    // notification, so a value a pick puts in would not reach the text box: the fields hold the text, and the save
+    // writes it back.
     public PresetFieldViewModel FinalmaskPreset { get; }
 
     public PresetFieldViewModel CipherSuitesPreset { get; }
+
+    public PresetFieldViewModel DialModePreset { get; }
 
     public string TransportHeaderType
     {
@@ -315,6 +318,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         // PattN: the preset fields start with what the profile holds
         FinalmaskPreset = new PresetFieldViewModel(FieldPresets.FinalMask, SelectedSource?.Finalmask);
         CipherSuitesPreset = new PresetFieldViewModel(FieldPresets.CipherSuites, SelectedSource?.CipherSuites);
+        DialModePreset = new PresetFieldViewModel(FieldPresets.DialMode, SelectedSource?.DialMode);
 
         var protocolExtra = SelectedSource?.GetProtocolExtra() ?? new();
         var transport = SelectedSource?.GetTransportExtra() ?? new();
@@ -363,6 +367,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         // PattN: what the preset fields hold, first, as the checks below read it; a blank field is the default, none
         SelectedSource.Finalmask = string.IsNullOrWhiteSpace(FinalmaskPreset.Text) ? string.Empty : FinalmaskPreset.Text;
         SelectedSource.CipherSuites = string.IsNullOrWhiteSpace(CipherSuitesPreset.Text) ? string.Empty : CipherSuitesPreset.Text;
+        SelectedSource.DialMode = string.IsNullOrWhiteSpace(DialModePreset.Text) ? string.Empty : DialModePreset.Text;
 
         if (SelectedSource.Remarks.IsNullOrEmpty())
         {

@@ -519,6 +519,13 @@ public class Global
             "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_GCM_SHA256:TLS_RSA_WITH_AES_256_GCM_SHA384:TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA"),
     ];
 
+    // PattN: the dialModes the dialMode fields offer (PattNG arrays.xml dial_mode_preset_names/values): the name the
+    // list shows, and the dialMode a pick puts in the field, as Xray reads it.
+    public static readonly List<(string Name, string Value)> DialModePresets =
+    [
+        ("oob", "oob.0"),
+    ];
+
     // PattN: the resolvers and the domains the ECH fields of the Aether editor and the WARP keys window offer (PattNG
     // arrays.xml aether_ech_dns_options / aether_ech_domain_options): each one the core takes, the default first.
     public static readonly List<string> AetherEchDnsOptions =

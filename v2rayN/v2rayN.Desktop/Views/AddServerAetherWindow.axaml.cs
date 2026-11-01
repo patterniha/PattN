@@ -69,7 +69,7 @@ public partial class AddServerAetherWindow : WindowBase<AddServerAetherViewModel
             this.Bind(ViewModel, vm => vm.ScanModeIndex, v => v.cmbScanMode.SelectedIndex).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.ObfuscationIndex, v => v.cmbObfuscation.SelectedIndex).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.FingerprintIndex, v => v.cmbFingerprint.SelectedIndex).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.DialMode, v => v.txtDialMode.Text).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.DialMode, v => v.presetDialMode.ViewModel).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.PsiphonIndex, v => v.cmbPsiphon.SelectedIndex).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.PsiphonModeIndex, v => v.cmbPsiphonMode.SelectedIndex).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.PsiphonCdnIps, v => v.txtPsiphonCdnIps.Text).DisposeWith(disposables);
@@ -107,7 +107,7 @@ public partial class AddServerAetherWindow : WindowBase<AddServerAetherViewModel
             this.OneWayBind(ViewModel, vm => vm.ShowObfuscation, v => v.rowObfuscation.IsVisible).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.ShowTransport, v => v.rowFingerprint.IsVisible).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.ExitNode.IsFreedom, v => v.presetFinalMask.IsEnabled).DisposeWith(disposables);
-            this.OneWayBind(ViewModel, vm => vm.ExitNode.IsFreedom, v => v.txtDialMode.IsEnabled).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.ExitNode.IsFreedom, v => v.presetDialMode.IsEnabled).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.ShowPsiphonUnavailable, v => v.rowPsiphonUnavailable.IsVisible).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.PsiphonOn, v => v.rowPsiphonMode.IsVisible).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.PsiphonCdnShown, v => v.rowPsiphonCdnIps.IsVisible).DisposeWith(disposables);

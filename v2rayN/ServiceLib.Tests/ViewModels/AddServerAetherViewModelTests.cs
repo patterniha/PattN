@@ -222,6 +222,7 @@ public class AddServerAetherViewModelTests
         await vm.ExitNode.Name.Should().BeEqualTo(string.Empty);
         await vm.ExitNode.IsFreedom.Should().BeTrue();
         await vm.FinalMask.Text.Should().BeEqualTo(string.Empty);
+        await vm.DialMode.Text.Should().BeEqualTo(string.Empty);
         await vm.Command.Should().BeEqualTo(string.Empty);
         // The command box shows the command the settings build.
         await vm.CommandText.Should().BeEqualTo(vm.BuiltCommand);
@@ -476,7 +477,7 @@ public class AddServerAetherViewModelTests
         await (await Editor(new FakeSource(), chosen)).ExitNode.Name.Should().BeEqualTo("germany");
         // The finalMask and the dialMode set before are kept, out of use, for freedom again.
         vm.FinalMask.Text = """{"tcp": []}""";
-        vm.DialMode = "custom";
+        vm.DialMode.Text = "custom";
         await vm.ToProfileItem().Finalmask.Should().BeEqualTo("""{"tcp": []}""");
         await vm.ToProfileItem().DialMode.Should().BeEqualTo("custom");
         await vm.ExitNode.IsFreedom.Should().BeFalse();
@@ -612,7 +613,7 @@ public class AddServerAetherViewModelTests
         vm.TargetStrategy = string.Empty;
         // The exit-node's finalMask and dialMode stand outside the fold.
         vm.FinalMask.Text = """{"tcp": []}""";
-        vm.DialMode = "custom";
+        vm.DialMode.Text = "custom";
         await vm.HasOtherSettings.Should().BeFalse();
 
         // A profile that holds one opens with the fold open.
@@ -1887,6 +1888,27 @@ public class AddServerAetherViewModelTests
 
         await source.KeyChecks.Should().BeEqualTo(2);
         await source.Saved.Single().Remarks.Should().BeEqualTo("edited meanwhile");
+    }
+
+    [Test]
+    public async Task TheExitNodesDialModeIsAPresetFieldSavedAsItHolds()
+    {
+        var (oobName, oob) = Global.DialModePresets[0];
+        var profile = With(new ProtocolExtraItem { AetherProtocol = AetherProtocol.Masque.Type });
+        profile.DialMode = oob;
+        var vm = await Editor(new FakeSource(), profile);
+
+        await vm.DialMode.Text.Should().BeEqualTo(oob);
+        await vm.DialMode.Matched;
+        await vm.DialMode.HeldName.Should().BeEqualTo(oobName);
+        await vm.DialMode.Setting.Should().BeEqualTo("dialMode");
+        // Default blanks it, a pick puts the preset back, and a blank one is saved as none.
+        await vm.DialMode.ChooseAtAsync(0);
+        await vm.ToProfileItem().DialMode.Should().BeEqualTo(string.Empty);
+        await vm.DialMode.ChooseAtAsync(1);
+        await vm.ToProfileItem().DialMode.Should().BeEqualTo(oob);
+        vm.DialMode.Text = " ";
+        await vm.ToProfileItem().DialMode.Should().BeEqualTo(string.Empty);
     }
 
     #endregion save

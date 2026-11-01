@@ -54,7 +54,7 @@ public partial class AetherKeysWindow
             this.Bind(ViewModel, vm => vm.EchDns, v => v.cmbEchDns.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.EchDomain, v => v.cmbEchDomain.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.FingerprintIndex, v => v.cmbFingerprint.SelectedIndex).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.DialMode, v => v.txtDialMode.Text).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.DialMode, v => v.presetDialMode.ViewModel).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.CommandText, v => v.txtCommand.Text).DisposeWith(disposables);
 
             // What the settings call for: the rows shown, the fields enabled; a run locks them all.
@@ -63,7 +63,7 @@ public partial class AetherKeysWindow
             this.OneWayBind(ViewModel, vm => vm.Ech, v => v.rowEchDns.Visibility, Shown).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.Ech, v => v.rowEchDomain.Visibility, Shown).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.ExitNode.IsFreedom, v => v.presetFinalMask.IsEnabled).DisposeWith(disposables);
-            this.OneWayBind(ViewModel, vm => vm.ExitNode.IsFreedom, v => v.txtDialMode.IsEnabled).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.ExitNode.IsFreedom, v => v.presetDialMode.IsEnabled).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.NotRenewing, v => v.panelSettings.IsEnabled).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.NotRenewing, v => v.txtCommand.IsEnabled).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.GetKeysText, v => v.btnGetKeys.Content).DisposeWith(disposables);

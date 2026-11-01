@@ -204,6 +204,7 @@ public class AetherKeysViewModelTests
         await vm.EchDomain.Should().BeEqualTo("cloudflare-ech.com");
         await vm.ExitNode.IsFreedom.Should().BeTrue();
         await vm.FinalMask.Text.Should().BeEqualTo(string.Empty);
+        await vm.DialMode.Text.Should().BeEqualTo(string.Empty);
         await vm.CommandText.Should().BeEqualTo(AetherKeys.BuiltCommand(source.Stored));
         await vm.CommandIsCustom.Should().BeFalse();
     }
@@ -223,7 +224,7 @@ public class AetherKeysViewModelTests
         vm.EchDomain = "example.com";
         vm.FingerprintIndex = AetherFingerprint.All.ToList().IndexOf(AetherFingerprint.SemiPython);
         vm.FinalMask.Text = """{"tcp": []}""";
-        vm.DialMode = "ForceIP";
+        vm.DialMode.Text = "ForceIP";
 
         var expected = new AetherKeysSettings
         {
@@ -845,6 +846,24 @@ public class AetherKeysViewModelTests
         var shown = await Notices(vm.GetKeysAsync);
         await shown.Should().Contain(string.Format(ResUI.MsgInvalidProperty, ResUI.TbAetherExitFinalMask));
         await source.Runs.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task TheDialModeIsAPresetFieldThatIsSaved()
+    {
+        var source = new FakeSource { Stored = new AetherKeysSettings { DialMode = FieldPresets.DialMode.TextOf(0)! } };
+        var vm = await Window(source);
+
+        await vm.DialMode.Setting.Should().BeEqualTo("dialMode");
+        await vm.DialMode.Text.Should().BeEqualTo(FieldPresets.DialMode.TextOf(0));
+        await vm.DialMode.Matched;
+        await vm.DialMode.HeldName.Should().BeEqualTo(FieldPresets.DialMode.Names[0]);
+        // Default blanks it, which is saved; a pick puts the preset back.
+        await vm.DialMode.ChooseAtAsync(0);
+        await vm.Settings.DialMode.Should().BeEqualTo(string.Empty);
+        await source.Saved.Last().DialMode.Should().BeEqualTo(string.Empty);
+        await vm.DialMode.ChooseAtAsync(1);
+        await vm.Settings.DialMode.Should().BeEqualTo(FieldPresets.DialMode.TextOf(0));
     }
 
     #endregion PattN

@@ -57,6 +57,7 @@ public partial class AetherKeysViewModel : MyReactiveObject
         KindOptions = AetherKeyKind.All.Select(kind => new AetherKeyKindOption(kind, KindLabel(kind), kind == Settings.Kind)).ToList();
         ExitNode = new ExitNodeFieldViewModel(Settings.ExitNode);
         FinalMask = new PresetFieldViewModel(FieldPresets.FinalMask, Settings.FinalMask);
+        DialMode = new PresetFieldViewModel(FieldPresets.DialMode, Settings.DialMode);
         Log = new AetherLogViewModel(ResUI.TbAetherKeysLogEmpty);
         // Until the core folder is read, as PattNG: the note that it is missing shows only once it is known to be.
         CoreAvailable = true;
@@ -87,6 +88,13 @@ public partial class AetherKeysViewModel : MyReactiveObject
             if (!_showing && e.PropertyName == nameof(PresetFieldViewModel.Text))
             {
                 Update(settings => settings with { FinalMask = FinalMask.Text ?? string.Empty });
+            }
+        };
+        DialMode.PropertyChanged += (_, e) =>
+        {
+            if (!_showing && e.PropertyName == nameof(PresetFieldViewModel.Text))
+            {
+                Update(settings => settings with { DialMode = DialMode.Text ?? string.Empty });
             }
         };
         _source.SessionChanged += OnSessionChanged;
@@ -201,11 +209,8 @@ public partial class AetherKeysViewModel : MyReactiveObject
     /// <summary>The finalMask of the freedom exit-node, a preset field (design 3.3).</summary>
     public PresetFieldViewModel FinalMask { get; }
 
-    public string DialMode
-    {
-        get => Settings.DialMode;
-        set => Update(settings => settings with { DialMode = value ?? string.Empty });
-    }
+    /// <summary>The dialMode of the freedom exit-node, a preset field (design 3.3).</summary>
+    public PresetFieldViewModel DialMode { get; }
 
     /// <summary>
     /// The command box: the command written by hand, or the one the settings build while there is none. The built one
@@ -510,6 +515,10 @@ public partial class AetherKeysViewModel : MyReactiveObject
             {
                 FinalMask.Text = settings.FinalMask;
             }
+            if (DialMode.Text != settings.DialMode)
+            {
+                DialMode.Text = settings.DialMode;
+            }
             BuiltCommand = AetherKeys.BuiltCommand(settings);
             CommandIsCustom = AetherKeys.IsCustom(settings);
             Refresh();
@@ -532,7 +541,6 @@ public partial class AetherKeysViewModel : MyReactiveObject
         this.RaisePropertyChanged(nameof(EchDns));
         this.RaisePropertyChanged(nameof(EchDomain));
         this.RaisePropertyChanged(nameof(FingerprintIndex));
-        this.RaisePropertyChanged(nameof(DialMode));
         this.RaisePropertyChanged(nameof(CommandText));
     }
 

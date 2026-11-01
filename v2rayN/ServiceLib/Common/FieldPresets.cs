@@ -1,6 +1,6 @@
 namespace ServiceLib.Common;
 
-// PattN: fork-only file, the preset fields of PattNG's editors (finalMask, cipherSuites).
+// PattN: fork-only file, the preset fields of PattNG's editors (finalMask, cipherSuites, dialMode).
 
 /// <summary>How the text of a preset field is matched to its presets (PattNG FieldPresets.Match).</summary>
 public enum EPresetMatch
@@ -14,6 +14,12 @@ public enum EPresetMatch
     /// as Xray skips it.
     /// </summary>
     Names,
+
+    /// <summary>
+    /// Text the core reads as it is written, such as a dialMode, which Xray neither trims nor folds the case of: a
+    /// field holds one only when it has exactly its text.
+    /// </summary>
+    Exact,
 }
 
 /// <summary>
@@ -28,8 +34,8 @@ public sealed class FieldPresets
     public const int None = -1;
 
     /// <summary>
-    /// The pick, chosen until another is, that leaves the setting at its default: a blank field, which is no finalMask,
-    /// and for cipherSuites Xray's own suites.
+    /// The pick, chosen until another is, that leaves the setting at its default: a blank field, which is no finalMask
+    /// and no dialMode, and for cipherSuites Xray's own suites.
     /// </summary>
     public const int Default = -2;
 
@@ -44,6 +50,9 @@ public sealed class FieldPresets
 
     /// <summary>The cipherSuites field of a TLS profile.</summary>
     public static FieldPresets CipherSuites { get; } = new("cipherSuites", Global.CipherSuitesPresets, EPresetMatch.Names);
+
+    /// <summary>The dialMode fields of the server editor and of the exit-node on the Aether pages.</summary>
+    public static FieldPresets DialMode { get; } = new("dialMode", Global.DialModePresets, EPresetMatch.Exact);
 
     /// <summary>What each value is compared by, read on the first match, on the thread that matches.</summary>
     private readonly Lazy<object?[]> _keys;
@@ -147,6 +156,7 @@ public sealed class FieldPresets
         return Match switch
         {
             EPresetMatch.Json => JsonKeyOf(text),
+            EPresetMatch.Exact => text,
             _ => text.Split(':').Select(name => name.Trim()).Where(name => name.Length > 0).ToList(),
         };
     }
@@ -157,6 +167,7 @@ public sealed class FieldPresets
         {
             (JsonKey a, JsonKey b) => JsonNode.DeepEquals(a.Node, b.Node),
             (List<string> a, List<string> b) => a.SequenceEqual(b, StringComparer.Ordinal),
+            (string a, string b) => string.Equals(a, b, StringComparison.Ordinal),
             _ => false,
         };
     }

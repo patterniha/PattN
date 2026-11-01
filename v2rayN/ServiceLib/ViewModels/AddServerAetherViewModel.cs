@@ -120,13 +120,13 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
         TorBridgesIndex = IndexIn(AetherTorBridges.All, AetherTorBridges.FromString(extra.AetherTorBridges));
         TorBridgeLines = extra.AetherTorBridgeLines ?? string.Empty;
         TorRelaysIndex = IndexIn(AetherTorRelays.All, AetherTorRelays.FromString(extra.AetherTorRelays));
-        DialMode = _initial.DialMode ?? string.Empty;
         // The targetStrategy chosen; blank while the profile follows its default, which the list shows.
         TargetStrategy = _initial.TargetStrategy ?? string.Empty;
         Command = extra.AetherCommand ?? string.Empty;
 
         ExitNode = new ExitNodeFieldViewModel(extra.AetherExitNode);
         FinalMask = new PresetFieldViewModel(FieldPresets.FinalMask, _initial.Finalmask);
+        DialMode = new PresetFieldViewModel(FieldPresets.DialMode, _initial.DialMode);
         Log = new AetherLogViewModel(ResUI.TbAetherLogEmpty);
         var chosenSets = AetherPsiphonCdnSet.Parse(PsiphonCdnSets).ToHashSet();
         var setLabels = AetherLabels.PsiphonCdnSets;
@@ -195,7 +195,9 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
     /// <summary>The finalMask of the freedom exit-node, a preset field (design 3.3).</summary>
     public PresetFieldViewModel FinalMask { get; }
 
-    [Reactive] public partial string DialMode { get; set; }
+    /// <summary>The dialMode of the freedom exit-node, a preset field (design 3.3).</summary>
+    public PresetFieldViewModel DialMode { get; }
+
     [Reactive] public partial int PsiphonIndex { get; set; }
     [Reactive] public partial int PsiphonModeIndex { get; set; }
     [Reactive] public partial string PsiphonCdnIps { get; set; }
@@ -444,7 +446,7 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
         profile.Address = Address;
         profile.Port = PortOf(Port);
         profile.Finalmask = KotlinText.IsBlank(FinalMask.Text) ? string.Empty : FinalMask.Text;
-        profile.DialMode = KotlinText.IsBlank(DialMode) ? string.Empty : DialMode;
+        profile.DialMode = KotlinText.IsBlank(DialMode.Text) ? string.Empty : DialMode.Text;
         // Set below, against the default of the profile as built here.
         profile.TargetStrategy = string.Empty;
         profile.SetProtocolExtra(profile.GetProtocolExtra() with
@@ -1008,7 +1010,7 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
         return name is nameof(Remarks) or nameof(ProtocolIndex) or nameof(TransportIndex) or nameof(MasqueSni)
             or nameof(Fragment) or nameof(FragmentSize) or nameof(FragmentDelay) or nameof(Ech) or nameof(EchDns)
             or nameof(EchDomain) or nameof(ScanModeIndex) or nameof(ObfuscationIndex) or nameof(FingerprintIndex)
-            or nameof(DialMode) or nameof(PsiphonIndex) or nameof(PsiphonModeIndex) or nameof(PsiphonCdnIps)
+            or nameof(PsiphonIndex) or nameof(PsiphonModeIndex) or nameof(PsiphonCdnIps)
             or nameof(PsiphonCdnSni) or nameof(PsiphonCdnSets) or nameof(PsiphonRegion) or nameof(PsiphonBundledList)
             or nameof(TorIndex) or nameof(TorBridgesIndex) or nameof(TorRelaysIndex) or nameof(TorBridgeLines)
             or nameof(WiwOuter) or nameof(WiwInner) or nameof(Address) or nameof(Port) or nameof(IpVersionIndex)

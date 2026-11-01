@@ -7,10 +7,11 @@ using TUnit.Assertions.Enums;
 namespace ServiceLib.Tests.ViewModels;
 
 /// <summary>
-/// PattN (design 3.3, stage 10): the server editor's finalMask and cipherSuites as preset fields (PattNG PresetField in
-/// BaseServerActivity), and the save checks of PattNG's TlsSettingsCheck. The editor is made where no UI thread is. No
-/// test writes the database: a refused save stops before it, and a save that passes the checks is a new VMess profile
-/// with a security the handler does not know, which ConfigHandler.AddVMessServer refuses before it stores anything.
+/// PattN (design 3.3, stage 10): the server editor's finalMask, cipherSuites and dialMode as preset fields (PattNG
+/// PresetField in BaseServerActivity), and the save checks of PattNG's TlsSettingsCheck. The editor is made where no UI
+/// thread is. No test writes the database: a refused save stops before it, and a save that passes the checks is a new
+/// VMess profile with a security the handler does not know, which ConfigHandler.AddVMessServer refuses before it stores
+/// anything.
 /// </summary>
 [NotInParallel("AppManager config")]
 public class AddServerViewModelTests
@@ -22,7 +23,7 @@ public class AddServerViewModelTests
     private static string FinalMaskName(int index) => Global.FinalMaskPresets[index].Name;
 
     /// <summary>A new profile of <paramref name="type" />, filled in so that the checks before the TLS ones pass.</summary>
-    private static ProfileItem NewProfile(EConfigType type = EConfigType.VLESS, string finalmask = "", string cipherSuites = "")
+    private static ProfileItem NewProfile(EConfigType type = EConfigType.VLESS, string finalmask = "", string cipherSuites = "", string dialMode = "")
     {
         return new ProfileItem
         {
@@ -33,6 +34,7 @@ public class AddServerViewModelTests
             Password = "5783a3e7-e373-51cd-8642-c83782b807c5",
             Finalmask = finalmask,
             CipherSuites = cipherSuites,
+            DialMode = dialMode,
         };
     }
 
@@ -47,6 +49,7 @@ public class AddServerViewModelTests
         var vm = await Task.Run(() => ViewModelConfig.With(config, () => new AddServerViewModel(profile)));
         await vm.FinalmaskPreset.Matched;
         await vm.CipherSuitesPreset.Matched;
+        await vm.DialModePreset.Matched;
         return vm;
     }
 
@@ -153,6 +156,23 @@ public class AddServerViewModelTests
     }
 
     [Test]
+    public async Task TheDialModeFieldNamesThePresetItHoldsOnlyWhenItIsExactlyOne()
+    {
+        var (oobName, oob) = Global.DialModePresets[0];
+        var vm = await Editor(NewProfile(dialMode: oob));
+
+        await vm.DialModePreset.Text.Should().BeEqualTo(oob);
+        await vm.DialModePreset.HeldName.Should().BeEqualTo(oobName);
+        await vm.DialModePreset.Setting.Should().BeEqualTo("dialMode");
+        await vm.DialModePreset.PickNames.Should().BeEquivalentTo(
+            [ResUI.TbPresetDefault, .. Global.DialModePresets.Select(preset => preset.Name)], CollectionOrdering.Matching);
+
+        // Blank, it holds the default; Xray reads a dialMode as written, so with a space it is the user's own.
+        await (await Editor(NewProfile())).DialModePreset.HeldName.Should().BeEqualTo(ResUI.TbPresetDefault);
+        await (await Editor(NewProfile(dialMode: $" {oob}"))).DialModePreset.HeldName.Should().BeNull();
+    }
+
+    [Test]
     public async Task APickOverABlankOrAPresetValueReplacesItWithoutAsking()
     {
         var vm = await Editor(NewProfile());
@@ -218,6 +238,7 @@ public class AddServerViewModelTests
         var vm = await TlsEditor(EConfigType.VMess, fingerprint: TlsSettingsCheck.UnsafeFingerprint);
         await vm.FinalmaskPreset.ChooseAtAsync(1);
         await vm.CipherSuitesPreset.ChooseAtAsync(2);
+        await vm.DialModePreset.ChooseAtAsync(1);
         // An edit after the pick is what is saved.
         vm.CipherSuitesPreset.Text += ":TLS_AES_128_GCM_SHA256";
 
@@ -226,13 +247,16 @@ public class AddServerViewModelTests
         await shown.Should().Contain(ResUI.OperationFailed);
         await vm.SelectedSource.Finalmask.Should().BeEqualTo(FinalMask(0));
         await vm.SelectedSource.CipherSuites.Should().BeEqualTo(Global.CipherSuitesPresets[1].Value + ":TLS_AES_128_GCM_SHA256");
+        await vm.SelectedSource.DialMode.Should().BeEqualTo(Global.DialModePresets[0].Value);
 
         vm.FinalmaskPreset.Text = " \n ";
         vm.CipherSuitesPreset.Text = "  ";
+        vm.DialModePreset.Text = " ";
         await Save(vm);
 
         await vm.SelectedSource.Finalmask.Should().BeEqualTo(string.Empty);
         await vm.SelectedSource.CipherSuites.Should().BeEqualTo(string.Empty);
+        await vm.SelectedSource.DialMode.Should().BeEqualTo(string.Empty);
     }
 
     #endregion the preset fields

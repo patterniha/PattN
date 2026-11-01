@@ -400,16 +400,11 @@
                     <TextBlock
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
-                        VerticalAlignment="Center"
+                        VerticalAlignment="Top"
                         Style="{StaticResource ToolbarTextBlock}"
                         Text="{x:Static resx:ResUI.TbAetherExitDialMode}"
                         TextWrapping="Wrap" />
-                    <TextBox
-                        x:Name="txtDialMode"
-                        Grid.Column="1"
-                        Width="400"
-                        Margin="{StaticResource Margin4}"
-                        Style="{StaticResource DefTextBox}" />
+                    <views:PresetField x:Name="presetDialMode" Grid.Column="1" />
                 </Grid>
 
                 <!--  18. Psiphon  -->

@@ -1196,18 +1196,18 @@
                             ShowsText="False" />
                     </StackPanel>
 
+                    <!--  PattN: at the top, 10 px down, level with the preset field's text above the name of the preset it holds (design 3.3)  -->
                     <TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
-                        Margin="{StaticResource Margin4}"
-                        VerticalAlignment="Center"
+                        Margin="4,10,4,4"
+                        VerticalAlignment="Top"
                         Text="{x:Static resx:ResUI.TbDialMode}" />
-                    <TextBox
-                        x:Name="txtDialMode"
+                    <!--  PattN: dialMode as a preset field (design 3.3)  -->
+                    <views:PresetField
+                        x:Name="presetDialMode"
                         Grid.Row="1"
                         Grid.Column="1"
-                        Width="400"
-                        Margin="{StaticResource Margin4}"
                         HorizontalAlignment="Left" />
 
                     <TextBlock
