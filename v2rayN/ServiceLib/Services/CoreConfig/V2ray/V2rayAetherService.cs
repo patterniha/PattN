@@ -815,11 +815,15 @@ public partial class CoreConfigV2rayService
         var servers = new List<object>();
         if (serverDomains.Count > 0)
         {
-            foreach (var address in bootstrap)
+            for (var i = 0; i < bootstrap.Count; i++)
             {
-                var server = DnsServer(address);
+                var server = DnsServer(bootstrap[i]);
                 server.domains = serverDomains;
-                server.finalQuery = true;
+                // The last ends the query, as in the session's DNS: every bootstrap server is asked in turn, none after them.
+                if (i == bootstrap.Count - 1)
+                {
+                    server.finalQuery = true;
+                }
                 servers.Add(JsonUtils.SerializeToNode(server, options)!);
             }
         }

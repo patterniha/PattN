@@ -263,8 +263,8 @@ public partial class CoreConfigV2rayService
         }
         if (context.ProtectDomainList.Count > 0)
         {
-            // finalQuery: the protected (proxy server) domains must be answered by this direct
-            // server alone, never falling through to resolvers that dial through the proxy itself
+            // finalQuery: the protected (proxy server) domains must be answered by the direct
+            // servers alone, never falling through to resolvers that dial through the proxy itself
             // full: so only the proxy host itself matches, a plain entry is a substring match in Xray DNS
             AddDnsServers(directDNSAddress, context.ProtectDomainList.Select(d => $"full:{d}").ToHashSet(), true, finalQuery: true);
         }
@@ -364,14 +364,17 @@ public partial class CoreConfigV2rayService
             {
                 return;
             }
-            foreach (var dnsAddress in dnsAddresses)
+            for (var i = 0; i < dnsAddresses.Count; i++)
             {
+                var dnsAddress = dnsAddresses[i];
                 var dnsServer = CreateDnsServer(dnsAddress, domains, expectedIPs);
                 if (isDirectDns)
                 {
                     dnsServer.tag = $"{Global.DirectDnsTag}-{directDnsTagIndex++}";
                 }
-                if (finalQuery)
+                // PattN: the group's last server ends the query, so that every server of the group is asked in turn
+                // and none after them
+                if (finalQuery && i == dnsAddresses.Count - 1)
                 {
                     dnsServer.finalQuery = true;
                 }

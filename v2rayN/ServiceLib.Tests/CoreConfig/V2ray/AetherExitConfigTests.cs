@@ -88,6 +88,23 @@ public class AetherExitConfigTests
     }
 
     [Test]
+    public async Task EveryBootstrapServerIsAskedInTurnAndTheLastEndsTheQuery()
+    {
+        var config = CoreConfigTestFactory.CreateConfigWithTun(ECoreType.Xray, enableIPv6Address: false);
+        config.SimpleDNSItem.DirectDNS = "https://dns.alidns.com/dns-query";
+        config.SimpleDNSItem.BootstrapDNS = "223.5.5.5, 119.29.29.29";
+
+        var node = Generate(config, AetherExit.Plain, 41965);
+
+        var servers = node["dns"]!["servers"]!.AsArray().Select(server => server!.AsObject()).ToList();
+        await servers.Select(server => server["address"]!.GetValue<string>()).Should()
+            .BeEquivalentTo(["223.5.5.5", "119.29.29.29", "https://dns.alidns.com/dns-query"], CollectionOrdering.Matching);
+        // As in the session's DNS: the first does not end the query, so the second is asked when it gives nothing.
+        await servers[0].ContainsKey("finalQuery").Should().BeFalse();
+        await servers[1]["finalQuery"]!.GetValue<bool>().Should().BeTrue();
+    }
+
+    [Test]
     public async Task UnderTheTunTheExitResolvesByTheFamilyOfTheDirectOutbound()
     {
         var config = CoreConfigTestFactory.CreateConfigWithTun(ECoreType.Xray, enableIPv6Address: false);
