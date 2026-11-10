@@ -2445,4 +2445,13 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="TbOk" xml:space="preserve">
     <value>OK</value>
   </data>
+  <data name="TbCurvePreferences" xml:space="preserve">
+    <value>Curve Preferences</value>
+  </data>
+  <data name="TbEnableSessionResumption" xml:space="preserve">
+    <value>Enable Session Resumption</value>
+  </data>
+  <data name="MsgCurvePreferencesNeedUnsafe" xml:space="preserve">
+    <value>curvePreferences only apply with the unsafe fingerprint. Choose unsafe, or clear curvePreferences.</value>
+  </data>
 </root>

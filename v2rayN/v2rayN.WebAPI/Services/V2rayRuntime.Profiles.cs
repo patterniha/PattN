@@ -272,9 +272,10 @@ public sealed partial class V2rayRuntime
 
     /// <summary>
     /// PattN: why the server editor would not save <paramref name="profile" /> for its TLS settings (TlsSettingsCheck, X2),
-    /// as a refusal with a code of its own and the editor's message as its detail; null when it would. cipherSuites need
-    /// the unsafe fingerprint on a profile Xray runs, as <paramref name="core" /> says, an empty fingerprint being
-    /// <paramref name="defaultFingerprint" />; WebSocket and HTTPUpgrade connect with alpn http/1.1 alone, or none.
+    /// as a refusal with a code of its own and the editor's message as its detail; null when it would. cipherSuites and
+    /// curvePreferences need the unsafe fingerprint on a profile Xray runs, as <paramref name="core" /> says, an empty
+    /// fingerprint being <paramref name="defaultFingerprint" />; WebSocket and HTTPUpgrade connect with alpn http/1.1
+    /// alone, or none.
     /// </summary>
     internal static OperationView? TlsSettingsRefusal(ProfileItem profile, string? defaultFingerprint, ECoreType core)
     {
@@ -282,6 +283,8 @@ public sealed partial class V2rayRuntime
         {
             ETlsSettingsError.CipherSuitesNeedUnsafe => OperationView.Fail("profile_cipher_suites_need_unsafe",
                 ApiMessageKeys.ProfileInvalid, new { detail = ServiceLib.Resx.ResUI.MsgCipherSuitesNeedUnsafe }),
+            ETlsSettingsError.CurvePreferencesNeedUnsafe => OperationView.Fail("profile_curve_preferences_need_unsafe",
+                ApiMessageKeys.ProfileInvalid, new { detail = ServiceLib.Resx.ResUI.MsgCurvePreferencesNeedUnsafe }),
             ETlsSettingsError.WebsocketAlpnNotHttp1 => OperationView.Fail("profile_websocket_alpn_http1_only",
                 ApiMessageKeys.ProfileInvalid, new { detail = ServiceLib.Resx.ResUI.MsgWebsocketAlpnHttp1Only }),
             _ => null,

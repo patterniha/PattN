@@ -123,6 +123,8 @@ public class ConfigHandlerAetherTests
         profile.Alpn = "h2";
         profile.Fingerprint = "chrome";
         profile.CipherSuites = "TLS_AES_128_GCM_SHA256";
+        profile.CurvePreferences = "X25519";
+        profile.EnableSessionResumption = true;
         profile.AllowInsecure = Global.StringTrue;
         profile.PublicKey = "public-key";
         profile.ShortId = "short-id";
@@ -161,6 +163,7 @@ public class ConfigHandlerAetherTests
                      (nameof(ProfileItem.Alpn), stored.Alpn),
                      (nameof(ProfileItem.Fingerprint), stored.Fingerprint),
                      (nameof(ProfileItem.CipherSuites), stored.CipherSuites),
+                     (nameof(ProfileItem.CurvePreferences), stored.CurvePreferences),
                      (nameof(ProfileItem.AllowInsecure), stored.AllowInsecure),
                      (nameof(ProfileItem.PublicKey), stored.PublicKey),
                      (nameof(ProfileItem.ShortId), stored.ShortId),
@@ -176,6 +179,7 @@ public class ConfigHandlerAetherTests
             await value.IsNullOrEmpty().Should().BeTrue().Because($"{name}: {value}");
         }
         await stored.MuxEnabled.Should().BeNull();
+        await stored.EnableSessionResumption.Should().BeFalse();
         await (stored.GetTransportExtra() == new TransportExtraItem()).Should().BeTrue();
 
         // An edit through the editor's path keeps the profile and takes its new settings.

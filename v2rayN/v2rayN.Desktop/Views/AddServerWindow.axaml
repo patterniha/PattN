@@ -1251,7 +1251,7 @@
                     Grid.Row="8"
                     ColumnDefinitions="300,Auto"
                     IsVisible="False"
-                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                     <TextBlock
                         Grid.Row="1"
@@ -1307,28 +1307,55 @@
                         Grid.Column="1"
                         HorizontalAlignment="Left" />
 
+                    <!--  PattN: curvePreferences, one of a few lists as alpn is one of a few (wider than alpn's box, for X25519MLKEM768,X25519), and enableSessionResumption, after cipherSuites  -->
                     <TextBlock
                         Grid.Row="5"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
-                        Text="{x:Static resx:ResUI.TbAllowInsecure}" />
-                    <ToggleSwitch
-                        x:Name="togAllowInsecure"
+                        Text="{x:Static resx:ResUI.TbCurvePreferences}" />
+                    <ComboBox
+                        x:Name="cmbCurvePreferences"
                         Grid.Row="5"
                         Grid.Column="1"
-                        Margin="{StaticResource Margin4}"
-                        HorizontalAlignment="Left" />
+                        Width="240"
+                        Margin="{StaticResource Margin4}" />
 
                     <TextBlock
                         Grid.Row="6"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
+                        Text="{x:Static resx:ResUI.TbEnableSessionResumption}" />
+                    <ToggleSwitch
+                        x:Name="togEnableSessionResumption"
+                        Grid.Row="6"
+                        Grid.Column="1"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left" />
+
+                    <TextBlock
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Text="{x:Static resx:ResUI.TbAllowInsecure}" />
+                    <ToggleSwitch
+                        x:Name="togAllowInsecure"
+                        Grid.Row="7"
+                        Grid.Column="1"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left" />
+
+                    <TextBlock
+                        Grid.Row="8"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
                         Text="{x:Static resx:ResUI.TbEchConfigList}" />
                     <TextBox
                         x:Name="txtEchConfigList"
-                        Grid.Row="6"
+                        Grid.Row="8"
                         Grid.Column="1"
                         Width="400"
                         Margin="{StaticResource Margin4}"
@@ -1336,14 +1363,14 @@
 
                     <TextBlock
                         x:Name="tbEchOutbound"
-                        Grid.Row="7"
+                        Grid.Row="9"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
                         Text="{x:Static resx:ResUI.TbEchOutbound}" />
                     <Button
                         x:Name="btnEchOutbound"
-                        Grid.Row="7"
+                        Grid.Row="9"
                         Grid.Column="1"
                         Margin="{StaticResource MarginLr4}"
                         HorizontalAlignment="Left"
@@ -1372,27 +1399,27 @@
                     </Button>
 
                     <TextBlock
-                        Grid.Row="8"
+                        Grid.Row="10"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
                         Text="{x:Static resx:ResUI.TbVerifyPeerCertByName}" />
                     <TextBox
                         x:Name="txtVerifyPeerCertByName"
-                        Grid.Row="8"
+                        Grid.Row="10"
                         Grid.Column="1"
                         Width="400"
                         Margin="{StaticResource Margin4}"
                         HorizontalAlignment="Left" />
 
                     <TextBlock
-                        Grid.Row="9"
+                        Grid.Row="11"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
                         Text="{x:Static resx:ResUI.TbCertPinning}" />
                     <StackPanel
-                        Grid.Row="9"
+                        Grid.Row="11"
                         Grid.Column="1"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">

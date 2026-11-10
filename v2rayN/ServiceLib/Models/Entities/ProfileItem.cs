@@ -59,6 +59,16 @@ public class ProfileItem
         return Alpn.IsNullOrEmpty() ? null : Utils.String2List(Alpn);
     }
 
+    /// <summary>
+    /// PattN: the TLS curvePreferences the outbound offers (PattNG CoreOutboundBuilder.curvePreferenceNames): split on ',',
+    /// each name trimmed, empty ones skipped; null when there are none.
+    /// </summary>
+    public List<string>? GetCurvePreferences()
+    {
+        var names = (CurvePreferences ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return names.Length == 0 ? null : [.. names];
+    }
+
     public string GetNetwork()
     {
         if (Network.IsNullOrEmpty() || !Global.Networks.Contains(Network))
@@ -210,6 +220,12 @@ public class ProfileItem
     public string Sni { get; set; }
     public string Alpn { get; set; } = string.Empty;
     public string CipherSuites { get; set; } = string.Empty;
+
+    // PattN: TLS curvePreferences, the names joined by ',' as Alpn's are, and enableSessionResumption, after cipherSuites
+    public string CurvePreferences { get; set; } = string.Empty;
+
+    public bool EnableSessionResumption { get; set; }
+
     public string DialMode { get; set; } = string.Empty;
     public string TargetStrategy { get; set; } = string.Empty;
     public string Fingerprint { get; set; }

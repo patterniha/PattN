@@ -342,6 +342,9 @@ public partial class CoreConfigV2rayService
                 {
                     alpn = _node.GetAlpn(),
                     cipherSuites = _node.CipherSuites.IsNullOrEmpty() ? null : _node.CipherSuites,
+                    // PattN: curvePreferences as a list, and enableSessionResumption only when it is on
+                    curvePreferences = _node.GetCurvePreferences(),
+                    enableSessionResumption = _node.EnableSessionResumption ? true : null,
                     fingerprint = _node.Fingerprint.IsNullOrEmpty() ? _config.CoreBasicItem.DefFingerprint : _node.Fingerprint,
                     echConfigList = _node.EchConfigList.NullIfEmpty(),
                     verifyPeerCertByName = _node.VerifyPeerCertByName.NullIfEmpty(),

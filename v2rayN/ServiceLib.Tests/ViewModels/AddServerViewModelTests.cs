@@ -362,6 +362,42 @@ public class AddServerViewModelTests
         await shown.Should().Contain(ResUI.OperationFailed);
     }
 
+    // PattN: curvePreferences are refused as cipherSuites are, with a message of their own, told after the cipherSuites
+    // one; sing-box, which takes them as curve_preferences, is not asked (X1). enableSessionResumption is never refused.
+    [Test]
+    public async Task CurvePreferencesNeedTheUnsafeFingerprint()
+    {
+        var chrome = await TlsEditor(EConfigType.VMess, "raw", fingerprint: "chrome");
+        chrome.SelectedSource.CurvePreferences = "X25519MLKEM768";
+        var refused = await Save(chrome);
+        await refused.Should().Contain(ResUI.MsgCurvePreferencesNeedUnsafe);
+        await refused.Should().NotContain(ResUI.OperationFailed);
+
+        var both = await TlsEditor(EConfigType.VMess, "raw", fingerprint: "chrome", cipherSuites: Suites);
+        both.SelectedSource.CurvePreferences = "X25519";
+        var first = await Save(both);
+        await first.Should().Contain(ResUI.MsgCipherSuitesNeedUnsafe);
+        await first.Should().NotContain(ResUI.MsgCurvePreferencesNeedUnsafe);
+
+        var unsafeOne = await TlsEditor(EConfigType.VMess, "raw", fingerprint: "unsafe");
+        unsafeOne.SelectedSource.CurvePreferences = "X25519MLKEM768,X25519";
+        unsafeOne.SelectedSource.EnableSessionResumption = true;
+        var passed = await Save(unsafeOne);
+        await passed.Should().NotContain(ResUI.MsgCurvePreferencesNeedUnsafe);
+        await passed.Should().Contain(ResUI.OperationFailed);
+
+        var resumption = await TlsEditor(EConfigType.VMess, "raw", fingerprint: "chrome");
+        resumption.SelectedSource.EnableSessionResumption = true;
+        await (await Save(resumption)).Should().Contain(ResUI.OperationFailed);
+
+        var singBox = await TlsEditor(EConfigType.VMess, "raw", fingerprint: "chrome");
+        singBox.CoreType = nameof(ECoreType.sing_box);
+        singBox.SelectedSource.CurvePreferences = "X25519";
+        var singBoxShown = await Save(singBox);
+        await singBoxShown.Should().NotContain(ResUI.MsgCurvePreferencesNeedUnsafe);
+        await singBoxShown.Should().Contain(ResUI.OperationFailed);
+    }
+
     [Test]
     public async Task WebSocketAndHttpUpgradeTakeOnlyHttp1OrNoAlpn()
     {

@@ -193,6 +193,7 @@ public class Tls4Sbox
     public bool? insecure { get; set; }
     public List<string>? alpn { get; set; }
     public List<string>? cipher_suites { get; set; }
+    public List<string>? curve_preferences { get; set; }
     public Utls4Sbox? utls { get; set; }
     public Reality4Sbox? reality { get; set; }
     public bool? fragment { get; set; }

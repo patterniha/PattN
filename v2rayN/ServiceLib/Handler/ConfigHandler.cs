@@ -278,6 +278,8 @@ public static class ConfigHandler
             item.Fingerprint = profileItem.Fingerprint;
             item.Alpn = profileItem.Alpn;
             item.CipherSuites = profileItem.CipherSuites;
+            item.CurvePreferences = profileItem.CurvePreferences;
+            item.EnableSessionResumption = profileItem.EnableSessionResumption;
             item.DialMode = profileItem.DialMode;
             item.TargetStrategy = profileItem.TargetStrategy;
 
@@ -797,6 +799,8 @@ public static class ConfigHandler
         profileItem.Alpn = string.Empty;
         //profileItem.Alpn = "h3";
         profileItem.CipherSuites = string.Empty;
+        profileItem.CurvePreferences = string.Empty;
+        profileItem.EnableSessionResumption = false;
         profileItem.Network = string.Empty;
 
         if (profileItem.StreamSecurity.IsNullOrEmpty())
@@ -1001,6 +1005,8 @@ public static class ConfigHandler
         profileItem.Fingerprint = string.Empty;
         profileItem.Alpn = string.Empty;
         profileItem.CipherSuites = string.Empty;
+        profileItem.CurvePreferences = string.Empty;
+        profileItem.EnableSessionResumption = false;
         profileItem.Network = string.Empty;
         profileItem.AllowInsecure = string.Empty;
         if (profileItem.StreamSecurity.IsNullOrEmpty())
@@ -1025,6 +1031,8 @@ public static class ConfigHandler
         profileItem.Fingerprint = string.Empty;
         profileItem.Alpn = string.Empty;
         profileItem.CipherSuites = string.Empty;
+        profileItem.CurvePreferences = string.Empty;
+        profileItem.EnableSessionResumption = false;
         profileItem.Network = string.Empty;
         profileItem.AllowInsecure = string.Empty;
         if (profileItem.StreamSecurity.IsNullOrEmpty())
@@ -1065,6 +1073,8 @@ public static class ConfigHandler
         profileItem.Alpn = string.Empty;
         profileItem.Fingerprint = string.Empty;
         profileItem.CipherSuites = string.Empty;
+        profileItem.CurvePreferences = string.Empty;
+        profileItem.EnableSessionResumption = false;
         profileItem.AllowInsecure = string.Empty;
         profileItem.PublicKey = string.Empty;
         profileItem.ShortId = string.Empty;

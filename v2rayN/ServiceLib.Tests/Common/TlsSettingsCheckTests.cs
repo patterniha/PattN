@@ -4,8 +4,8 @@ namespace ServiceLib.Tests.Common;
 /// From PattNG TlsSettingsCheckTest: the TLS settings the server editor refuses to save, as the Xray-core fork would not
 /// apply them or would not connect, and the alpn an imported WebSocket or HTTPUpgrade link gets. PattN fills an empty
 /// fingerprint with the default of its settings, which the check is given, and reads alpn as its outbound offers it.
-/// PattN: the cipherSuites rule is for the profiles Xray runs (X1), the alpn rule for every core; both apply to SOCKS and
-/// HTTP as well, whose editor shows these settings under TLS (R10-1).
+/// PattN: the cipherSuites and curvePreferences rules are for the profiles Xray runs (X1), the alpn rule for every core;
+/// they apply to SOCKS and HTTP as well, whose editor shows these settings under TLS (R10-1).
 /// </summary>
 public class TlsSettingsCheckTests
 {
@@ -17,7 +17,8 @@ public class TlsSettingsCheckTests
         EConfigType type = EConfigType.VLESS,
         string security = Global.StreamSecurity,
         string network = "ws",
-        string? alpn = null)
+        string? alpn = null,
+        string? curvePreferences = null)
     {
         return new ProfileItem
         {
@@ -25,9 +26,15 @@ public class TlsSettingsCheckTests
             StreamSecurity = security,
             Fingerprint = fingerprint ?? string.Empty,
             CipherSuites = cipherSuites ?? string.Empty,
+            CurvePreferences = curvePreferences ?? string.Empty,
             Network = network,
             Alpn = alpn!,
         };
+    }
+
+    private static bool CurvesNeedUnsafe(ProfileItem profile, string? defaultFingerprint = "chrome", ECoreType core = ECoreType.Xray)
+    {
+        return TlsSettingsCheck.CurvePreferencesNeedUnsafe(profile, defaultFingerprint, core);
     }
 
     // PattNG: an empty fingerprint is Chrome's; PattN's default fingerprint stands in for it, Chrome's here. Xray runs the
@@ -148,6 +155,59 @@ public class TlsSettingsCheckTests
         {
             await NeedUnsafe(Profile(fingerprint: "chrome", cipherSuites: value)).Should().BeTrue().Because(name);
             await NeedUnsafe(Profile(fingerprint: "unsafe", cipherSuites: value)).Should().BeFalse().Because(name);
+        }
+    }
+
+    // PattN: curvePreferences are weighed as cipherSuites are: the fork passes uTLS no curve preferences either.
+    [Test]
+    public async Task CurvePreferencesNeedTheUnsafeFingerprint()
+    {
+        const string Curves = "X25519MLKEM768,X25519";
+        foreach (var fingerprint in new[] { "unsafe", "Unsafe" })
+        {
+            await CurvesNeedUnsafe(Profile(fingerprint: fingerprint, curvePreferences: Curves)).Should().BeFalse().Because(fingerprint);
+            await Validate(Profile(fingerprint: fingerprint, curvePreferences: Curves, network: "raw")).Should().BeNull().Because(fingerprint);
+        }
+        foreach (var fingerprint in new[] { "chrome", "", "randomized" })
+        {
+            await CurvesNeedUnsafe(Profile(fingerprint: fingerprint, curvePreferences: Curves)).Should().BeTrue().Because(fingerprint);
+            await Validate(Profile(fingerprint: fingerprint, curvePreferences: Curves, network: "raw")).Should()
+                .BeEqualTo(ETlsSettingsError.CurvePreferencesNeedUnsafe).Because(fingerprint);
+        }
+        // No curvePreferences, nothing to refuse; an empty fingerprint is the default one of the settings.
+        await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: "")).Should().BeFalse();
+        await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: " \n")).Should().BeFalse();
+        await CurvesNeedUnsafe(Profile(curvePreferences: Curves), defaultFingerprint: "unsafe").Should().BeFalse();
+        await CurvesNeedUnsafe(Profile(curvePreferences: Curves), defaultFingerprint: null).Should().BeTrue();
+
+        // Where cipherSuites are not weighed, neither are curvePreferences: under REALITY or no TLS, on Hysteria2, under
+        // sing-box, which takes them as curve_preferences.
+        await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: Curves, security: Global.StreamSecurityReality)).Should().BeFalse();
+        await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: Curves, security: "")).Should().BeFalse();
+        await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: Curves, type: EConfigType.Hysteria2)).Should().BeFalse();
+        await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: Curves), core: ECoreType.sing_box).Should().BeFalse();
+        foreach (var type in new[] { EConfigType.VMess, EConfigType.VLESS, EConfigType.Shadowsocks, EConfigType.Trojan, EConfigType.SOCKS, EConfigType.HTTP })
+        {
+            await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: Curves, type: type)).Should().BeTrue().Because(type.ToString());
+        }
+
+        // cipherSuites are told first, then curvePreferences, then the alpn.
+        await Validate(Profile(fingerprint: "chrome", cipherSuites: Suites, curvePreferences: Curves, alpn: "h2")).Should()
+            .BeEqualTo(ETlsSettingsError.CipherSuitesNeedUnsafe);
+        await Validate(Profile(fingerprint: "chrome", curvePreferences: Curves, alpn: "h2")).Should()
+            .BeEqualTo(ETlsSettingsError.CurvePreferencesNeedUnsafe);
+        await Validate(Profile(fingerprint: "unsafe", curvePreferences: Curves, alpn: "h2")).Should()
+            .BeEqualTo(ETlsSettingsError.WebsocketAlpnNotHttp1);
+    }
+
+    // PattN: the lists the curvePreferences field offers, but none, are what the rule is for.
+    [Test]
+    public async Task EveryCurvePreferencesChoiceButNoneNeedsTheUnsafeFingerprint()
+    {
+        foreach (var value in Global.CurvePreferences)
+        {
+            await CurvesNeedUnsafe(Profile(fingerprint: "chrome", curvePreferences: value)).Should().BeEqualTo(value != "").Because(value);
+            await CurvesNeedUnsafe(Profile(fingerprint: "unsafe", curvePreferences: value)).Should().BeFalse().Because(value);
         }
     }
 

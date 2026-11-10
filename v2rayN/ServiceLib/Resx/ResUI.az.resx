@@ -2580,4 +2580,13 @@ Təyin edildikdə sertifikat sabitlənəcək və "Təhlükəsiz olmayan əlaqəy
   <data name="TbOk" xml:space="preserve">
     <value>Oldu</value>
   </data>
+  <data name="TbCurvePreferences" xml:space="preserve">
+    <value>Curve Preferences</value>
+  </data>
+  <data name="TbEnableSessionResumption" xml:space="preserve">
+    <value>Enable Session Resumption</value>
+  </data>
+  <data name="MsgCurvePreferencesNeedUnsafe" xml:space="preserve">
+    <value>curvePreferences yalnız unsafe barmaq izi ilə tətbiq olunur. unsafe seçin və ya curvePreferences-i təmizləyin.</value>
+  </data>
 </root>

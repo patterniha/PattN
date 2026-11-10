@@ -817,4 +817,48 @@ public class CoreConfigSingboxServiceTests
         await proxyOutbound.method.Should().BeEqualTo("aes-128-gcm");
         await proxyOutbound.password.Should().BeEqualTo("custom_password");
     }
+
+    [Test]
+    public async Task GenerateClientConfigContent_CurvePreferences_ShouldBeTheTlsCurvePreferences()
+    {
+        // PattN: sing-box takes curvePreferences as curve_preferences, by the same names; it has no client setting for
+        // session resumption, so enableSessionResumption writes nothing there.
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.sing_box);
+        node.StreamSecurity = Global.StreamSecurity;
+        node.Sni = "example.com";
+        node.CurvePreferences = "X25519MLKEM768,X25519";
+        node.EnableSessionResumption = true;
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box);
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        var proxy = JsonNode.Parse(result.Data!.ToString()!)!["outbounds"]!.AsArray()
+            .First(o => o?["tag"]?.GetValue<string>() == Global.ProxyTag)!;
+        var tls = proxy["tls"]!.AsObject();
+        await tls["curve_preferences"]!.AsArray().Select(n => n!.GetValue<string>()).SequenceEqual(["X25519MLKEM768", "X25519"]).Should().BeTrue();
+        await tls.Select(p => p.Key).Any(k => k.Contains("session", StringComparison.OrdinalIgnoreCase)).Should().BeFalse();
+
+        // A share link may carry any names: Xray's go by sing-box's names, each once, and a name sing-box does not know
+        // is left out rather than refused with the whole config.
+        node.CurvePreferences = "CurveP256, x25519mlkem768,SecP256r1MLKEM768,P256,curvep384,bogus";
+        await CurvesOf(node).Should().BeEqualTo("P256,X25519MLKEM768,P384");
+        foreach (var none in new[] { "", "SecP256r1MLKEM768", "bogus, ," })
+        {
+            node.CurvePreferences = none;
+            await CurvesOf(node).Should().BeNull().Because(none);
+        }
+
+        string? CurvesOf(ProfileItem profile)
+        {
+            var generated = new CoreConfigSingboxService(CoreConfigTestFactory.CreateContext(config, profile, ECoreType.sing_box)).GenerateClientConfigContent();
+            var outboundTls = JsonNode.Parse(generated.Data!.ToString()!)!["outbounds"]!.AsArray()
+                .First(o => o?["tag"]?.GetValue<string>() == Global.ProxyTag)!["tls"]!.AsObject();
+            return outboundTls.TryGetPropertyValue("curve_preferences", out var names)
+                ? string.Join(",", names!.AsArray().Select(n => n!.GetValue<string>()))
+                : null;
+        }
+    }
 }

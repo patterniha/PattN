@@ -67,6 +67,8 @@ public class VmessFmt : BaseFmt
             alpn = item.Alpn,
             fp = item.Fingerprint,
             cs = item.CipherSuites,
+            cp = item.CurvePreferences,
+            esr = item.EnableSessionResumption ? "1" : string.Empty,
             insecure = item.GetAllowInsecure() ? "1" : "0",
             vcn = item.VerifyPeerCertByName,
             pcs = item.CertSha,
@@ -145,6 +147,8 @@ public class VmessFmt : BaseFmt
         item.Alpn = Utils.ToString(vmessQRCode.alpn);
         item.Fingerprint = Utils.ToString(vmessQRCode.fp);
         item.CipherSuites = Utils.ToString(vmessQRCode.cs);
+        item.CurvePreferences = Utils.ToString(vmessQRCode.cp);
+        item.EnableSessionResumption = vmessQRCode.esr == "1";
         item.AllowInsecure = vmessQRCode.insecure == "1" ? Global.StringTrue : string.Empty;
         item.VerifyPeerCertByName = Utils.ToString(vmessQRCode.vcn);
         item.CertSha = Utils.ToString(vmessQRCode.pcs);

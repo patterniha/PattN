@@ -1597,6 +1597,8 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="300" />
@@ -1665,19 +1667,21 @@
                         Grid.Column="1"
                         HorizontalAlignment="Left" />
 
+                    <!--  PattN: curvePreferences, one of a few lists as alpn is one of a few (wider than alpn's box, for X25519MLKEM768,X25519), and enableSessionResumption, after cipherSuites  -->
                     <TextBlock
                         Grid.Row="5"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
                         Style="{StaticResource ToolbarTextBlock}"
-                        Text="{x:Static resx:ResUI.TbAllowInsecure}" />
-                    <ToggleButton
-                        x:Name="togAllowInsecure"
+                        Text="{x:Static resx:ResUI.TbCurvePreferences}" />
+                    <ComboBox
+                        x:Name="cmbCurvePreferences"
                         Grid.Row="5"
                         Grid.Column="1"
+                        Width="240"
                         Margin="{StaticResource Margin4}"
-                        HorizontalAlignment="Left" />
+                        Style="{StaticResource DefComboBox}" />
 
                     <TextBlock
                         Grid.Row="6"
@@ -1685,10 +1689,38 @@
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
                         Style="{StaticResource ToolbarTextBlock}"
+                        Text="{x:Static resx:ResUI.TbEnableSessionResumption}" />
+                    <ToggleButton
+                        x:Name="togEnableSessionResumption"
+                        Grid.Row="6"
+                        Grid.Column="1"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left" />
+
+                    <TextBlock
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ToolbarTextBlock}"
+                        Text="{x:Static resx:ResUI.TbAllowInsecure}" />
+                    <ToggleButton
+                        x:Name="togAllowInsecure"
+                        Grid.Row="7"
+                        Grid.Column="1"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left" />
+
+                    <TextBlock
+                        Grid.Row="8"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ToolbarTextBlock}"
                         Text="{x:Static resx:ResUI.TbEchConfigList}" />
                     <TextBox
                         x:Name="txtEchConfigList"
-                        Grid.Row="6"
+                        Grid.Row="8"
                         Grid.Column="1"
                         Width="400"
                         Margin="{StaticResource Margin4}"
@@ -1697,7 +1729,7 @@
 
                     <TextBlock
                         x:Name="tbEchOutbound"
-                        Grid.Row="7"
+                        Grid.Row="9"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
@@ -1705,7 +1737,7 @@
                         Text="{x:Static resx:ResUI.TbEchOutbound}" />
                     <materialDesign:PopupBox
                         x:Name="btnEchOutbound"
-                        Grid.Row="7"
+                        Grid.Row="9"
                         Grid.Column="1"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
@@ -1727,7 +1759,7 @@
                     </materialDesign:PopupBox>
 
                     <TextBlock
-                        Grid.Row="8"
+                        Grid.Row="10"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
@@ -1735,7 +1767,7 @@
                         Text="{x:Static resx:ResUI.TbVerifyPeerCertByName}" />
                     <TextBox
                         x:Name="txtVerifyPeerCertByName"
-                        Grid.Row="8"
+                        Grid.Row="10"
                         Grid.Column="1"
                         Width="400"
                         Margin="{StaticResource Margin4}"
@@ -1743,14 +1775,14 @@
                         Style="{StaticResource DefTextBox}" />
 
                     <TextBlock
-                        Grid.Row="9"
+                        Grid.Row="11"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
                         Style="{StaticResource ToolbarTextBlock}"
                         Text="{x:Static resx:ResUI.TbCertPinning}" />
                     <StackPanel
-                        Grid.Row="9"
+                        Grid.Row="11"
                         Grid.Column="1"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">

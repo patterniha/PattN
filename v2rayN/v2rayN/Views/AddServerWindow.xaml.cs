@@ -179,9 +179,14 @@ public partial class AddServerWindow
             this.Bind(ViewModel, vm => vm.SelectedSource.Sni, v => v.txtSNI.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.AllowInsecure, v => v.togAllowInsecure.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSource.Fingerprint, v => v.cmbFingerprint.Text).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.SelectedSource.Alpn, v => v.cmbAlpn.Text).DisposeWith(disposables);
+            // PattN: alpn and curvePreferences go by the item, as written, as in the Avalonia editor: matched by the box's
+            // text, a value another entry starts with (X25519 after X25519MLKEM768), or one differing only in case, showed nothing
+            this.Bind(ViewModel, vm => vm.SelectedSource.Alpn, v => v.cmbAlpn.SelectedItem).DisposeWith(disposables);
             // PattN: cipherSuites as a preset field (design 3.3)
             this.OneWayBind(ViewModel, vm => vm.CipherSuitesPreset, v => v.presetCipherSuites.ViewModel).DisposeWith(disposables);
+            // PattN: curvePreferences and enableSessionResumption, after cipherSuites
+            this.Bind(ViewModel, vm => vm.SelectedSource.CurvePreferences, v => v.cmbCurvePreferences.SelectedItem).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.SelectedSource.EnableSessionResumption, v => v.togEnableSessionResumption.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.CertSha, v => v.txtCertSha256Pinning.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.CertTip, v => v.labCertPinning.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.Cert, v => v.txtCert.Text).DisposeWith(disposables);
@@ -216,6 +221,10 @@ public partial class AddServerWindow
     private void InitializeData(ProfileItem profileItem)
     {
         Title = $"{profileItem.ConfigType}";
+        // PattN: an alpn or curvePreferences no choice holds, as a share link can carry, is offered after the choices,
+        // so that the box shows what the profile holds rather than nothing
+        cmbAlpn.ItemsSource = DropdownChoices.With(Global.Alpns, profileItem.Alpn);
+        cmbCurvePreferences.ItemsSource = DropdownChoices.With(Global.CurvePreferences, profileItem.CurvePreferences);
         var lstStreamSecurity = new List<string> { string.Empty, Global.StreamSecurity };
         switch (profileItem.ConfigType)
         {
@@ -259,6 +268,9 @@ public partial class AddServerWindow
                 cmbAlpn.IsEnabled = false;
                 // PattN: cipherSuites is a preset field (design 3.3)
                 presetCipherSuites.IsEnabled = false;
+                // PattN: curvePreferences and enableSessionResumption, as cipherSuites
+                cmbCurvePreferences.IsEnabled = false;
+                togEnableSessionResumption.IsEnabled = false;
                 break;
 
             case EConfigType.TUIC:
@@ -306,6 +318,9 @@ public partial class AddServerWindow
                 cmbAlpn.IsEnabled = false;
                 // PattN: cipherSuites is a preset field (design 3.3)
                 presetCipherSuites.IsEnabled = false;
+                // PattN: curvePreferences and enableSessionResumption, as cipherSuites
+                cmbCurvePreferences.IsEnabled = false;
+                togEnableSessionResumption.IsEnabled = false;
                 togAllowInsecure.IsEnabled = false;
 
                 cmbCongestionControl12.ItemsSource = Global.NaiveCongestionControls;
@@ -319,6 +334,9 @@ public partial class AddServerWindow
                 cmbAlpn.IsEnabled = false;
                 // PattN: cipherSuites is a preset field (design 3.3)
                 presetCipherSuites.IsEnabled = false;
+                // PattN: curvePreferences and enableSessionResumption, as cipherSuites
+                cmbCurvePreferences.IsEnabled = false;
+                togEnableSessionResumption.IsEnabled = false;
                 togAllowInsecure.IsEnabled = false;
                 break;
         }

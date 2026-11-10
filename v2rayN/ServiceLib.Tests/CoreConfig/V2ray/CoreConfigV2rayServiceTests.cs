@@ -1278,6 +1278,46 @@ public class CoreConfigV2rayServiceTests
         await ParseOutbounds(result).Count(o => o?["tag"]?.GetValue<string>() == "ech-out").Should().BeEqualTo(1);
     }
 
+    [Test]
+    public async Task GenerateClientConfigContent_CurvePreferencesAndSessionResumption_ShouldFollowCipherSuites()
+    {
+        // PattN: curvePreferences go out as a list, each name trimmed, and enableSessionResumption only when it is on;
+        // both right after cipherSuites, as in the editor and the share links.
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.Xray, "n1", "node-1");
+        node.StreamSecurity = Global.StreamSecurity;
+        node.Sni = "example.com";
+        node.Fingerprint = "unsafe";
+        node.CipherSuites = "TLS_AES_128_GCM_SHA256";
+        node.CurvePreferences = " X25519MLKEM768 ,X25519,";
+        node.EnableSessionResumption = true;
+
+        var result = new CoreConfigV2rayService(CoreConfigTestFactory.CreateContext(config, node, ECoreType.Xray)).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        var tls = TlsSettingsOf(result);
+        await tls["curvePreferences"]!.AsArray().Select(n => n!.GetValue<string>()).SequenceEqual(["X25519MLKEM768", "X25519"]).Should().BeTrue();
+        await tls["enableSessionResumption"]!.GetValue<bool>().Should().BeTrue();
+        var keys = tls.Select(p => p.Key).ToList();
+        await keys.IndexOf("curvePreferences").Should().BeEqualTo(keys.IndexOf("cipherSuites") + 1);
+        await keys.IndexOf("enableSessionResumption").Should().BeEqualTo(keys.IndexOf("cipherSuites") + 2);
+
+        // Unset, neither is written.
+        node.CurvePreferences = string.Empty;
+        node.EnableSessionResumption = false;
+        var plain = new CoreConfigV2rayService(CoreConfigTestFactory.CreateContext(config, node, ECoreType.Xray)).GenerateClientConfigContent();
+
+        await plain.Success.Should().BeTrue().Because($"ret msg: {plain.Msg}");
+        var plainTls = TlsSettingsOf(plain);
+        await plainTls.ContainsKey("curvePreferences").Should().BeFalse();
+        await plainTls.ContainsKey("enableSessionResumption").Should().BeFalse();
+        await plainTls.ContainsKey("cipherSuites").Should().BeTrue();
+
+        static JsonObject TlsSettingsOf(RetResult result) =>
+            ParseOutbounds(result).First(o => o?["tag"]?.GetValue<string>() == Global.ProxyTag)!["streamSettings"]!["tlsSettings"]!.AsObject();
+    }
+
     private static ProfileItem CreateEchNode(string indexId, string remarks, string echOutbound)
     {
         var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.Xray, indexId, remarks);

@@ -2833,6 +2833,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 curvePreferences only apply with the unsafe fingerprint. Choose unsafe, or clear curvePreferences. 的本地化字符串。
+        /// </summary>
+        public static string MsgCurvePreferencesNeedUnsafe {
+            get {
+                return ResourceManager.GetString("MsgCurvePreferencesNeedUnsafe", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Custom outbound {0} file not found: {1} 的本地化字符串。
         /// </summary>
         public static string MsgCustomOutboundFileNotFound {
@@ -4897,6 +4906,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 Curve Preferences 的本地化字符串。
+        /// </summary>
+        public static string TbCurvePreferences {
+            get {
+                return ResourceManager.GetString("TbCurvePreferences", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Enable Custom DNS 的本地化字符串。
         /// </summary>
         public static string TbCustomDNSEnable {
@@ -5118,6 +5136,15 @@ namespace ServiceLib.Resx {
         public static string TbEnableHappyEyeballsTip {
             get {
                 return ResourceManager.GetString("TbEnableHappyEyeballsTip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Enable Session Resumption 的本地化字符串。
+        /// </summary>
+        public static string TbEnableSessionResumption {
+            get {
+                return ResourceManager.GetString("TbEnableSessionResumption", resourceCulture);
             }
         }
         

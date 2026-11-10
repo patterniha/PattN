@@ -341,6 +341,11 @@ public class TlsSettings4Ray
 
     public string? cipherSuites { get; set; }
 
+    // PattN: after cipherSuites, as in the editor and the share links
+    public List<string>? curvePreferences { get; set; }
+
+    public bool? enableSessionResumption { get; set; }
+
     public string? fingerprint { get; set; }
 
     public bool? show { get; set; }

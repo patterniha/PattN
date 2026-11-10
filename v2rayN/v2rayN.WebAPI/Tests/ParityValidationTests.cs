@@ -166,6 +166,44 @@ public class ParityValidationTests
         await V2rayRuntime.TlsSettingsRefusal(CreateTlsProfile(EConfigType.Hysteria2, "ws", "chrome", "h2", CipherSuites), "chrome", ECoreType.Xray).Should().BeNull();
     }
 
+    // PattN (X2): curvePreferences without the unsafe fingerprint on a profile Xray runs are refused as cipherSuites are,
+    // with a code of their own, after the cipherSuites one.
+    [Test]
+    public async Task CurvePreferencesAreCheckedLikeTheServerEditor()
+    {
+        foreach (var type in new[] { EConfigType.VMess, EConfigType.VLESS, EConfigType.Shadowsocks, EConfigType.Trojan, EConfigType.SOCKS, EConfigType.HTTP })
+        {
+            var chrome = CreateTlsProfile(type, fingerprint: "chrome");
+            chrome.CurvePreferences = "X25519MLKEM768,X25519";
+            await AssertTlsRefused(V2rayRuntime.TlsSettingsRefusal(chrome, "chrome", ECoreType.Xray),
+                "profile_curve_preferences_need_unsafe", ResUI.MsgCurvePreferencesNeedUnsafe, $"{type} chrome");
+            var empty = CreateTlsProfile(type);
+            empty.CurvePreferences = "X25519";
+            await AssertTlsRefused(V2rayRuntime.TlsSettingsRefusal(empty, "chrome", ECoreType.Xray),
+                "profile_curve_preferences_need_unsafe", ResUI.MsgCurvePreferencesNeedUnsafe, $"{type} empty");
+        }
+
+        var both = CreateTlsProfile(EConfigType.VLESS, fingerprint: "chrome", cipherSuites: CipherSuites);
+        both.CurvePreferences = "X25519";
+        await AssertTlsRefused(V2rayRuntime.TlsSettingsRefusal(both, "chrome", ECoreType.Xray),
+            "profile_cipher_suites_need_unsafe", ResUI.MsgCipherSuitesNeedUnsafe, "both");
+
+        // unsafe, an unsafe default, sing-box and enableSessionResumption alone pass.
+        var unsafeOne = CreateTlsProfile(EConfigType.VLESS, fingerprint: "unsafe");
+        unsafeOne.CurvePreferences = "X25519";
+        unsafeOne.EnableSessionResumption = true;
+        await V2rayRuntime.TlsSettingsRefusal(unsafeOne, "chrome", ECoreType.Xray).Should().BeNull();
+        var unsafeDefault = CreateTlsProfile(EConfigType.VLESS);
+        unsafeDefault.CurvePreferences = "X25519";
+        await V2rayRuntime.TlsSettingsRefusal(unsafeDefault, "unsafe", ECoreType.Xray).Should().BeNull();
+        var singBox = CreateTlsProfile(EConfigType.VLESS, fingerprint: "chrome");
+        singBox.CurvePreferences = "X25519";
+        await V2rayRuntime.TlsSettingsRefusal(singBox, "chrome", ECoreType.sing_box).Should().BeNull();
+        var resumption = CreateTlsProfile(EConfigType.VLESS, fingerprint: "chrome");
+        resumption.EnableSessionResumption = true;
+        await V2rayRuntime.TlsSettingsRefusal(resumption, "chrome", ECoreType.Xray).Should().BeNull();
+    }
+
     // PattN (X2): a save through the API runs the TLS checks with the default fingerprint of the settings and the core
     // that runs the profile, the one it names or the one the settings give its type; a refused save writes nothing.
     [Test]

@@ -41,6 +41,11 @@ public class VmessQRCode
 
     public string cs { get; set; } = string.Empty;
 
+    // PattN: curvePreferences as the profile holds them, and enableSessionResumption, "1" when on
+    public string cp { get; set; } = string.Empty;
+
+    public string esr { get; set; } = string.Empty;
+
     public string insecure { get; set; } = string.Empty;
 
     public string vcn { get; set; } = string.Empty;

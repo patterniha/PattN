@@ -117,6 +117,65 @@ public class FmtHandlerTests
     }
 
     [Test]
+    public async Task GetShareUriAndResolveConfig_Vless_ShouldRoundTripCurvePreferencesAndSessionResumption()
+    {
+        // PattN: "cp" carries curvePreferences as the profile holds them, the comma percent-encoded as alpn's is, and
+        // "esr=1" enableSessionResumption when it is on; both come after "cs" and neither is written when unset.
+        var source = CreateVlessProfile();
+        source.StreamSecurity = Global.StreamSecurity;
+        source.Sni = "sni.vless.example";
+        source.Fingerprint = "unsafe";
+        source.CipherSuites = "TLS_AES_128_GCM_SHA256";
+        source.CurvePreferences = "X25519MLKEM768,X25519";
+        source.EnableSessionResumption = true;
+
+        var resolved = await ExportThenImport(source);
+
+        await resolved.CipherSuites.Should().BeEqualTo(source.CipherSuites);
+        await resolved.CurvePreferences.Should().BeEqualTo(source.CurvePreferences);
+        await resolved.EnableSessionResumption.Should().BeTrue();
+        await AssertExportContains(source, "cp=X25519MLKEM768%2CX25519", "esr=1");
+
+        source.CurvePreferences = string.Empty;
+        source.EnableSessionResumption = false;
+        var uri = FmtHandler.GetShareUri(source)!;
+        var keys = uri[(uri.IndexOf('?') + 1)..].Split('#')[0].Split('&').Select(p => p.Split('=')[0]).ToList();
+        await keys.Should().Contain("cs").Because(uri);
+        await keys.Should().NotContain("cp").Because(uri);
+        await keys.Should().NotContain("esr").Because(uri);
+        var plain = await ExportThenImport(source);
+        await plain.CurvePreferences.Should().BeEqualTo(string.Empty);
+        await plain.EnableSessionResumption.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task GetShareUriAndResolveConfig_Vmess_ShouldRoundTripCurvePreferencesAndSessionResumption()
+    {
+        // PattN: the QR-code JSON carries them as its own "cp" and "esr" members, after "cs".
+        var source = CreateVmessProfile();
+        source.StreamSecurity = Global.StreamSecurity;
+        source.Sni = "sni.vmess.example";
+        source.Fingerprint = "unsafe";
+        source.CurvePreferences = "X25519";
+        source.EnableSessionResumption = true;
+
+        var resolved = await ExportThenImport(source);
+
+        await resolved.CurvePreferences.Should().BeEqualTo("X25519");
+        await resolved.EnableSessionResumption.Should().BeTrue();
+        var uri = FmtHandler.GetShareUri(source)!;
+        var json = JsonNode.Parse(Utils.Base64Decode(uri[Global.ProtocolShares[EConfigType.VMess].Length..]))!.AsObject();
+        await json["cp"]!.GetValue<string>().Should().BeEqualTo("X25519");
+        await json["esr"]!.GetValue<string>().Should().BeEqualTo("1");
+        var members = json.Select(p => p.Key).ToList();
+        await members.IndexOf("cp").Should().BeEqualTo(members.IndexOf("cs") + 1);
+        await members.IndexOf("esr").Should().BeEqualTo(members.IndexOf("cs") + 2);
+
+        source.EnableSessionResumption = false;
+        await (await ExportThenImport(source)).EnableSessionResumption.Should().BeFalse();
+    }
+
+    [Test]
     public async Task GetShareUriAndResolveConfig_Vless_ShouldRoundTripDialMode()
     {
         // dialMode is a sockopt option, so it has to travel even when the profile has no TLS.

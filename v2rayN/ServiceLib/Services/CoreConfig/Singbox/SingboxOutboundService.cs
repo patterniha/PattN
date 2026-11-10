@@ -493,6 +493,15 @@ public partial class CoreConfigSingboxService
                         .Where(c => c.IsNotEmpty())
                         .ToList();
                 }
+                // PattN: curvePreferences go to sing-box's curve_preferences (sing-box 1.13+) by sing-box's names
+                // (CurveP256 is P256 there), each once; a name sing-box does not know is left out, as it would refuse
+                // the whole config. sing-box has no client setting for enableSessionResumption, which is Xray's alone
+                var curves = _node.GetCurvePreferences()?
+                    .Select(name => Global.SingboxCurveNames.GetValueOrDefault(name))
+                    .OfType<string>()
+                    .Distinct()
+                    .ToList();
+                tls.curve_preferences = curves is { Count: > 0 } ? curves : null;
                 var certs = CertPemManager.ParsePemChain(_node.Cert);
                 if (certs.Count > 0)
                 {

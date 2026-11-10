@@ -431,14 +431,15 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             return;
         }
         // PattN: TLS settings the Xray-core fork would not apply, or with which it would not connect (PattNG TlsSettingsCheck);
-        // the cipherSuites rule only for a profile Xray runs (X1): the core chosen here, or the one the settings give its type,
-        // as AppManager.GetCoreType finds it
+        // the cipherSuites and curvePreferences rules only for a profile Xray runs (X1): the core chosen here, or the one the
+        // settings give its type, as AppManager.GetCoreType finds it
         var runCore = CoreType.IsNullOrEmpty()
             ? _config.CoreTypeItem?.FirstOrDefault(it => it.ConfigType == SelectedSource.ConfigType)?.CoreType ?? ECoreType.Xray
             : Enum.Parse<ECoreType>(CoreType);
         var tlsError = TlsSettingsCheck.Validate(SelectedSource, _config.CoreBasicItem.DefFingerprint, runCore) switch
         {
             ETlsSettingsError.CipherSuitesNeedUnsafe => ResUI.MsgCipherSuitesNeedUnsafe,
+            ETlsSettingsError.CurvePreferencesNeedUnsafe => ResUI.MsgCurvePreferencesNeedUnsafe,
             ETlsSettingsError.WebsocketAlpnNotHttp1 => ResUI.MsgWebsocketAlpnHttp1Only,
             _ => null,
         };

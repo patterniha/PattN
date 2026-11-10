@@ -680,6 +680,31 @@ public class Global
         ""
     ];
 
+    // PattN: the curvePreferences the TLS settings offer (PattNG arrays.xml curve_preferences), as a profile and a share
+    // link (cp) hold them, the names joined by ',': none, which leaves the core its own, first
+    public static readonly List<string> CurvePreferences =
+    [
+        "",
+        "X25519MLKEM768",
+        "X25519",
+        "X25519MLKEM768,X25519",
+    ];
+
+    // PattN: the name sing-box's curve_preferences takes for each curve name the profile can hold (Xray's, as its
+    // transport/internet/tls ParseCurveName reads them, and sing-box's own), both read whatever the case; sing-box knows
+    // no other curve, and refuses the whole config for a name it does not know
+    public static readonly Dictionary<string, string> SingboxCurveNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["X25519MLKEM768"] = "X25519MLKEM768",
+        ["X25519"] = "X25519",
+        ["CurveP256"] = "P256",
+        ["P256"] = "P256",
+        ["CurveP384"] = "P384",
+        ["P384"] = "P384",
+        ["CurveP521"] = "P521",
+        ["P521"] = "P521",
+    };
+
     public static readonly List<string> LogLevels =
     [
         "debug",

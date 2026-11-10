@@ -90,6 +90,15 @@ public class BaseFmt
             {
                 dicQuery.Add("cs", Utils.UrlEncode(item.CipherSuites));
             }
+            // PattN: curvePreferences (cp), as the profile holds them, and enableSessionResumption (esr) when on
+            if (item.CurvePreferences.IsNotEmpty())
+            {
+                dicQuery.Add("cp", Utils.UrlEncode(item.CurvePreferences));
+            }
+            if (item.EnableSessionResumption)
+            {
+                dicQuery.Add("esr", "1");
+            }
         }
         if (item.EchConfigList.IsNotEmpty())
         {
@@ -242,6 +251,8 @@ public class BaseFmt
         item.Sni = GetQueryValue(query, "sni");
         item.Alpn = GetQueryDecoded(query, "alpn");
         item.CipherSuites = GetQueryDecoded(query, "cs");
+        item.CurvePreferences = GetQueryDecoded(query, "cp");
+        item.EnableSessionResumption = GetQueryValue(query, "esr") == "1";
         item.Fingerprint = GetQueryDecoded(query, "fp");
         item.PublicKey = GetQueryDecoded(query, "pbk");
         item.ShortId = GetQueryDecoded(query, "sid");

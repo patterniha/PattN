@@ -236,6 +236,18 @@ public class FieldPresetsTests
     }
 
     [Test]
+    public async Task TheCurvePreferencesFieldOffersNoneThenTheThreeLists()
+    {
+        // PattN: not a preset field but a list of a few, as alpn's is; PattNG's arrays.xml curve_preferences is the same.
+        await Global.CurvePreferences.SequenceEqual(["", "X25519MLKEM768", "X25519", "X25519MLKEM768,X25519"]).Should().BeTrue();
+        // Each curve they name reaches sing-box under a name it takes.
+        foreach (var name in Global.CurvePreferences.SelectMany(value => value.Split(',', StringSplitOptions.RemoveEmptyEntries)))
+        {
+            await Global.SingboxCurveNames.ContainsKey(name).Should().BeTrue().Because(name);
+        }
+    }
+
+    [Test]
     public async Task TheDialModeFieldsOfferTheGivenDialModesUnderTheirNames()
     {
         var names = Global.DialModePresets.Select(preset => preset.Name).ToList();

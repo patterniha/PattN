@@ -16,6 +16,13 @@ public enum ETlsSettingsError
     CipherSuitesNeedUnsafe,
 
     /// <summary>
+    /// curvePreferences with a fingerprint other than unsafe on a profile Xray runs, as for cipherSuites: the fork passes
+    /// uTLS no curve preferences either, so the fingerprint's own groups go out. sing-box, which takes them as
+    /// curve_preferences, is not asked (X1).
+    /// </summary>
+    CurvePreferencesNeedUnsafe,
+
+    /// <summary>
     /// An alpn other than http/1.1 alone for WebSocket or HTTPUpgrade, whatever the fingerprint. These transports speak
     /// HTTP/1.1 after the handshake whatever it negotiated, and Cloudflare picks h2 whenever it is offered, even after
     /// http/1.1; the unsafe fingerprint offers the alpn as written, the others offer h2,http/1.1 when it is written so;
@@ -28,8 +35,9 @@ public enum ETlsSettingsError
 /// PattN: TLS settings of a profile that the patterniha Xray-core fork would not apply, or with which it would not
 /// connect, so that the server editor, and the WebAPI's, do not save them (PattNG core/TlsSettingsCheck.kt; read from
 /// the fork's transport/internet/tls and its WebSocket and HTTPUpgrade dialers). The fork builds the ClientHello with uTLS
-/// for every fingerprint but unsafe and passes uTLS no cipher suites, so cipherSuites apply with the unsafe fingerprint
-/// alone; that rule is for the profiles Xray runs (X1). The alpn rule is for every core.
+/// for every fingerprint but unsafe and passes uTLS no cipher suites and no curve preferences, so cipherSuites and
+/// curvePreferences apply with the unsafe fingerprint alone; those rules are for the profiles Xray runs (X1). The alpn
+/// rule is for every core.
 /// </summary>
 public static class TlsSettingsCheck
 {
@@ -40,11 +48,11 @@ public static class TlsSettingsCheck
     private const string Http1 = "http/1.1";
 
     /// <summary>
-    /// Whether the check applies to <paramref name="profile" />, which is where PattN's editor shows cipherSuites, alpn and
-    /// the fingerprint: under TLS on VMess, VLESS, Shadowsocks, Trojan, SOCKS and HTTP, as for the ECH outbound
-    /// (NodeValidator.EchOutboundApplies); PattNG's editor offers TLS on the first four alone. Hysteria2 and MASQUE, whose
-    /// editor disables these fields, WireGuard and Aether, which have no TLS settings, and the types sing-box alone runs
-    /// are left out.
+    /// Whether the check applies to <paramref name="profile" />, which is where PattN's editor shows cipherSuites,
+    /// curvePreferences, alpn and the fingerprint: under TLS on VMess, VLESS, Shadowsocks, Trojan, SOCKS and HTTP, as for
+    /// the ECH outbound (NodeValidator.EchOutboundApplies); PattNG's editor offers TLS on the first four alone. Hysteria2
+    /// and MASQUE, whose editor disables these fields, WireGuard and Aether, which have no TLS settings, and the types
+    /// sing-box alone runs are left out.
     /// </summary>
     public static bool AppliesTo(ProfileItem profile)
     {
@@ -55,9 +63,9 @@ public static class TlsSettingsCheck
 
     /// <summary>
     /// The TLS setting of <paramref name="profile" /> the fork would not apply or would not connect with, cipherSuites
-    /// first; null where the check does not apply or there is none. <paramref name="defaultFingerprint" /> stands in for
-    /// an empty fingerprint, and <paramref name="core" /> is the core that runs the profile, see
-    /// <see cref="CipherSuitesNeedUnsafe" />.
+    /// first, then curvePreferences; null where the check does not apply or there is none.
+    /// <paramref name="defaultFingerprint" /> stands in for an empty fingerprint, and <paramref name="core" /> is the core
+    /// that runs the profile, see <see cref="CipherSuitesNeedUnsafe" />.
     /// </summary>
     public static ETlsSettingsError? Validate(ProfileItem profile, string? defaultFingerprint, ECoreType core)
     {
@@ -68,6 +76,10 @@ public static class TlsSettingsCheck
         if (CipherSuitesNeedUnsafe(profile, defaultFingerprint, core))
         {
             return ETlsSettingsError.CipherSuitesNeedUnsafe;
+        }
+        if (CurvePreferencesNeedUnsafe(profile, defaultFingerprint, core))
+        {
+            return ETlsSettingsError.CurvePreferencesNeedUnsafe;
         }
         if (IsUpgrade(profile) && !IsHttp1OrNone(profile))
         {
@@ -90,8 +102,31 @@ public static class TlsSettingsCheck
         {
             return false;
         }
+        return !UsesUnsafe(profile, defaultFingerprint);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="profile" />, run by <paramref name="core" />, holds curvePreferences the fork would not
+    /// apply, weighed as <see cref="CipherSuitesNeedUnsafe" /> weighs cipherSuites: curvePreferences that are not blank,
+    /// with a fingerprint other than unsafe, on a profile Xray runs.
+    /// </summary>
+    public static bool CurvePreferencesNeedUnsafe(ProfileItem profile, string? defaultFingerprint, ECoreType core)
+    {
+        if (core != ECoreType.Xray || !AppliesTo(profile) || KotlinText.IsBlank(profile.CurvePreferences))
+        {
+            return false;
+        }
+        return !UsesUnsafe(profile, defaultFingerprint);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="profile" /> uses the unsafe fingerprint, <paramref name="defaultFingerprint" /> standing in
+    /// for an empty one; the fork lowercases the fingerprint before it looks it up.
+    /// </summary>
+    private static bool UsesUnsafe(ProfileItem profile, string? defaultFingerprint)
+    {
         var fingerprint = string.IsNullOrEmpty(profile.Fingerprint) ? defaultFingerprint : profile.Fingerprint;
-        return fingerprint?.ToLowerInvariant() != UnsafeFingerprint;
+        return fingerprint?.ToLowerInvariant() == UnsafeFingerprint;
     }
 
     /// <summary>

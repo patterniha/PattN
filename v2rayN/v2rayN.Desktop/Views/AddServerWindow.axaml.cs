@@ -184,6 +184,9 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
             this.Bind(ViewModel, vm => vm.SelectedSource.Alpn, v => v.cmbAlpn.SelectedValue).DisposeWith(disposables);
             // PattN: cipherSuites as a preset field (design 3.3)
             this.OneWayBind(ViewModel, vm => vm.CipherSuitesPreset, v => v.presetCipherSuites.ViewModel).DisposeWith(disposables);
+            // PattN: curvePreferences and enableSessionResumption, after cipherSuites
+            this.Bind(ViewModel, vm => vm.SelectedSource.CurvePreferences, v => v.cmbCurvePreferences.SelectedValue).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.SelectedSource.EnableSessionResumption, v => v.togEnableSessionResumption.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.CertSha, v => v.txtCertSha256Pinning.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.CertTip, v => v.labCertPinning.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.Cert, v => v.txtCert.Text).DisposeWith(disposables);
@@ -215,6 +218,10 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
     private void InitializeData(ProfileItem profileItem)
     {
         Title = $"{profileItem.ConfigType}";
+        // PattN: an alpn or curvePreferences no choice holds, as a share link can carry, is offered after the choices,
+        // so that the box shows what the profile holds rather than nothing
+        cmbAlpn.ItemsSource = DropdownChoices.With(Global.Alpns, profileItem.Alpn);
+        cmbCurvePreferences.ItemsSource = DropdownChoices.With(Global.CurvePreferences, profileItem.CurvePreferences);
         var lstStreamSecurity = new List<string> { string.Empty, Global.StreamSecurity };
         switch (profileItem.ConfigType)
         {
@@ -258,6 +265,9 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
                 cmbAlpn.IsEnabled = false;
                 // PattN: cipherSuites is a preset field (design 3.3)
                 presetCipherSuites.IsEnabled = false;
+                // PattN: curvePreferences and enableSessionResumption, as cipherSuites
+                cmbCurvePreferences.IsEnabled = false;
+                togEnableSessionResumption.IsEnabled = false;
                 break;
 
             case EConfigType.TUIC:
@@ -305,6 +315,9 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
                 cmbAlpn.IsEnabled = false;
                 // PattN: cipherSuites is a preset field (design 3.3)
                 presetCipherSuites.IsEnabled = false;
+                // PattN: curvePreferences and enableSessionResumption, as cipherSuites
+                cmbCurvePreferences.IsEnabled = false;
+                togEnableSessionResumption.IsEnabled = false;
                 togAllowInsecure.IsEnabled = false;
 
                 cmbCongestionControl12.ItemsSource = Global.NaiveCongestionControls;
@@ -318,6 +331,9 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
                 cmbAlpn.IsEnabled = false;
                 // PattN: cipherSuites is a preset field (design 3.3)
                 presetCipherSuites.IsEnabled = false;
+                // PattN: curvePreferences and enableSessionResumption, as cipherSuites
+                cmbCurvePreferences.IsEnabled = false;
+                togEnableSessionResumption.IsEnabled = false;
                 togAllowInsecure.IsEnabled = false;
                 break;
         }
