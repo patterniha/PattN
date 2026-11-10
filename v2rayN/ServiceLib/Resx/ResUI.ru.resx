@@ -2580,4 +2580,10 @@
   <data name="MsgXrayCopyInUse" xml:space="preserve">
     <value>Ядро Xray не обновлено: Xray всё ещё запущен из {0}, как при тесте скорости или задержки; обновите снова, когда он завершится</value>
   </data>
+  <data name="menuDonate" xml:space="preserve">
+    <value>Пожертвовать</value>
+  </data>
+  <data name="TbOk" xml:space="preserve">
+    <value>ОК</value>
+  </data>
 </root>

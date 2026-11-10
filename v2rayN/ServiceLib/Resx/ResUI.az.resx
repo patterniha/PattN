@@ -2574,4 +2574,10 @@ Təyin edildikdə sertifikat sabitlənəcək və "Təhlükəsiz olmayan əlaqəy
   <data name="MsgXrayCopyInUse" xml:space="preserve">
     <value>Xray nüvəsi yenilənmədi: bir Xray hələ də {0} faylından işləyir, sürət və ya gecikmə testi kimi; o bitdikdən sonra yenidən yeniləyin</value>
   </data>
+  <data name="menuDonate" xml:space="preserve">
+    <value>İanə et</value>
+  </data>
+  <data name="TbOk" xml:space="preserve">
+    <value>Oldu</value>
+  </data>
 </root>

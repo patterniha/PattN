@@ -1078,6 +1078,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 Donate 的本地化字符串。
+        /// </summary>
+        public static string menuDonate {
+            get {
+                return ResourceManager.GetString("menuDonate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Copy 的本地化字符串。
         /// </summary>
         public static string menuEditCopy {
@@ -5487,6 +5496,15 @@ namespace ServiceLib.Resx {
         public static string TbNotChangeSystemProxy {
             get {
                 return ResourceManager.GetString("TbNotChangeSystemProxy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 OK 的本地化字符串。
+        /// </summary>
+        public static string TbOk {
+            get {
+                return ResourceManager.GetString("TbOk", resourceCulture);
             }
         }
         

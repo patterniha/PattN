@@ -116,6 +116,9 @@
 
                     <MenuItem x:Name="menuPromotion" Header="{x:Static resx:ResUI.menuPromotion}" />
 
+                    <!--  PattN: Donate, after the Telegram channel, opens the window of PattN's donation wallets  -->
+                    <MenuItem x:Name="menuDonate" Header="{x:Static resx:ResUI.menuDonate}" />
+
                     <MenuItem x:Name="menuClose" Header="{x:Static resx:ResUI.menuExit}" />
                 </Menu>
 

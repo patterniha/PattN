@@ -2439,4 +2439,10 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="MsgXrayCopyInUse" xml:space="preserve">
     <value>Xray-core was not updated: an Xray still runs from {0}, as a speed or latency test does; update again once it has ended</value>
   </data>
+  <data name="menuDonate" xml:space="preserve">
+    <value>Faire un don</value>
+  </data>
+  <data name="TbOk" xml:space="preserve">
+    <value>OK</value>
+  </data>
 </root>

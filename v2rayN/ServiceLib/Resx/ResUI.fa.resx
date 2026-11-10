@@ -2448,4 +2448,10 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="MsgXrayCopyInUse" xml:space="preserve">
     <value>هسته Xray به‌روز نشد: یک Xray هنوز از {0} اجرا می‌شود، مثل یک تست سرعت یا تأخیر؛ پس از پایان آن دوباره به‌روز کنید</value>
   </data>
+  <data name="menuDonate" xml:space="preserve">
+    <value>حمایت مالی</value>
+  </data>
+  <data name="TbOk" xml:space="preserve">
+    <value>تایید</value>
+  </data>
 </root>

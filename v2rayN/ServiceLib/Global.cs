@@ -14,6 +14,16 @@ public class Global
     public const string PsiphonServersStampFileName = "psiphon_servers.stamp";
 
     public const string PromotionUrl = @"aHR0cHM6Ly90Lm1lL3BhdHRfY2hhbm5lbF94";
+
+    // PattN: the wallets the Donate window lists, network and address; an address is copied exactly as written here
+    public static readonly IReadOnlyList<(string Network, string Address)> DonationWallets =
+    [
+        ("USDT (BEP20)", "0x76a768B53Ca77B43086946315f0BDF21156bF424"),
+        ("USDT (TRC20)", "TU5gKvKqcXPn8itp1DouBCwcqGHMemBm8o"),
+        ("TON (TON)", "UQAc-mZB3y7uxWHKiMmq0ORZEYgycWDWZ4V1k73HsXvTJx-i"),
+        ("BTC (BTC)", "bc1q8cptsn497hlfay6ypaaladldlrjalvx2ah233g"),
+    ];
+
     public const string ConfigFileName = "guiNConfig.json";
     public const string CoreConfigFileName = "config.json";
     public const string CorePreConfigFileName = "configPre.json";

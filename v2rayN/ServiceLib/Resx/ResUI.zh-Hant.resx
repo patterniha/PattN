@@ -2578,4 +2578,10 @@
   <data name="MsgXrayCopyInUse" xml:space="preserve">
     <value>Xray 核心未更新：仍有 Xray 從 {0} 執行，例如速度或延遲測試；請在其結束後再次更新</value>
   </data>
+  <data name="menuDonate" xml:space="preserve">
+    <value>捐贈</value>
+  </data>
+  <data name="TbOk" xml:space="preserve">
+    <value>確定</value>
+  </data>
 </root>

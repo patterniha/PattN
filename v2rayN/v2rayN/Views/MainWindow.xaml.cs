@@ -25,6 +25,7 @@ public partial class MainWindow
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         menuSettingsSetUWP.Click += MenuSettingsSetUWP_Click;
         menuPromotion.Click += MenuPromotion_Click;
+        menuDonate.Click += MenuDonate_Click;
         menuClose.Click += MenuClose_Click;
         menuCheckUpdate.Click += MenuCheckUpdate_Click;
         btnNewUpdate.Click += MenuCheckUpdate_Click;
@@ -253,6 +254,12 @@ public partial class MainWindow
     {
         // PattN: the menu opens PattN's Telegram channel; a t.me link takes no cache-busting ?t= query.
         ProcUtils.ProcessStart(Utils.Base64Decode(Global.PromotionUrl));
+    }
+
+    private void MenuDonate_Click(object sender, RoutedEventArgs e)
+    {
+        // PattN: the window of PattN's donation wallets
+        new DonateWindow { Owner = this }.ShowDialog();
     }
 
     private void MenuSettingsSetUWP_Click(object sender, RoutedEventArgs e)

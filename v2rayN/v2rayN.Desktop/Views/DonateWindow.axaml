@@ -1,0 +1,37 @@
+<Window
+    x:Class="v2rayN.Desktop.Views.DonateWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
+    Title="{x:Static resx:ResUI.menuDonate}"
+    MinWidth="350"
+    CanResize="False"
+    ShowInTaskbar="False"
+    SizeToContent="WidthAndHeight"
+    WindowDecorations="Full"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <!--  PattN: PattN's donation wallets, a twin of the WPF DonateWindow; OK closes the window  -->
+    <DockPanel Margin="{StaticResource Margin8}">
+        <StackPanel
+            Margin="{StaticResource Margin4}"
+            HorizontalAlignment="Center"
+            DockPanel.Dock="Bottom"
+            Orientation="Horizontal">
+            <Button
+                x:Name="btnOk"
+                MinWidth="100"
+                HorizontalContentAlignment="Center"
+                Content="{x:Static resx:ResUI.TbOk}"
+                IsCancel="True"
+                IsDefault="True" />
+        </StackPanel>
+        <!--  One row a wallet, built from Global.DonationWallets: the network, the address, its Copy button  -->
+        <Grid
+            x:Name="gridWallets"
+            Margin="{StaticResource Margin4}"
+            ColumnDefinitions="Auto,Auto,Auto" />
+    </DockPanel>
+</Window>
