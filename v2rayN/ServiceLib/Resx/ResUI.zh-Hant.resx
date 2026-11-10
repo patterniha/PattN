@@ -421,7 +421,7 @@
     <value>參數設定</value>
   </data>
   <data name="menuPromotion" xml:space="preserve">
-    <value>推廣</value>
+    <value>Telegram 頻道</value>
   </data>
   <data name="menuReload" xml:space="preserve">
     <value>重啟服務</value>

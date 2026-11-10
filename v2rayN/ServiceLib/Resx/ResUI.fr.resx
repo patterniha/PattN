@@ -418,7 +418,7 @@
     <value>Paramètres config</value>
   </data>
   <data name="menuPromotion" xml:space="preserve">
-    <value>Promotion</value>
+    <value>Canal Telegram</value>
   </data>
   <data name="menuReload" xml:space="preserve">
     <value>Redémarrer</value>

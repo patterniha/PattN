@@ -1474,7 +1474,7 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
-        ///   查找类似 Promotion 的本地化字符串。
+        ///   查找类似 Telegram channel 的本地化字符串。
         /// </summary>
         public static string menuPromotion {
             get {
