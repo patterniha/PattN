@@ -9,6 +9,10 @@ on:
       target: # windows linux macos windows-desktop
         required: true
         type: string
+      isAot:
+        required: false
+        type: boolean
+        default: false
     secrets:
       GPG_PRIVATE_KEY:
         required: true
@@ -43,11 +47,40 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v7
 
+    - name: Set package variables
+      id: package-vars
+      shell: bash
+      env:
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_IS_AOT: ${{ inputs.isAot }}
+      run: |
+        set -euo pipefail
+        package_dir="PattN-${Target}-${Arch}"
+        package_file="${package_dir}.zip"
+        build_artifact_name="${{ matrix.arch }}"
+        rename_suffix=""
+        if [[ "$INPUT_IS_AOT" == "true" ]]; then
+          build_artifact_name="${build_artifact_name}-aot"
+          rename_suffix="-aot"
+        fi
+        if [[ "$INPUT_TARGET" == "windows-desktop" ]]; then
+          rename_suffix="-desktop${rename_suffix}"
+        fi
+        final_package_file="${package_dir}${rename_suffix}.zip"
+
+        {
+          echo "build_artifact_name=${build_artifact_name}"
+          echo "package_dir=${package_dir}"
+          echo "package_file=${package_file}"
+          echo "final_package_file=${final_package_file}"
+          echo "rename_suffix=${rename_suffix}"
+        } >> "$GITHUB_OUTPUT"
+
     - name: Restore build artifacts
       uses: actions/download-artifact@v8
       with:
-        name: ${{ matrix.arch }}
-        path: PattN-${{ env.Target }}-${{ env.Arch }}
+        name: ${{ steps.package-vars.outputs.build_artifact_name }}
+        path: ${{ steps.package-vars.outputs.package_dir }}
 
     - name: Get v2rayN-core-bin
       run: |
@@ -89,17 +122,22 @@ jobs:
         wget -nv -O "PattN-$Target-$Arch/bin/srss/geoip-ir.srs" "https://raw.githubusercontent.com/chocolate4u/Iran-sing-box-rules/rule-set/geoip-ir.srs"
 
     - name: Package zip archive
-      run: 7z a -tZip PattN-$Target-$Arch.zip PattN-$Target-$Arch -mx1
+      shell: bash
+      run: |
+        7z a -tZip "${{ steps.package-vars.outputs.package_file }}" "${{ steps.package-vars.outputs.package_dir }}" -mx1
 
-    - name: Rename windows-desktop
-      if: inputs.target == 'windows-desktop'
-      run: mv "PattN-$Target-$Arch.zip" "PattN-$Target-$Arch-desktop.zip"
+    - name: Rename package archive
+      if: steps.package-vars.outputs.rename_suffix != ''
+      shell: bash
+      run: |
+        mv "${{ steps.package-vars.outputs.package_file }}" \
+          "${{ steps.package-vars.outputs.package_dir }}${{ steps.package-vars.outputs.rename_suffix }}.zip"
 
     - name: Upload zip artifact
       uses: actions/upload-artifact@v7
       with:
-        name: release-${{ inputs.target }}-${{ matrix.arch }}
-        path: PattN*.zip
+        name: release-${{ inputs.target }}-${{ matrix.arch }}${{ inputs.isAot && '-aot' || '' }}
+        path: ${{ steps.package-vars.outputs.final_package_file }}
         if-no-files-found: error
 
   release:
@@ -111,7 +149,7 @@ jobs:
     uses: ./.github/workflows/upload-sign.yml
     with:
       release_tag: ${{ inputs.release_tag }}
-      artifact_name: release-${{ inputs.target }}-${{ matrix.arch }}
+      artifact_name: release-${{ inputs.target }}-${{ matrix.arch }}${{ inputs.isAot && '-aot' || '' }}
       file_pattern: '*.zip'
     secrets:
       GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}

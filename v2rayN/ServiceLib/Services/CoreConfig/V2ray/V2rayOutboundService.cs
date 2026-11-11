@@ -8,7 +8,7 @@ public partial class CoreConfigV2rayService
         _coreConfig.outbounds.InsertRange(0, proxyOutboundList);
         if (proxyOutboundList.Count(n => n.tag.StartsWith(Global.ProxyTag)) > 1)
         {
-            var multipleLoad = _node.GetProtocolExtra().MultipleLoad ?? EMultipleLoad.LeastPing;
+            var multipleLoad = FindFirstPolicyGroupMultipleLoad() ?? EMultipleLoad.LeastPing;
             GenObservatory(multipleLoad);
             GenBalancer(multipleLoad);
         }
@@ -206,7 +206,7 @@ public partial class CoreConfigV2rayService
                         };
                         var setting = new Outboundsettings4Ray
                         {
-                            address = Utils.String2List(protocolExtra.WgInterfaceAddress)?.Select(s => s.Trim()).ToList() ?? ["172.16.0.2/32"],
+                            address = JsonUtils.SerializeToArray(Utils.String2List(protocolExtra.WgInterfaceAddress)?.Select(s => s.Trim()).ToList() ?? ["172.16.0.2/32"]),
                             secretKey = _node.Password,
                             reserved = Utils.String2List(protocolExtra.WgReserved)?.Select(s => s.Trim()).Select(int.Parse).ToList(),
                             mtu = protocolExtra.WgMtu > 0 ? protocolExtra.WgMtu : Global.TunMtus.First(),
@@ -357,11 +357,6 @@ public partial class CoreConfigV2rayService
                 {
                     tlsSettings.serverName = Utils.String2List(host)?.First();
                 }
-                if (!tlsSettings.echConfigList.IsNullOrEmpty())
-                {
-                    // For legacy xray compatibility, remove this in the future
-                    tlsSettings.echForceQuery = "full";
-                }
                 // PattN: the ECH config query goes through the profile's ECH outbound, which is
                 // appended to the config after every other outbound (AppendEchOutbounds)
                 if (NodeValidator.ValidateEchOutbound(_node, out var echOutbound) == null && echOutbound != null)
@@ -425,17 +420,6 @@ public partial class CoreConfigV2rayService
                     };
 
                     var kcpFinalmask = new Finalmask4Ray();
-                    if (Global.KcpHeaderMaskMap.TryGetValue(headerType, out var header))
-                    {
-                        kcpFinalmask.udp =
-                        [
-                            new Mask4Ray
-                            {
-                                type = "mkcp-legacy",
-                                settings = new MaskSettings4Ray { header = header },
-                            }
-                        ];
-                    }
                     kcpFinalmask.udp ??= [];
                     if (kcpSeed.IsNullOrEmpty())
                     {
@@ -452,9 +436,19 @@ public partial class CoreConfigV2rayService
                             settings = new MaskSettings4Ray { value = kcpSeed },
                         });
                     }
-                    kcpFinalmask.udp?.Reverse();
+                    if (Global.KcpHeaderMaskMap.TryGetValue(headerType, out var header))
+                    {
+                        kcpFinalmask.udp =
+                        [
+                            new Mask4Ray
+                            {
+                                type = "mkcp-legacy",
+                                settings = new MaskSettings4Ray { header = header },
+                            },
+                        ];
+                    }
                     streamSettings.kcpSettings = kcpSettings;
-                    streamSettings.finalmask = kcpFinalmask;
+                    streamSettings.finalmask = (JsonObject)JsonUtils.SerializeToNode(kcpFinalmask);
                     break;
                 //ws
                 case nameof(ETransport.ws):
@@ -515,7 +509,7 @@ public partial class CoreConfigV2rayService
                     }
                     if (xhttpExtra.IsNotEmpty())
                     {
-                        xhttpSettings.extra = JsonUtils.ParseJson(xhttpExtra);
+                        xhttpSettings.extra = JsonUtils.ParseJson(xhttpExtra) as JsonObject;
                     }
 
                     streamSettings.xhttpSettings = xhttpSettings;
@@ -538,6 +532,81 @@ public partial class CoreConfigV2rayService
                     streamSettings.grpcSettings = grpcSettings;
                     break;
 
+                case nameof(ETransport.xdrive):
+                    streamSettings.network = nameof(ETransport.xdrive);
+                    var xdriveSettings = new XdriveSettings4Ray
+                    {
+                        service = transport.XdriveService,
+                        remoteFolder = transport.XdriveRemoteFolder,
+                        secrets = transport.XdriveSecrets.IsNotEmpty() ? Utils.String2List(transport.XdriveSecrets) : null,
+                    };
+
+                    if (string.Equals(transport.XdriveService, "s3", StringComparison.OrdinalIgnoreCase)
+                        || transport.XdriveS3Endpoint.IsNotEmpty()
+                        || transport.XdriveS3Bucket.IsNotEmpty())
+                    {
+                        xdriveSettings.s3 = new S3Settings4Ray
+                        {
+                            endpoint = transport.XdriveS3Endpoint,
+                            region = transport.XdriveS3Region,
+                            bucket = transport.XdriveS3Bucket,
+                            pathStyle = transport.XdriveS3PathStyle,
+                        };
+                    }
+
+                    if (transport.XdriveExtra.IsNotEmpty())
+                    {
+                        try
+                        {
+                            var extraNode = JsonUtils.ParseJson(transport.XdriveExtra);
+                            if (extraNode is JsonObject extraObj)
+                            {
+                                if (int.TryParse(extraObj["segmentBytes"]?.ToString(), out var segmentBytes))
+                                {
+                                    xdriveSettings.segmentBytes = segmentBytes;
+                                }
+                                if (int.TryParse(extraObj["flushIntervalMs"]?.ToString(), out var flushIntervalMs))
+                                {
+                                    xdriveSettings.flushIntervalMs = flushIntervalMs;
+                                }
+                                if (int.TryParse(extraObj["pollIntervalMs"]?.ToString(), out var pollIntervalMs))
+                                {
+                                    xdriveSettings.pollIntervalMs = pollIntervalMs;
+                                }
+                                if (int.TryParse(extraObj["maxPollIntervalMs"]?.ToString(), out var maxPollIntervalMs))
+                                {
+                                    xdriveSettings.maxPollIntervalMs = maxPollIntervalMs;
+                                }
+                                if (int.TryParse(extraObj["eagerWindowMs"]?.ToString(), out var eagerWindowMs))
+                                {
+                                    xdriveSettings.eagerWindowMs = eagerWindowMs;
+                                }
+                                if (int.TryParse(extraObj["concurrency"]?.ToString(), out var concurrency))
+                                {
+                                    xdriveSettings.concurrency = concurrency;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // ignore extra json parse errors
+                        }
+                    }
+
+                    if (string.Equals(transport.XdriveService, "google-drive", StringComparison.OrdinalIgnoreCase))
+                    {
+                        xdriveSettings.segmentBytes ??= 524288;
+                        xdriveSettings.flushIntervalMs ??= 10;
+                        xdriveSettings.pollIntervalMs ??= 50;
+                        xdriveSettings.maxPollIntervalMs ??= 200;
+                        xdriveSettings.eagerWindowMs ??= 10000;
+                        xdriveSettings.concurrency ??= 64;
+                    }
+
+                    streamSettings.xdriveSettings = xdriveSettings;
+                    FillOutboundMux(outbound, true, true);
+                    break;
+
                 case "hysteria":
                     var ports = protocolExtra?.Ports;
                     int? upMbps = protocolExtra?.UpMbps is { } su and >= 0
@@ -553,16 +622,6 @@ public partial class CoreConfigV2rayService
                             : Global.Hysteria2DefaultHopInt).ToString();
                     var hy2Finalmask = new Finalmask4Ray();
                     var quicParams = new QuicParams4Ray();
-                    if (!ports.IsNullOrEmpty() &&
-                        (ports.Contains(':') || ports.Contains('-') || ports.Contains(',')))
-                    {
-                        var udpHop = new UdpHop4Ray
-                        {
-                            ports = ports.Replace(':', '-'),
-                            interval = hopInterval,
-                        };
-                        quicParams.udpHop = udpHop;
-                    }
                     if (upMbps > 0 || downMbps > 0)
                     {
                         quicParams.congestion = "brutal";
@@ -575,15 +634,6 @@ public partial class CoreConfigV2rayService
                     }
                     hy2Finalmask.quicParams = quicParams;
                     hy2Finalmask.udp ??= [];
-                    if (HyRealm.TryParse(protocolExtra.Hy2RealmUrl, out var realm)
-                        && realm is not null)
-                    {
-                        hy2Finalmask.udp.Add(new Mask4Ray
-                        {
-                            type = "realm",
-                            settings = new MaskSettings4Ray { url = realm.ToUriForFinalmask(), stunServers = realm.StunList },
-                        });
-                    }
                     if (!protocolExtra.SalamanderPass.IsNullOrEmpty())
                     {
                         var isGecko = !protocolExtra.GeckoMinPacketSize.IsNullOrEmpty() || !protocolExtra.GeckoMaxPacketSize.IsNullOrEmpty();
@@ -601,13 +651,36 @@ public partial class CoreConfigV2rayService
                             settings = salamanderSettings,
                         });
                     }
+                    if (HyRealm.TryParse(protocolExtra.Hy2RealmUrl, out var realm)
+                        && realm is not null)
+                    {
+                        hy2Finalmask.udp.Add(new Mask4Ray
+                        {
+                            type = "realm",
+                            settings = new MaskSettings4Ray { url = realm.ToUriForFinalmask(), stunServers = realm.StunList },
+                        });
+                    }
+                    else if (!ports.IsNullOrEmpty()
+                             && (ports.Contains(':') || ports.Contains('-') || ports.Contains(',')))
+                    {
+                        var udpHopFinalmask = new Mask4Ray
+                        {
+                            type = "udphop",
+                            settings = new MaskSettings4Ray
+                            {
+                                mode = "intervallocal,intervalremote",
+                                interval = hopInterval,
+                                remotePorts = ports.Replace(':', '-'),
+                            },
+                        };
+                        hy2Finalmask.udp.Add(udpHopFinalmask);
+                    }
                     streamSettings.hysteriaSettings = new()
                     {
                         version = 2,
                         auth = _node.Password,
                     };
-                    hy2Finalmask.udp?.Reverse();
-                    streamSettings.finalmask = hy2Finalmask;
+                    streamSettings.finalmask = (JsonObject)JsonUtils.SerializeToNode(hy2Finalmask);
                     break;
 
                 case "masque":
@@ -629,11 +702,21 @@ public partial class CoreConfigV2rayService
                         }
                         headers = userHeaders;
                     }
-                    streamSettings.masqueSettings = new()
+                    var masqueSettings = new MasqueSettings4Ray
                     {
                         path = protocolExtra?.MasquePath.NullIfEmpty(),
                         headers = headers.Count > 0 ? headers : null,
                     };
+                    if (!protocolExtra.WarpPrivateKey.IsNullOrEmpty())
+                    {
+                        masqueSettings.warp = new MasqueWarpSettings4Ray
+                        {
+                            publicKey = protocolExtra.WarpPublicKey,
+                            privateKey = protocolExtra.WarpPrivateKey,
+                            address = Utils.String2List(protocolExtra.WarpAddress)?.Select(s => s.Trim()).ToList(),
+                        };
+                    }
+                    streamSettings.masqueSettings = masqueSettings;
                     break;
 
                 default:
@@ -663,7 +746,7 @@ public partial class CoreConfigV2rayService
                             pathHttp = string.Join(",".AppendQuotes(), arrPath);
                         }
                         request = request.Replace("$requestPath$", $"{pathHttp.AppendQuotes()}");
-                        rawSettings.header.request = JsonUtils.Deserialize<object>(request);
+                        rawSettings.header.request = JsonUtils.SerializeToNode(request) as JsonObject;
 
                         streamSettings.rawSettings = rawSettings;
                     }
@@ -672,7 +755,7 @@ public partial class CoreConfigV2rayService
 
             if (!_node.Finalmask.IsNullOrEmpty())
             {
-                streamSettings.finalmask = JsonUtils.ParseJson(_node.Finalmask);
+                streamSettings.finalmask = JsonUtils.ParseJson(_node.Finalmask) as JsonObject;
             }
         }
         catch (Exception ex)
@@ -848,8 +931,6 @@ public partial class CoreConfigV2rayService
                                              && (n.streamSettings?.sockopt?.dialerProxy?.IsNullOrEmpty() ?? true))
                 .ToList();
 
-        var fragmentMask = BuildFragmentsMasks();
-
         foreach (var outbound in actOutboundWithTlsList)
         {
             var finalMaskJsonObj = JsonUtils.ParseJson(JsonUtils.Serialize(outbound.streamSettings?.finalmask)) as JsonObject ?? new JsonObject();
@@ -857,6 +938,13 @@ public partial class CoreConfigV2rayService
             var tcpFinalmaskList = finalMaskJsonObj["tcp"] as JsonArray ?? [];
             if (tcpFinalmaskList.Count == 0)
             {
+                var fragmentMask = BuildFragmentsMasks();
+                // Xray's tlshello fragment is incompatible with REALITY.
+                if (outbound.streamSettings.security == Global.StreamSecurityReality
+                    && fragmentMask.settings?.packets == "tlshello")
+                {
+                    fragmentMask.settings!.packets = "1-3";
+                }
                 tcpFinalmaskList.Add(JsonUtils.SerializeToNode(fragmentMask));
                 finalMaskJsonObj["tcp"] = tcpFinalmaskList;
             }
@@ -876,10 +964,10 @@ public partial class CoreConfigV2rayService
             protocol = "freedom",
             streamSettings = new StreamSettings4Ray
             {
-                finalmask = new Finalmask4Ray
+                finalmask = JsonUtils.SerializeToNode(new Finalmask4Ray
                 {
                     tcp = [fragmentMask],
-                },
+                }) as JsonObject,
             },
         };
 
@@ -954,5 +1042,33 @@ public partial class CoreConfigV2rayService
             context.Aether.AddCopy(outbound, clonedOutbound);
         }
         return clonedOutbounds;
+    }
+
+    private EMultipleLoad? FindFirstPolicyGroupMultipleLoad()
+    {
+        if (!_node.ConfigType.IsGroupType())
+        {
+            return null;
+        }
+
+        // BFS: the nearest policy group in the group tree decides the multiple load strategy.
+        var queue = new Queue<ProfileItem>([_node]);
+        while (queue.Count > 0)
+        {
+            var node = queue.Dequeue();
+            if (node.ConfigType == EConfigType.PolicyGroup)
+            {
+                return node.GetProtocolExtra().MultipleLoad;
+            }
+            foreach (var childId in Utils.String2List(node.GetProtocolExtra().ChildItems) ?? [])
+            {
+                if (context.AllProxiesMap.TryGetValue(childId, out var childNode)
+                    && childNode.ConfigType.IsGroupType())
+                {
+                    queue.Enqueue(childNode);
+                }
+            }
+        }
+        return null;
     }
 }

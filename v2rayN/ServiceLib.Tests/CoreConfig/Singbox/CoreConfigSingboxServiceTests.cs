@@ -113,6 +113,72 @@ public class CoreConfigSingboxServiceTests
     }
 
     [Test]
+    [Arguments(null)]
+    [Arguments("Default")]
+    public async Task GenerateClientConfigContent_TunDnsModeDefault_ShouldNotIncludeDnsMode(string? dnsMode)
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        config.TunModeItem.EnableTun = true;
+        config.TunModeItem.DnsMode = dnsMode;
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateSocksNode(ECoreType.sing_box);
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box) with
+        {
+            IsTunEnabled = true,
+        };
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        await result.Data!.ToString().Should().NotContain("\"dns_mode\"");
+    }
+
+    [Test]
+    public async Task GenerateClientConfigContent_TunDnsModeDisabled_ShouldIncludeDnsMode()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        config.TunModeItem.EnableTun = true;
+        config.TunModeItem.DnsMode = "disabled";
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateSocksNode(ECoreType.sing_box);
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box) with
+        {
+            IsTunEnabled = true,
+        };
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        var tun = cfg.inbounds.First(i => i.type == "tun");
+        await tun.dns_mode.Should().BeEqualTo("disabled");
+    }
+
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task GenerateClientConfigContent_TunDnsModeDisabled_ShouldNotIncludeGlobalDnsHijackRule(bool sniffingEnabled)
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        config.TunModeItem.EnableTun = true;
+        config.TunModeItem.DnsMode = "disabled";
+        config.Inbound.First().SniffingEnabled = sniffingEnabled;
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateSocksNode(ECoreType.sing_box);
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box) with
+        {
+            IsTunEnabled = true,
+        };
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        await cfg.route.rules.Any(
+            r => r.action == "hijack-dns" && r.process_path == null).Should().BeFalse();
+    }
+
+    [Test]
     public async Task GenerateClientConfigContent_TunEnabled_ShouldKeepEmbeddedTunRules()
     {
         // The embedded tun rules reject local-network noise (NetBIOS/mDNS, multicast).
@@ -860,5 +926,64 @@ public class CoreConfigSingboxServiceTests
                 ? string.Join(",", names!.AsArray().Select(n => n!.GetValue<string>()))
                 : null;
         }
+    }
+
+    [Test]
+    [Arguments("/ws?ed=2048", "/ws")]
+    [Arguments("/ws?ed=2048&key=value", "/ws?key=value")]
+    [Arguments("/ws?key=value&ed=2048", "/ws?key=value")]
+    [Arguments("/ws?a=1&ed=2048&b=2", "/ws?a=1&b=2")]
+    public async Task GenerateClientConfigContent_WsEarlyDataInPath_ShouldKeepRemainingQuery(string path, string expectedPath)
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.sing_box);
+        node.Network = nameof(ETransport.ws);
+        node.SetTransportExtra(node.GetTransportExtra() with { Path = path });
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box);
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeTrue().Because($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        var transport = cfg.outbounds.First(o => o.tag == Global.ProxyTag).transport;
+        await transport.Should().NotBeNull();
+        await transport!.max_early_data.Should().BeEqualTo(2048);
+        await transport.early_data_header_name.Should().BeEqualTo("Sec-WebSocket-Protocol");
+        await transport.path.Should().BeEqualTo(expectedPath);
+    }
+
+    [Test]
+    public async Task GenerateClientSpeedtestConfig_ShouldInheritProxyDialStrategy()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        config.SimpleDNSItem.Strategy4ProxyDial = "UseIPv6v4";
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+
+        var node = CoreConfigTestFactory.CreateSocksNode(ECoreType.sing_box);
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box);
+
+        var normal = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+        await normal.Success.Should().BeTrue().Because($"ret msg: {normal.Msg}");
+        var normalCfg = JsonUtils.Deserialize<SingboxConfig>(normal.Data!.ToString())!;
+        await normalCfg.route.default_domain_resolver!.strategy.Should().BeEqualTo("prefer_ipv6");
+
+        var speedtest = new CoreConfigSingboxService(context).GenerateClientSpeedtestConfig(
+        [
+            new()
+            {
+                IndexId = node.IndexId,
+                Address = node.Address,
+                Port = node.Port,
+                ConfigType = node.ConfigType,
+                Profile = node,
+                CoreType = ECoreType.sing_box,
+            }
+        ]);
+
+        await speedtest.Success.Should().BeTrue().Because($"ret msg: {speedtest.Msg}");
+        var speedtestCfg = JsonUtils.Deserialize<SingboxConfig>(speedtest.Data!.ToString())!;
+        await speedtestCfg.route.default_domain_resolver.Should().NotBeNull();
+        await speedtestCfg.route.default_domain_resolver!.strategy.Should().BeEqualTo("prefer_ipv6");
     }
 }

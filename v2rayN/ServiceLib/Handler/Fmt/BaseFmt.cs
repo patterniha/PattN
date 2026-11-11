@@ -6,25 +6,16 @@ public class BaseFmt
 
     // PattN: JSON options such as echOutbound travel in share links on one line and are stored
     // indented, as fm is; text that is not JSON is kept as it is
-    private static readonly JsonSerializerOptions ShareJsonOptions = new()
-    {
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    };
-
-    private static readonly JsonSerializerOptions StoredJsonOptions = new(ShareJsonOptions) { WriteIndented = true };
-
     protected static string ToShareJson(string json)
     {
         var node = JsonUtils.ParseJson(json);
-        return node != null ? JsonUtils.Serialize(node, ShareJsonOptions) : json;
+        return node != null ? JsonUtils.Serialize(node, indented: false, nullValue: true) : json;
     }
 
     protected static string FromShareJson(string json)
     {
         var node = JsonUtils.ParseJson(json);
-        return node != null ? JsonUtils.Serialize(node, StoredJsonOptions) : json;
+        return node != null ? JsonUtils.Serialize(node, indented: true, nullValue: true) : json;
     }
 
     protected static string GetIpv6(string address)
@@ -120,12 +111,7 @@ public class BaseFmt
         {
             var node = JsonUtils.ParseJson(item.Finalmask);
             var finalmask = node != null
-                ? JsonUtils.Serialize(node, new JsonSerializerOptions
-                {
-                    WriteIndented = false,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                })
+                ? JsonUtils.Serialize(node, indented: false, nullValue: true)
                 : item.Finalmask;
             dicQuery.Add("fm", Utils.UrlEncode(finalmask));
         }
@@ -199,12 +185,7 @@ public class BaseFmt
                 {
                     var node = JsonUtils.ParseJson(transport.XhttpExtra);
                     var extra = node != null
-                        ? JsonUtils.Serialize(node, new JsonSerializerOptions
-                        {
-                            WriteIndented = false,
-                            DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                        })
+                        ? JsonUtils.Serialize(node, indented: false, nullValue: true)
                         : transport.XhttpExtra;
                     dicQuery.Add("extra", UrlEncodeSafe(extra));
                 }
@@ -270,12 +251,7 @@ public class BaseFmt
         {
             var node = JsonUtils.ParseJson(finalmaskDecoded);
             item.Finalmask = node != null
-                ? JsonUtils.Serialize(node, new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                })
+                ? JsonUtils.Serialize(node, indented: true, nullValue: true)
                 : finalmaskDecoded;
         }
         else
@@ -333,12 +309,7 @@ public class BaseFmt
                     var node = JsonUtils.ParseJson(xhttpExtra);
                     if (node != null)
                     {
-                        xhttpExtra = JsonUtils.Serialize(node, new JsonSerializerOptions
-                        {
-                            WriteIndented = true,
-                            DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                        });
+                        xhttpExtra = JsonUtils.Serialize(node, indented: true, nullValue: true);
                     }
                 }
 

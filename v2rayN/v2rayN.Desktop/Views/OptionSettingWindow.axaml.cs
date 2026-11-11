@@ -5,7 +5,7 @@ namespace v2rayN.Desktop.Views;
 
 public partial class OptionSettingWindow : WindowBase<OptionSettingViewModel>
 {
-    private static Config _config;
+    private static Config _config; 
 
     public OptionSettingWindow()
     {
@@ -33,6 +33,7 @@ public partial class OptionSettingWindow : WindowBase<OptionSettingViewModel>
         cmbmux4RayXudpProxyUDP443.ItemsSource = new[] { "reject", "skip" };
         cmbMtu.ItemsSource = Global.TunMtus;
         cmbStack.ItemsSource = Global.TunStacks;
+        cmbDnsMode.ItemsSource = Global.TunDnsModes;
         cmbIcmpRoutingPolicy.ItemsSource = Global.TunIcmpRoutingPolicies;
         cmbIpv4Address.ItemsSource = Global.TunIPv4Address;
         cmbIpv6Address.ItemsSource = Global.TunIPv6Address;
@@ -59,6 +60,7 @@ public partial class OptionSettingWindow : WindowBase<OptionSettingViewModel>
         cmbRoutingRulesSourceUrl.ItemsSource = Global.RoutingRulesSources;
         cmbIPAPIUrl.ItemsSource = Global.IPAPIUrls;
         cmbRootCertificateProvider.ItemsSource = Global.RootCertProviders;
+        cmbbindInterface.ItemsSource = NetworkUtils.GetBindInterfaceNames();
 
         cmbMainGirdOrientation.ItemsSource = Utils.GetEnumNames<EGirdOrientation>();
 
@@ -83,7 +85,7 @@ public partial class OptionSettingWindow : WindowBase<OptionSettingViewModel>
             this.Bind(ViewModel, vm => vm.Loglevel, v => v.cmbloglevel.SelectedValue).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.DefFingerprint, v => v.cmbdefFingerprint.SelectedValue).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.DefUserAgent, v => v.cmbdefUserAgent.SelectedValue).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.BindInterface, v => v.txtbindInterface.Text).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.BindInterface, v => v.cmbbindInterface.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.Mux4RayConcurrency, v => v.txtmux4RayConcurrency.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.Mux4RayXudpConcurrency, v => v.txtmux4RayXudpConcurrency.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.Mux4RayXudpProxyUDP443, v => v.cmbmux4RayXudpProxyUDP443.SelectedValue).DisposeWith(disposables);
@@ -136,6 +138,7 @@ public partial class OptionSettingWindow : WindowBase<OptionSettingViewModel>
             this.Bind(ViewModel, vm => vm.TunEnableIPv6Address, v => v.togEnableIPv6Address.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunIcmpRouting, v => v.cmbIcmpRoutingPolicy.SelectedValue).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunEnableLegacyProtect, v => v.togEnableLegacyProtect.IsChecked).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.TunDnsMode, v => v.cmbDnsMode.SelectedValue).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunRouteExcludeAddress, v => v.txtRouteExcludeAddress.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunIPv4Address, v => v.cmbIpv4Address.SelectedValue).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunIPv6Address, v => v.cmbIpv6Address.SelectedValue).DisposeWith(disposables);

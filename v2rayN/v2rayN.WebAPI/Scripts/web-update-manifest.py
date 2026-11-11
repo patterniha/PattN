@@ -91,7 +91,7 @@ def asset_url(repository: str, version: str, asset: str) -> str:
     return f"https://github.com/{repository}/releases/download/{version}/{asset}"
 
 
-# PattN: riscv64 and loongarch64 are built only with exotic_arch, as for the desktop packages
+# PattN: riscv64 and loongarch64 are built only with exotic_arch (a RISC-V runner and a QEMU VM, 1-3 h)
 OPTIONAL_RIDS = frozenset(("linux-riscv64", "linux-loongarch64"))
 
 

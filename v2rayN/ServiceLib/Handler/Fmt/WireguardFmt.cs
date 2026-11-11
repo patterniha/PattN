@@ -29,12 +29,7 @@ public class WireguardFmt : BaseFmt
         {
             var node = JsonUtils.ParseJson(finalmaskDecoded);
             item.Finalmask = node != null
-                ? JsonUtils.Serialize(node, new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                })
+                ? JsonUtils.Serialize(node, indented: true, nullValue: true)
                 : finalmaskDecoded;
         }
         else
@@ -106,12 +101,7 @@ public class WireguardFmt : BaseFmt
         {
             var node = JsonUtils.ParseJson(item.Finalmask);
             var finalmask = node != null
-                ? JsonUtils.Serialize(node, new JsonSerializerOptions
-                {
-                    WriteIndented = false,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                })
+                ? JsonUtils.Serialize(node, indented: false, nullValue: true)
                 : item.Finalmask;
             dicQuery.Add("fm", Utils.UrlEncode(finalmask));
         }

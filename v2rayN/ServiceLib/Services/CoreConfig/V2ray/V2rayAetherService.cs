@@ -58,7 +58,7 @@ public partial class CoreConfigV2rayService
                 // The freedom exit-node resolves with Xray's DNS under the TUN (ForceIP): with the direct DNS servers, as
                 // the session's protected names are, rather than the system resolver, whose queries enter the TUN and may
                 // reach a remote DNS through the very core that is starting (critique 19).
-                _coreConfig.dns = BuildAetherExitDns();
+                _coreConfig.dns = (JsonObject)JsonUtils.SerializeToNode(BuildAetherExitDns());
             }
             // Bound to the uplink while a TUN runs, it looks every name up by its own DNS, which leaves by the uplink (D2-3).
             LookUpNamesByUplink();
@@ -811,8 +811,7 @@ public partial class CoreConfigV2rayService
             .Where(host => host != "localhost" && Utils.IsDomain(host))
             .Select(host => $"full:{host}")
             .ToList();
-        var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
-        var servers = new List<object>();
+        var servers = new List<JsonNode>();
         if (serverDomains.Count > 0)
         {
             for (var i = 0; i < bootstrap.Count; i++)
@@ -824,10 +823,10 @@ public partial class CoreConfigV2rayService
                 {
                     server.finalQuery = true;
                 }
-                servers.Add(JsonUtils.SerializeToNode(server, options)!);
+                servers.Add(JsonUtils.SerializeToNode(server)!);
             }
         }
-        servers.AddRange(direct.Select(address => (object)JsonUtils.SerializeToNode(DnsServer(address), options)!));
+        servers.AddRange(direct.Select(address => JsonUtils.SerializeToNode(DnsServer(address))!));
         return new Dns4Ray { servers = servers };
 
         // The addresses of text, the system's resolver as "localhost"; with byUplinkInstead, the system's resolver gives
@@ -883,7 +882,7 @@ public partial class CoreConfigV2rayService
         }
         var dns = BuildAetherExitDns(byUplink: true);
         dns.tag = UplinkDnsTag;
-        _coreConfig.dns = dns;
+        _coreConfig.dns = (JsonObject)JsonUtils.SerializeToNode(dns);
         _coreConfig.outbounds ??= [];
         var direct = _coreConfig.outbounds.FirstOrDefault(outbound => outbound is { protocol: "freedom", tag: Global.DirectTag });
         if (direct == null)

@@ -108,7 +108,7 @@ public class NodeValidator
     /// </summary>
     public static string? GetOutboundTag(JsonObject outbound)
     {
-        return JsonSerializer.SerializeToElement(outbound).TryGetProperty("tag", out var tag)
+        return JsonSerializer.SerializeToElement(outbound, AppJsonContext.Default.JsonObject).TryGetProperty("tag", out var tag)
             && tag.ValueKind == JsonValueKind.String
                 ? tag.GetString()
                 : null;

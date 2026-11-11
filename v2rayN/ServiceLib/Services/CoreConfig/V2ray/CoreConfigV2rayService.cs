@@ -232,8 +232,8 @@ public partial class CoreConfigV2rayService(CoreConfigContext context)
                 var tag = Global.ProxyTag + inbound.port.ToString();
                 var isBalancer = false;
                 //outbound
-                var proxyOutbounds =
-                    new CoreConfigV2rayService(context with { Node = item }).BuildAllProxyOutbounds(tag);
+                var service = new CoreConfigV2rayService(context with { Node = item });
+                var proxyOutbounds = service.BuildAllProxyOutbounds(tag);
                 // PattN: a group or a chain that dials an Aether core is tested on its own, with its core (design
                 // 2.12.1); one left in the batch is not tested rather than dial a core that is not there
                 if (proxyOutbounds.Any(context.Aether.IsAetherOutbound))
@@ -246,7 +246,7 @@ public partial class CoreConfigV2rayService(CoreConfigContext context)
                 if (proxyOutbounds.Count(n => n.tag.StartsWith(tag)) > 1)
                 {
                     isBalancer = true;
-                    var multipleLoad = _node.GetProtocolExtra().MultipleLoad ?? EMultipleLoad.LeastPing;
+                    var multipleLoad = service.FindFirstPolicyGroupMultipleLoad() ?? EMultipleLoad.LeastPing;
                     GenObservatory(multipleLoad, tag);
                     GenBalancer(multipleLoad, tag);
                 }

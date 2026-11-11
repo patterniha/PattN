@@ -9,6 +9,7 @@ public partial class SubEditWindow
         Loaded += Window_Loaded;
 
         cmbConvertTarget.ItemsSource = Global.SubConvertTargets;
+        cmbPreResolve.ItemsSource = Global.DomainDNS4PreResolveAddress;
         // PattN: not the Aether core, which takes no configuration file
         cmbCustomCoreType.ItemsSource = Utils.GetEnumNames<ECoreType>().Where(t => t != nameof(ECoreType.v2rayN) && t != nameof(ECoreType.aether)).ToList().AppendEmpty();
 
@@ -31,6 +32,7 @@ public partial class SubEditWindow
             this.Bind(ViewModel, vm => vm.SelectedSource.PreSocksPort, v => v.txtPreSocksPort.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSource.Memo, v => v.txtMemo.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.CustomCoreType, v => v.cmbCustomCoreType.Text).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.SelectedSource.PreResolver, v => v.cmbPreResolve.Text).DisposeWith(disposables);
 
             this.BindCommand(ViewModel, vm => vm.SelectPrevProfileCmd, v => v.btnSelectPrevProfile).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SelectNextProfileCmd, v => v.btnSelectNextProfile).DisposeWith(disposables);

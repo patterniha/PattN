@@ -88,12 +88,12 @@ public partial class CoreConfigV2rayService
                     tunInbound.settings.gateway.Add(address6);
                 }
 
-                var bindInterface = _config.CoreBasicItem.BindInterface?.TrimEx();
+                var bindInterface = NetworkUtils.GetRealBindInterfaceName(_config.CoreBasicItem.BindInterface);
                 if (!bindInterface.IsNullOrEmpty())
                 {
                     tunInbound.settings.autoOutboundsInterface = bindInterface;
                 }
-                tunInbound.sniffing = inbound.sniffing;
+                tunInbound.sniffing = JsonUtils.DeepCopy(inbound.sniffing);
                 // PattN: respect the user's Route Only setting in TUN mode (upstream forces true)
                 // tunInbound.sniffing.routeOnly = true;
 

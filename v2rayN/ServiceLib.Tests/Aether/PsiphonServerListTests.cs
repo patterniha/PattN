@@ -33,7 +33,7 @@ public class PsiphonServerListTests : IDisposable
     /// <summary>A list the way Psiphon writes one: the package as JSON, compressed.</summary>
     private byte[] Pack(string data = Entries, string? signature = null, string? keyDigest = null)
     {
-        var json = $"{{\"data\":{JsonSerializer.Serialize(data)},\"signingPublicKeyDigest\":\"{keyDigest ?? DigestOf(_keyText)}\",\"signature\":\"{signature ?? Sign(data)}\"}}";
+        var json = $"{{\"data\":{JsonUtils.Serialize(data, false)},\"signingPublicKeyDigest\":\"{keyDigest ?? DigestOf(_keyText)}\",\"signature\":\"{signature ?? Sign(data)}\"}}";
         using var output = new MemoryStream();
         using (var zlib = new ZLibStream(output, CompressionLevel.Optimal))
         {

@@ -10,13 +10,12 @@ public partial class CoreConfigSingboxService
             var simpleDnsItem = context.SimpleDnsItem;
 
             var defaultDomainResolverTag = Global.SingboxDirectDNSTag;
-            var dialDnsStrategy = Utils.DomainStrategy4Sbox(simpleDnsItem.Strategy4ProxyDial);
+            var dialDnsStrategy = GetDefaultDomainResolverStrategy();
 
             var rawDNSItem = context.RawDnsItem;
             if (rawDNSItem is { Enabled: true })
             {
                 defaultDomainResolverTag = Global.SingboxLocalDNSTag;
-                dialDnsStrategy = rawDNSItem.DomainStrategy4Freedom.IsNullOrEmpty() ? null : rawDNSItem.DomainStrategy4Freedom;
             }
             else if (!simpleDnsItem.Strategy4Freedom.IsNullOrEmpty())
             {
@@ -113,23 +112,27 @@ public partial class CoreConfigSingboxService
                 }
             }
 
+            var disableDnsHijack = string.Equals(_config.TunModeItem.DnsMode, "disabled", StringComparison.OrdinalIgnoreCase);
             if (_config.Inbound.First().SniffingEnabled)
             {
                 _coreConfig.route.rules.Add(new()
                 {
                     action = "sniff"
                 });
-                _coreConfig.route.rules.Add(new()
+                if (!disableDnsHijack)
                 {
-                    type = "logical",
-                    mode = "or",
-                    action = "hijack-dns",
-                    rules =
-                    [
-                        new() { port = [53] },
-                        new() { protocol = ["dns"] },
-                    ],
-                });
+                    _coreConfig.route.rules.Add(new()
+                    {
+                        type = "logical",
+                        mode = "or",
+                        action = "hijack-dns",
+                        rules =
+                        [
+                            new() { port = [53] },
+                            new() { protocol = ["dns"] },
+                        ],
+                    });
+                }
                 if (_config.CoreBasicItem.EnableFinalFragment)
                 {
                     _coreConfig.route.rules.Add(new()
@@ -142,11 +145,14 @@ public partial class CoreConfigSingboxService
             }
             else
             {
-                _coreConfig.route.rules.Add(new()
+                if (!disableDnsHijack)
                 {
-                    port = [53],
-                    action = "hijack-dns",
-                });
+                    _coreConfig.route.rules.Add(new()
+                    {
+                        port = [53],
+                        action = "hijack-dns",
+                    });
+                }
                 if (_config.CoreBasicItem.EnableFinalFragment)
                 {
                     _coreConfig.route.rules.Add(new()
@@ -612,5 +618,16 @@ public partial class CoreConfigSingboxService
         FillRangeProxy(proxyOutbounds, _coreConfig, false);
 
         return tag;
+    }
+
+    private string? GetDefaultDomainResolverStrategy()
+    {
+        var rawDNSItem = context.RawDnsItem;
+        if (rawDNSItem is { Enabled: true })
+        {
+            return rawDNSItem.DomainStrategy4Freedom.IsNullOrEmpty() ? null : rawDNSItem.DomainStrategy4Freedom;
+        }
+
+        return Utils.DomainStrategy4Sbox(context.SimpleDnsItem.Strategy4ProxyDial);
     }
 }

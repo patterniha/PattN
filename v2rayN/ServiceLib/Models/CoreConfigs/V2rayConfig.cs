@@ -7,7 +7,7 @@ public class V2rayConfig
     public string? aetherCommand { get; set; }
 
     public Log4Ray log { get; set; }
-    public object dns { get; set; }
+    public JsonObject? dns { get; set; }
     public List<Inbounds4Ray> inbounds { get; set; }
     public List<Outbounds4Ray> outbounds { get; set; }
     public Routing4Ray routing { get; set; }
@@ -136,7 +136,7 @@ public class Outboundsettings4Ray
 
     public string? secretKey { get; set; }
 
-    public object? address { get; set; }
+    public JsonNode? address { get; set; }
 
     public int? port { get; set; }
 
@@ -148,7 +148,7 @@ public class Outboundsettings4Ray
 
     public string? email { get; set; }
 
-    public object? headers { get; set; }
+    public JsonNode? headers { get; set; }
 
     public List<WireguardPeer4Ray>? peers { get; set; }
 
@@ -205,8 +205,8 @@ public class Response4Ray
 
 public class Dns4Ray
 {
-    public Dictionary<string, object>? hosts { get; set; }
-    public List<object> servers { get; set; }
+    public Dictionary<string, JsonNode>? hosts { get; set; }
+    public List<JsonNode> servers { get; set; }
     public bool? serveStale { get; set; }
     public bool? enableParallelQuery { get; set; }
     public string? queryStrategy { get; set; }
@@ -233,7 +233,6 @@ public class Routing4Ray
     public List<BalancersItem4Ray>? balancers { get; set; }
 }
 
-[Serializable]
 public class RulesItem4Ray
 {
     public string? type { get; set; }
@@ -326,9 +325,11 @@ public class StreamSettings4Ray
     public GrpcSettings4Ray? grpcSettings { get; set; }
 
     public HysteriaSettings4Ray? hysteriaSettings { get; set; }
-    public MasqueSettings4Ray? masqueSettings { get; set; }
 
-    public object? finalmask { get; set; }
+    public MasqueSettings4Ray? masqueSettings { get; set; }
+    public XdriveSettings4Ray? xdriveSettings { get; set; }
+
+    public JsonObject? finalmask { get; set; }
 
     public Sockopt4Ray? sockopt { get; set; }
 }
@@ -358,7 +359,6 @@ public class TlsSettings4Ray
     public string? pinnedPeerCertSha256 { get; set; }
     public bool? disableSystemRoot { get; set; }
     public string? echConfigList { get; set; }
-    public string? echForceQuery { get; set; }
     public Sockopt4Ray? echSockopt { get; set; }
 }
 
@@ -377,9 +377,9 @@ public class Header4Ray
 {
     public string type { get; set; }
 
-    public object request { get; set; }
+    public JsonObject request { get; set; }
 
-    public object response { get; set; }
+    public JsonObject response { get; set; }
 }
 
 public class KcpSettings4Ray
@@ -425,7 +425,7 @@ public class XhttpSettings4Ray
     public string? path { get; set; }
     public string? host { get; set; }
     public string? mode { get; set; }
-    public object? extra { get; set; }
+    public JsonObject? extra { get; set; }
 }
 
 public class HttpSettings4Ray
@@ -466,12 +466,36 @@ public class MasqueSettings4Ray
 {
     public string? path { get; set; }
     public Dictionary<string, string>? headers { get; set; }
+    public MasqueWarpSettings4Ray? warp { get; set; }
 }
 
-public class UdpHop4Ray
+public class MasqueWarpSettings4Ray
 {
-    public string? ports { get; set; }
-    public string? interval { get; set; }
+    public string? privateKey { get; set; }
+    public string? publicKey { get; set; }
+    public List<string>? address { get; set; }
+}
+
+public class XdriveSettings4Ray
+{
+    public string? service { get; set; }
+    public string? remoteFolder { get; set; }
+    public List<string>? secrets { get; set; }
+    public S3Settings4Ray? s3 { get; set; }
+    public int? segmentBytes { get; set; }
+    public int? flushIntervalMs { get; set; }
+    public int? pollIntervalMs { get; set; }
+    public int? maxPollIntervalMs { get; set; }
+    public int? eagerWindowMs { get; set; }
+    public int? concurrency { get; set; }
+}
+
+public class S3Settings4Ray
+{
+    public string? endpoint { get; set; }
+    public string? region { get; set; }
+    public string? bucket { get; set; }
+    public bool? pathStyle { get; set; }
 }
 
 public class Finalmask4Ray
@@ -497,6 +521,12 @@ public class MaskSettings4Ray
     public string? url { get; set; }
     public List<string>? stunServers { get; set; }
     public string? packetSize { get; set; }
+
+    // udphop
+    public string? mode { get; set; }
+    public string? interval { get; set; }
+    // public List<string>? remoteIPs { get; set; }
+    public string? remotePorts { get; set; }
 
     // fragment
     public string? packets { get; set; }
@@ -524,7 +554,6 @@ public class QuicParams4Ray
     public string? congestion { get; set; }
     public string? brutalUp { get; set; }
     public string? brutalDown { get; set; }
-    public UdpHop4Ray? udpHop { get; set; }
 }
 
 public class AccountsItem4Ray

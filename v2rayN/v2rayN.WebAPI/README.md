@@ -214,7 +214,7 @@ verification. Web release orchestration and artifact names are RID-based, separa
 containers and Desktop workflows. riscv64 builds on RISC-V runners with the community .NET SDK;
 loongarch64 builds inside the QEMU loong64 VM with the official Loongson SDK; both run a native
 smoke before packaging. In PattN both run only when `release-WebAPI.yml` or `build-WebAPI.yml` is
-dispatched with `exotic_arch`, as for the desktop packages; "release all platforms" skips them, and
+dispatched with `exotic_arch`; "release all platforms" skips them, and
 `WebAPI-update.json` then lists the other packages.
 Windows x64/ARM64 have full-install and app-only update ZIPs; Windows
 containers are not built.

@@ -1104,6 +1104,9 @@
   <data name="TbSettingsTunStack" xml:space="preserve">
     <value>Stack</value>
   </data>
+  <data name="TbSettingsTunDnsMode" xml:space="preserve">
+    <value>DNS mode</value>
+  </data>
   <data name="TbMtu" xml:space="preserve">
     <value>MTU</value>
   </data>
@@ -2594,5 +2597,71 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   </data>
   <data name="MsgCurvePreferencesNeedUnsafe" xml:space="preserve">
     <value>curvePreferences only apply with the unsafe fingerprint. Choose unsafe, or clear curvePreferences.</value>
+  </data>
+  <data name="TbFakeIPv6" xml:space="preserve">
+    <value>IPv6 FakeIP</value>
+  </data>
+  <data name="TbFakeIPv6Tips" xml:space="preserve">
+    <value>Return fake IPv6 addresses as well. Requires FakeIP to be enabled and AAAA queries to be allowed.</value>
+  </data>
+  <data name="FillCorrectFakeIPv6Range" xml:space="preserve">
+    <value>Enter a valid IPv6 CIDR range with at least two addresses, for example fc00::/18.</value>
+  </data>
+  <data name="menuShowColumns" xml:space="preserve">
+    <value>Show columns</value>
+  </data>
+  <data name="TbWarp" xml:space="preserve">
+    <value>Warp</value>
+  </data>
+  <data name="LvPreResolve" xml:space="preserve">
+    <value>Pre-resolve server domains</value>
+  </data>
+  <data name="menuFreezeToThisColumn" xml:space="preserve">
+    <value>Freeze up to this column</value>
+  </data>
+  <data name="menuUnfreezeAllColumns" xml:space="preserve">
+    <value>Unfreeze all columns</value>
+  </data>
+  <data name="menuCurrentlyFrozenColumns" xml:space="preserve">
+    <value>Currently frozen first {0} column(s)</value>
+  </data>
+  <data name="menuHideThisColumn" xml:space="preserve">
+    <value>Hide this column</value>
+  </data>
+  <data name="XdriveProvider" xml:space="preserve">
+    <value>Preset Provider</value>
+  </data>
+  <data name="XdriveService" xml:space="preserve">
+    <value>Storage service (service)</value>
+  </data>
+  <data name="XdriveRemoteFolder" xml:space="preserve">
+    <value>Remote folder (remoteFolder)</value>
+  </data>
+  <data name="XdriveSecrets" xml:space="preserve">
+    <value>Secrets (AK,SK / OAuth)</value>
+  </data>
+  <data name="XdriveS3Endpoint" xml:space="preserve">
+    <value>S3 Endpoint</value>
+  </data>
+  <data name="XdriveS3Region" xml:space="preserve">
+    <value>S3 Region</value>
+  </data>
+  <data name="XdriveS3Bucket" xml:space="preserve">
+    <value>S3 Bucket</value>
+  </data>
+  <data name="XdriveS3PathStyle" xml:space="preserve">
+    <value>S3 Force Path Style</value>
+  </data>
+  <data name="XdriveExtra" xml:space="preserve">
+    <value>XDRIVE Extra</value>
+  </data>
+  <data name="XdriveExtraTip" xml:space="preserve">
+    <value>Raw JSON, format: { XdriveObject }</value>
+  </data>
+  <data name="TransportHeaderType6" xml:space="preserve">
+    <value>XDRIVE service</value>
+  </data>
+  <data name="TransportPathTip6" xml:space="preserve">
+    <value>XDRIVE remote folder</value>
   </data>
 </root>

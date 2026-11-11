@@ -1,6 +1,5 @@
 namespace ServiceLib.Models.Entities;
 
-[Serializable]
 public class SubItem
 {
     [PrimaryKey]
@@ -41,4 +40,6 @@ public class SubItem
     public string? OverrideAddress { get; set; }
 
     public int? OverridePort { get; set; }
+
+    public string? PreResolver { get; set; }
 }

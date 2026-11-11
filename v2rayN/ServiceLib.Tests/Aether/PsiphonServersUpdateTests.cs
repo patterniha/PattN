@@ -46,7 +46,7 @@ public class PsiphonServersUpdateTests : IDisposable
     {
         var signature = Convert.ToBase64String(_pair.SignData(Encoding.UTF8.GetBytes(data), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
         var digest = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(_keyText)));
-        var json = $"{{\"data\":{JsonSerializer.Serialize(data)},\"signingPublicKeyDigest\":\"{digest}\",\"signature\":\"{signature}\"}}";
+        var json = $"{{\"data\":{JsonUtils.Serialize(data, false)},\"signingPublicKeyDigest\":\"{digest}\",\"signature\":\"{signature}\"}}";
         using var output = new MemoryStream();
         using (var zlib = new ZLibStream(output, CompressionLevel.Optimal))
         {

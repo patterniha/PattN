@@ -34,7 +34,7 @@ public partial class DNSSettingViewModel : MyReactiveObject, ICloseable
     [Reactive] public partial bool RayCustomDNSEnableCompatible { get; set; }
     [Reactive] public partial bool SBCustomDNSEnableCompatible { get; set; }
 
-    public bool IsSimpleDNSEnabled => !(RayCustomDNSEnableCompatible && SBCustomDNSEnableCompatible);
+    [ObservableAsProperty] public partial bool IsSimpleDNSEnabled { get; }
 
     public ReactiveCommand<RxVoid, RxVoid> SaveCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> ImportDefConfig4V2rayCompatibleCmd { get; }
@@ -59,8 +59,11 @@ public partial class DNSSettingViewModel : MyReactiveObject, ICloseable
             await Task.CompletedTask;
         });
 
-        this.WhenAnyValue(x => x.RayCustomDNSEnableCompatible, x => x.SBCustomDNSEnableCompatible)
-            .Subscribe(_ => this.RaisePropertyChanged(nameof(IsSimpleDNSEnabled)));
+        _isSimpleDNSEnabledHelper = this.WhenAnyValue(
+                x => x.RayCustomDNSEnableCompatible,
+                x => x.SBCustomDNSEnableCompatible,
+                (a, b) => !(a && b))
+            .ToProperty(this, nameof(IsSimpleDNSEnabled));
 
         _ = Init();
     }

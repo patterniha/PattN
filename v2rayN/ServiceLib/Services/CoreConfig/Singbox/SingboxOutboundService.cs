@@ -549,7 +549,7 @@ public partial class CoreConfigSingboxService
                         transport.type = nameof(ETransport.http);
                         transport.host = transportExtra.Host.IsNullOrEmpty()
                             ? null
-                            : Utils.String2List(transportExtra.Host);
+                            : JsonUtils.SerializeToArray(Utils.String2List(transportExtra.Host));
                         transport.path = transportExtra.Path.NullIfEmpty();
                         if (!useragentValue.IsNullOrEmpty())
                         {
@@ -566,7 +566,9 @@ public partial class CoreConfigSingboxService
                     // Parse eh and ed parameters from path using regex
                     if (!wsPath.IsNullOrEmpty())
                     {
-                        var edRegex = new Regex(@"[?&]ed=(\d+)");
+                        // Keep the '?' or '&' in front of "ed" out of the match, so removing it
+                        // leaves "/ws?ed=2048&key=value" as "/ws?key=value", not "/ws&key=value".
+                        var edRegex = new Regex(@"(?<=[?&])ed=(\d+)&?");
                         var edMatch = edRegex.Match(wsPath);
                         if (edMatch.Success && int.TryParse(edMatch.Groups[1].Value, out var edValue))
                         {
@@ -574,11 +576,7 @@ public partial class CoreConfigSingboxService
                             transport.early_data_header_name = "Sec-WebSocket-Protocol";
 
                             wsPath = edRegex.Replace(wsPath, "");
-                            wsPath = wsPath.Replace("?&", "?");
-                            if (wsPath.EndsWith('?'))
-                            {
-                                wsPath = wsPath.TrimEnd('?');
-                            }
+                            wsPath = wsPath.TrimEnd('&').TrimEnd('?');
                         }
 
                         var ehRegex = new Regex(@"[?&]eh=([^&]+)");

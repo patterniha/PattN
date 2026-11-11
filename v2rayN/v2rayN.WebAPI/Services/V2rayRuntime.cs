@@ -572,7 +572,7 @@ public sealed partial class V2rayRuntime(
                     await using var operation = await _operations.EnterOperationAsync(operationToken);
                     await _mutations.RunAsync(async () =>
                     {
-                        await SubscriptionHandler.UpdateProcess(Config, id, useProxy, (success, message) =>
+                        var handler = new SubscriptionHandler(Config, useProxy, (success, message) =>
                         {
                             var payload = new
                             {
@@ -586,6 +586,7 @@ public sealed partial class V2rayRuntime(
                             AddLog("subscription", message);
                             return Task.CompletedTask;
                         });
+                        await handler.UpdateProcess(id);
 
                         operation.Token.ThrowIfCancellationRequested();
                         await EnsureConfigSaveSucceededAsync(() => ConfigHandler.SaveConfig(Config));

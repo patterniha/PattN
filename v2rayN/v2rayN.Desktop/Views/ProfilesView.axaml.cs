@@ -1,3 +1,4 @@
+using Avalonia.Controls.DataGridDragDrop;
 using Avalonia.VisualTree;
 using DialogHostAvalonia;
 using v2rayN.Desktop.Common;
@@ -8,6 +9,7 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
 {
     private static Config _config;
     private static readonly string _tag = "ProfilesView";
+    private bool _isDndRegistered = false;
 
     public ProfilesView()
     {
@@ -16,23 +18,12 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
         _config = AppManager.Instance.Config;
 
         menuSelectAll.Click += menuSelectAll_Click;
-        btnAutofitColumnWidth.Click += BtnAutofitColumnWidth_Click;
         txtServerFilter.KeyDown += TxtServerFilter_KeyDown;
         lstProfiles.KeyDown += LstProfiles_KeyDown;
         lstProfiles.SelectionChanged += lstProfiles_SelectionChanged;
         lstProfiles.DoubleTapped += LstProfiles_DoubleTapped;
-        lstProfiles.LoadingRow += LstProfiles_LoadingRow;
         lstProfiles.Sorting += LstProfiles_Sorting;
-        if (_config.UiItem.EnableDragDropSort)
-        {
-            lstProfiles.SetValue(DragDrop.AllowDropProperty, true);
-
-            lstProfiles.AddHandler(PointerPressedEvent, LstProfiles_PointerPressed, RoutingStrategies.Bubble, true);
-            lstProfiles.AddHandler(PointerMovedEvent, LstProfiles_PointerMoved, RoutingStrategies.Bubble, true);
-            lstProfiles.AddHandler(PointerReleasedEvent, LstProfiles_PointerReleased, RoutingStrategies.Bubble, true);
-            lstProfiles.AddHandler(DragDrop.DragOverEvent, LstProfiles_DragOver, RoutingStrategies.Bubble);
-            lstProfiles.AddHandler(DragDrop.DropEvent, LstProfiles_Drop, RoutingStrategies.Bubble);
-        }
+        SetupColumnHeaderContextMenu();
 
         this.WhenActivated(disposables =>
         {
@@ -83,6 +74,22 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
             this.BindCommand(ViewModel, vm => vm.Export2ShareUrlCmd, v => v.menuExport2ShareUrl).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.Export2ShareUrlBase64Cmd, v => v.menuExport2ShareUrlBase64).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.Export2InnerUriCmd, v => v.menuExport2InnerUri).DisposeWith(disposables);
+
+            if (_config.UiItem.EnableDragDropSort && !_isDndRegistered)
+            {
+                lstProfiles.CanUserReorderRows = true;
+                lstProfiles.RowDragHandle = DataGridRowDragHandle.RowHeaderAndRow;
+                lstProfiles.RowDragHandleVisible = true;
+                var rowDragDropOptions = new DataGridRowDragDropOptions()
+                {
+                    AllowedEffects = DragDropEffects.Move,
+                    DragSelectedRows = true,
+                    SuppressSelectionDragFromDragHandle = true,
+                };
+                lstProfiles.RowDragDropOptions = rowDragDropOptions;
+                lstProfiles.RowDropHandler = new ProfileRowDropHandler(ViewModel);
+                _isDndRegistered = true;
+            }
 
             ViewModel.ShowYesNoInteraction.RegisterHandler(async interaction =>
             {
@@ -198,7 +205,7 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
         }
     }
 
-    private void LstProfiles_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    private void LstProfiles_DoubleTapped(object? sender, TappedEventArgs e)
     {
         var source = e.Source as Border;
         if (source?.Name == "HeaderBackground")
@@ -214,11 +221,6 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
         {
             ViewModel?.EditServerAsync();
         }
-    }
-
-    private void LstProfiles_LoadingRow(object? sender, DataGridRowEventArgs e)
-    {
-        e.Row.Header = $" {e.Row.Index + 1}";
     }
 
     //private void LstProfiles_ColumnHeader_Click(object? sender, RoutedEventArgs e)
@@ -314,11 +316,6 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
         }
     }
 
-    private void BtnAutofitColumnWidth_Click(object? sender, RoutedEventArgs e)
-    {
-        AutofitColumnWidth();
-    }
-
     private void AutofitColumnWidth()
     {
         try
@@ -400,6 +397,7 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
                     }
                 }
             }
+            lstProfiles.FrozenColumnCount = _config.UiItem.FrozenColumnCount ?? 0;
         }
         catch (Exception ex)
         {
@@ -407,10 +405,26 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
         }
     }
 
+    private async void CopyIpInfo_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is MenuItem { CommandParameter: string text } && !text.IsNullOrEmpty())
+            {
+                await AvaUtils.SetClipboardData(this, text);
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+    }
+
     private void StorageUI()
     {
         try
         {
+            _config.UiItem.FrozenColumnCount = lstProfiles.FrozenColumnCount;
             List<ColumnItem> lvColumnItem = [];
             foreach (var item2 in lstProfiles.Columns)
             {
@@ -433,142 +447,153 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
         }
     }
 
+    private void SetupColumnHeaderContextMenu()
+    {
+        lstProfiles.AddHandler(PointerPressedEvent, (sender, e) =>
+        {
+            if (e.GetCurrentPoint(lstProfiles).Properties.IsRightButtonPressed)
+            {
+                var header = (e.Source as Visual)?.FindAncestorOfType<DataGridColumnHeader>();
+                if (header?.OwningColumn != null)
+                {
+                    e.Handled = true;
+                    ShowColumnHeaderContextMenu(header, header.OwningColumn);
+                }
+            }
+        }, RoutingStrategies.Tunnel);
+    }
+
+    private void ShowColumnHeaderContextMenu(DataGridColumnHeader header, DataGridColumn column)
+    {
+        var menu = new ContextMenu();
+        var colTitle = column.Header?.ToString() ?? string.Empty;
+
+        var visibleColumns = lstProfiles.Columns
+            .Where(c => c.IsVisible)
+            .OrderBy(c => c.DisplayIndex < 0 ? int.MaxValue : c.DisplayIndex)
+            
+            .ToList();
+        var targetIndex = visibleColumns.IndexOf(column);
+        var targetCount = targetIndex >= 0 ? targetIndex + 1 : 0;
+
+        var autofitColumnWidthColumn = new MenuItem
+        {
+            Header = ResUI.menuProfileAutofitColumnWidth,
+        };
+        autofitColumnWidthColumn.Click += (s, ev) =>
+        {
+            AutofitColumnWidth();
+        };
+
+        var hideColumn = new MenuItem
+        {
+            Header = ResUI.menuHideThisColumn,
+            IsEnabled = column.IsVisible,
+        };
+        hideColumn.Click += (s, ev) =>
+        {
+            column.IsVisible = false;
+        };
+
+        var showColumns = new MenuItem
+        {
+            Header = ResUI.menuShowColumns,
+        };
+        var dgColumnLst = lstProfiles.Columns.OrderBy(c => c.DisplayIndex < 0 ? int.MaxValue : c.DisplayIndex).ToList();
+        foreach (var col in dgColumnLst)
+        {
+            var columnItem = new MenuItem
+            {
+                Header = col.Header,
+                IsChecked = col.IsVisible,
+                IsEnabled = col.CanUserHide,
+                Padding = new Thickness(6, 2),
+                StaysOpenOnClick = true,
+                ToggleType = MenuItemToggleType.CheckBox,
+            };
+            columnItem.Click += (_, _) => col.IsVisible = columnItem.IsChecked;
+            showColumns.Items.Add(columnItem);
+        }
+
+        var freezeToHereStr = ResUI.menuFreezeToThisColumn;
+        if (!string.IsNullOrEmpty(colTitle))
+        {
+            freezeToHereStr += $" ({colTitle})";
+        }
+        var freezeToHere = new MenuItem
+        {
+            Header = freezeToHereStr,
+            IsEnabled = targetCount > 0,
+        };
+        freezeToHere.Click += (s, ev) =>
+        {
+            lstProfiles.FrozenColumnCount = targetCount;
+        };
+
+        var unfreezeAll = new MenuItem
+        {
+            Header = ResUI.menuUnfreezeAllColumns,
+            IsEnabled = lstProfiles.FrozenColumnCount > 0,
+        };
+        unfreezeAll.Click += (s, ev) =>
+        {
+            lstProfiles.FrozenColumnCount = 0;
+        };
+
+        var statusItemStr = string.Format(ResUI.menuCurrentlyFrozenColumns, lstProfiles.FrozenColumnCount);
+        var statusItem = new MenuItem
+        {
+            Header = statusItemStr,
+            IsEnabled = false,
+        };
+
+        menu.Items.Add(autofitColumnWidthColumn);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(hideColumn);
+        menu.Items.Add(showColumns);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(freezeToHere);
+        menu.Items.Add(unfreezeAll);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(statusItem);
+
+        header.ContextMenu = menu;
+        menu.Open(header);
+    }
+
     #endregion UI
 
-    #region Drag and Drop
-
-    private static readonly DataFormat<ProfileItemModel> LstProfilesRowFormat =
-        DataFormat.CreateInProcessFormat<ProfileItemModel>("LstProfilesRow");
-
-    private (Point, PointerPressedEventArgs)? _dragStartPoint;
-
-    private void LstProfiles_PointerPressed(object? sender, PointerPressedEventArgs e)
+    private sealed class ProfileRowDropHandler(ProfilesViewModel viewModel) : IDataGridRowDropHandler
     {
-        var properties = e.GetCurrentPoint(this).Properties;
-        if (properties.IsLeftButtonPressed)
+        private readonly DataGridRowReorderHandler _reorderHandler = new();
+
+        public bool Validate(DataGridRowDropEventArgs args)
         {
-            _dragStartPoint = (e.GetPosition(this), e);
+            ArgumentNullException.ThrowIfNull(args);
+            return _reorderHandler.Validate(args);
+        }
+
+        public bool Execute(DataGridRowDropEventArgs args)
+        {
+            ArgumentNullException.ThrowIfNull(args);
+
+            if (!_reorderHandler.Execute(args))
+            {
+                return false;
+            }
+
+            if (viewModel?.ProfileItems != null)
+            {
+                for (var index = 0; index < viewModel.ProfileItems.Count; index++)
+                {
+                    var item = viewModel.ProfileItems[index];
+                    var sort = (index + 1) * 10;
+                    item.Sort = sort;
+                    ProfileExManager.Instance.SetSort(item.IndexId, sort);
+                }
+            }
+
+            return true;
         }
     }
-
-    private async void LstProfiles_PointerMoved(object? sender, PointerEventArgs e)
-    {
-        try
-        {
-            if (_dragStartPoint == null)
-            {
-                return;
-            }
-
-            var properties = e.GetCurrentPoint(this).Properties;
-            if (!properties.IsLeftButtonPressed)
-            {
-                _dragStartPoint = null;
-                return;
-            }
-
-            var currentPoint = e.GetPosition(this);
-            var startPoint = _dragStartPoint.Value.Item1;
-            var delta = startPoint - currentPoint;
-
-            var threshold = new Vector(4, 4);
-
-            if (!(Math.Abs(delta.X) >= threshold.X) && !(Math.Abs(delta.Y) >= threshold.Y))
-            {
-                return;
-            }
-            var dragStartEventArgs = _dragStartPoint.Value.Item2;
-            _dragStartPoint = null;
-
-            if (e.Source is not Visual visualSource)
-            {
-                return;
-            }
-            var row = visualSource.FindAncestorOfType<DataGridRow>(true);
-            if (row?.DataContext == null)
-            {
-                return;
-            }
-
-            e.Handled = true;
-
-            var dragData = new DataTransfer();
-            var item = DataTransferItem.Create(LstProfilesRowFormat, row.DataContext as ProfileItemModel);
-
-            dragData.Add(item);
-
-            await DragDrop.DoDragDropAsync(dragStartEventArgs, dragData, DragDropEffects.Move);
-        }
-        catch
-        {
-            // Ignore
-        }
-    }
-
-    private void LstProfiles_PointerReleased(object? sender, PointerReleasedEventArgs e)
-    {
-        _dragStartPoint = null;
-    }
-
-    private void LstProfiles_DragOver(object? sender, DragEventArgs e)
-    {
-        if (!e.DataTransfer.Contains(LstProfilesRowFormat))
-        {
-            e.DragEffects = DragDropEffects.None;
-            return;
-        }
-        e.DragEffects = DragDropEffects.Move;
-    }
-
-    private void LstProfiles_Drop(object? sender, DragEventArgs e)
-    {
-        if (!e.DataTransfer.Contains(LstProfilesRowFormat))
-        {
-            return;
-        }
-        ProfileItemModel? sourceItem = null;
-        foreach (var item in e.DataTransfer.Items)
-        {
-            if (!item.Formats.Contains(LstProfilesRowFormat))
-            {
-                continue;
-            }
-            if (item.TryGetRaw(LstProfilesRowFormat) is not ProfileItemModel model)
-            {
-                continue;
-            }
-            sourceItem = model;
-            break;
-        }
-        if (sourceItem == null)
-        {
-            return;
-        }
-        if (e.Source is not Visual visualTarget)
-        {
-            return;
-        }
-
-        var targetRow = visualTarget.FindAncestorOfType<DataGridRow>(true);
-        if (targetRow is not { DataContext: ProfileItemModel targetItem })
-        {
-            return;
-        }
-        if (ReferenceEquals(sourceItem, targetItem))
-        {
-            return;
-        }
-        if (lstProfiles.ItemsSource is not IList<ProfileItemModel> items)
-        {
-            return;
-        }
-        var oldIndex = items.IndexOf(sourceItem);
-        var newIndex = items.IndexOf(targetItem);
-        if (oldIndex >= 0 && newIndex >= 0)
-        {
-            ViewModel?.MoveServerTo(oldIndex, targetItem);
-        }
-    }
-
-    #endregion Drag and Drop
 }

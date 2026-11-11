@@ -107,6 +107,18 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
     public partial string MasqueHeaders { get; set; }
 
     [Reactive]
+    public partial string WarpPublicKey { get; set; }
+
+    [Reactive]
+    public partial string WarpPrivateKey { get; set; }
+
+    [Reactive]
+    public partial string WarpAddress { get; set; }
+
+    [Reactive]
+    public partial string Network { get; set; }
+
+    [Reactive]
     public partial string RawHeaderType { get; set; }
 
     [Reactive]
@@ -149,6 +161,33 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
 
     public PresetFieldViewModel DialModePreset { get; }
 
+    [Reactive]
+    public partial string XdriveProvider { get; set; }
+
+    [Reactive]
+    public partial string XdriveService { get; set; }
+
+    [Reactive]
+    public partial string XdriveRemoteFolder { get; set; }
+
+    [Reactive]
+    public partial string XdriveSecrets { get; set; }
+
+    [Reactive]
+    public partial string XdriveS3Endpoint { get; set; }
+
+    [Reactive]
+    public partial string XdriveS3Region { get; set; }
+
+    [Reactive]
+    public partial string XdriveS3Bucket { get; set; }
+
+    [Reactive]
+    public partial bool? XdriveS3PathStyle { get; set; }
+
+    [Reactive]
+    public partial string XdriveExtra { get; set; }
+
     public string TransportHeaderType
     {
         get => SelectedSource.GetNetwork() switch
@@ -157,6 +196,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             nameof(ETransport.kcp) => KcpHeaderType,
             nameof(ETransport.xhttp) => XhttpMode,
             nameof(ETransport.grpc) => GrpcMode,
+            nameof(ETransport.xdrive) => XdriveService,
             _ => string.Empty,
         };
         set
@@ -178,6 +218,10 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
                 case nameof(ETransport.grpc):
                     GrpcMode = value;
                     break;
+
+                case nameof(ETransport.xdrive):
+                    XdriveService = value;
+                    break;
             }
             this.RaisePropertyChanged();
         }
@@ -192,6 +236,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             nameof(ETransport.httpupgrade) => Host,
             nameof(ETransport.xhttp) => Host,
             nameof(ETransport.grpc) => GrpcAuthority,
+            nameof(ETransport.xdrive) => XdriveS3Endpoint,
             _ => string.Empty,
         };
         set
@@ -208,6 +253,10 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
                 case nameof(ETransport.grpc):
                     GrpcAuthority = value;
                     break;
+
+                case nameof(ETransport.xdrive):
+                    XdriveS3Endpoint = value;
+                    break;
             }
             this.RaisePropertyChanged();
         }
@@ -222,6 +271,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             nameof(ETransport.httpupgrade) => Path,
             nameof(ETransport.xhttp) => Path,
             nameof(ETransport.grpc) => GrpcServiceName,
+            nameof(ETransport.xdrive) => XdriveRemoteFolder,
             _ => string.Empty,
         };
         set
@@ -241,6 +291,10 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
                 case nameof(ETransport.grpc):
                     GrpcServiceName = value;
                     break;
+
+                case nameof(ETransport.xdrive):
+                    XdriveRemoteFolder = value;
+                    break;
             }
             this.RaisePropertyChanged();
         }
@@ -248,14 +302,23 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
 
     public string TransportExtraText
     {
-        get => SelectedSource.GetNetwork() == nameof(ETransport.xhttp)
-            ? XhttpExtra
-            : string.Empty;
+        get => SelectedSource.GetNetwork() switch
+        {
+            nameof(ETransport.xhttp) => XhttpExtra,
+            nameof(ETransport.xdrive) => XdriveExtra,
+            _ => string.Empty,
+        };
         set
         {
-            if (SelectedSource.GetNetwork() == nameof(ETransport.xhttp))
+            switch (SelectedSource.GetNetwork())
             {
-                XhttpExtra = value;
+                case nameof(ETransport.xhttp):
+                    XhttpExtra = value;
+                    break;
+
+                case nameof(ETransport.xdrive):
+                    XdriveExtra = value;
+                    break;
             }
             this.RaisePropertyChanged();
         }
@@ -287,9 +350,17 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         this.WhenAnyValue(x => x.CertSha)
             .Subscribe(_ => UpdateCertTip());
 
-        this.WhenAnyValue(x => x.SelectedSource.Network)
-            .Subscribe(_ =>
+        this.WhenAnyValue(x => x.Network)
+            .Subscribe(network =>
             {
+                if (SelectedSource != null && !network.IsNullOrEmpty())
+                {
+                    SelectedSource.Network = network;
+                }
+                if (network == nameof(ETransport.xdrive))
+                {
+                    MuxEnabled = true;
+                }
                 this.RaisePropertyChanged(nameof(TransportHeaderType));
                 this.RaisePropertyChanged(nameof(TransportHost));
                 this.RaisePropertyChanged(nameof(TransportPath));
@@ -298,6 +369,13 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
 
         this.WhenAnyValue(x => x.Cert)
             .Subscribe(_ => UpdateCertSha());
+
+        this.WhenAnyValue(x => x.XdriveProvider)
+            .Where(p => p.IsNotEmpty())
+            .Subscribe(provider =>
+            {
+                ApplyXdriveProviderPreset(provider);
+            });
 
         if (profileItem.IndexId.IsNullOrEmpty())
         {
@@ -313,6 +391,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         AllowInsecure = SelectedSource?.GetAllowInsecure() == true;
         MuxEnabled = SelectedSource?.MuxEnabled == true;
         TargetStrategy = SelectedSource?.GetTargetStrategy() ?? Global.AsIs;
+        Network = SelectedSource?.Network ?? Global.DefaultNetwork;
         Cert = SelectedSource?.Cert ?? string.Empty;
         CertSha = SelectedSource?.CertSha ?? string.Empty;
         // PattN: the preset fields start with what the profile holds
@@ -348,6 +427,9 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         GeckoMaxPacketSize = protocolExtra.GeckoMaxPacketSize.ToInt();
         MasquePath = protocolExtra.MasquePath ?? string.Empty;
         MasqueHeaders = protocolExtra.MasqueHeaders ?? string.Empty;
+        WarpPublicKey = protocolExtra.WarpPublicKey ?? string.Empty;
+        WarpPrivateKey = protocolExtra.WarpPrivateKey ?? string.Empty;
+        WarpAddress = protocolExtra.WarpAddress ?? string.Empty;
 
         RawHeaderType = transport.RawHeaderType ?? Global.None;
         Host = transport.Host ?? string.Empty;
@@ -360,6 +442,48 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         KcpHeaderType = transport.KcpHeaderType.IsNullOrEmpty() ? Global.None : transport.KcpHeaderType;
         KcpSeed = transport.KcpSeed ?? string.Empty;
         KcpMtu = transport.KcpMtu;
+        XdriveService = transport.XdriveService.IsNullOrEmpty() ? (Global.XdriveServices.FirstOrDefault() ?? "google-drive") : transport.XdriveService;
+        XdriveRemoteFolder = transport.XdriveRemoteFolder ?? string.Empty;
+        XdriveSecrets = transport.XdriveSecrets ?? string.Empty;
+        XdriveS3Endpoint = transport.XdriveS3Endpoint ?? string.Empty;
+        XdriveS3Region = transport.XdriveS3Region ?? string.Empty;
+        XdriveS3Bucket = transport.XdriveS3Bucket ?? string.Empty;
+        XdriveS3PathStyle = transport.XdriveS3PathStyle;
+        XdriveExtra = transport.XdriveExtra ?? string.Empty;
+
+        if (transport.XdriveService == "google-drive")
+        {
+            XdriveProvider = "Google Drive";
+        }
+        else if (transport.XdriveS3Endpoint?.Contains("r2.cloudflarestorage.com") == true)
+        {
+            XdriveProvider = "Cloudflare R2";
+        }
+        else if (transport.XdriveS3Endpoint?.Contains("amazonaws.com") == true)
+        {
+            XdriveProvider = "AWS S3 (Global)";
+        }
+        else if (transport.XdriveS3Endpoint?.Contains("yandexcloud.net") == true)
+        {
+            XdriveProvider = "Yandex Cloud S3";
+        }
+        else if (transport.XdriveS3Endpoint?.Contains("arvanstorage.ir") == true)
+        {
+            XdriveProvider = "ArvanCloud S3";
+        }
+        else if (SelectedSource.Remarks?.Contains("Cloudflare", StringComparison.OrdinalIgnoreCase) == true
+                 || (transport.XdriveS3PathStyle == true && transport.XdriveS3Region == "auto"))
+        {
+            XdriveProvider = "Cloudflare R2";
+        }
+        else if (transport.XdriveService == "s3" || transport.XdriveS3Endpoint.IsNotEmpty())
+        {
+            XdriveProvider = "Custom S3";
+        }
+        else
+        {
+            XdriveProvider = "Cloudflare R2";
+        }
     }
 
     private async Task SaveServerAsync()
@@ -455,10 +579,11 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         SelectedSource.TargetStrategy = SelectedSource.GetTargetStrategy() ?? string.Empty;
         SelectedSource.Cert = Cert.IsNullOrEmpty() ? string.Empty : Cert;
         SelectedSource.CertSha = CertSha.IsNullOrEmpty() ? string.Empty : CertSha;
-        if (!Global.Networks.Contains(SelectedSource.Network))
+        if (!Global.Networks.Contains(Network))
         {
-            SelectedSource.Network = Global.DefaultNetwork;
+            Network = Global.DefaultNetwork;
         }
+        SelectedSource.Network = Network;
 
         var transport = new TransportExtraItem
         {
@@ -473,6 +598,14 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             KcpHeaderType = KcpHeaderType.NullIfEmpty(),
             KcpSeed = KcpSeed.NullIfEmpty(),
             KcpMtu = KcpMtu > 0 ? KcpMtu : null,
+            XdriveService = XdriveService.NullIfEmpty(),
+            XdriveRemoteFolder = XdriveRemoteFolder.NullIfEmpty(),
+            XdriveSecrets = XdriveSecrets.NullIfEmpty(),
+            XdriveS3Endpoint = XdriveS3Endpoint.NullIfEmpty(),
+            XdriveS3Region = XdriveS3Region.NullIfEmpty(),
+            XdriveS3Bucket = XdriveS3Bucket.NullIfEmpty(),
+            XdriveS3PathStyle = XdriveS3PathStyle,
+            XdriveExtra = XdriveExtra.NullIfEmpty(),
         };
 
         SelectedSource.SetProtocolExtra(SelectedSource.GetProtocolExtra() with
@@ -503,6 +636,9 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             GeckoMaxPacketSize = GeckoMaxPacketSize > 0 ? GeckoMaxPacketSize.ToString() : null,
             MasquePath = MasquePath.NullIfEmpty(),
             MasqueHeaders = MasqueHeaders.NullIfEmpty(),
+            WarpPublicKey = WarpPublicKey.NullIfEmpty(),
+            WarpPrivateKey = WarpPrivateKey.NullIfEmpty(),
+            WarpAddress = WarpAddress.NullIfEmpty(),
         });
         SelectedSource.SetTransportExtra(transport);
 
@@ -522,6 +658,44 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         CertTip = errorMessage.IsNullOrEmpty()
             ? ((Cert.IsNullOrEmpty() && CertSha.IsNullOrEmpty()) ? ResUI.CertNotSet : ResUI.CertSet)
             : errorMessage;
+    }
+
+    private void ApplyXdriveProviderPreset(string provider)
+    {
+        switch (provider)
+        {
+            case "Cloudflare R2":
+                XdriveService = "s3";
+                if (XdriveS3Region.IsNullOrEmpty()) XdriveS3Region = "auto";
+                XdriveS3PathStyle = true;
+                break;
+            case "Google Drive":
+                XdriveService = "google-drive";
+                SelectedSource.StreamSecurity = Global.StreamSecurity;
+                if (SelectedSource.Sni.IsNullOrEmpty()) SelectedSource.Sni = "www.google.com";
+                if (SelectedSource.Alpn.IsNullOrEmpty()) SelectedSource.Alpn = "h2";
+                if (SelectedSource.Address.IsNullOrEmpty()) SelectedSource.Address = "www.google.com";
+                if (SelectedSource.Port <= 0) SelectedSource.Port = 443;
+                break;
+            case "AWS S3 (Global)":
+                XdriveService = "s3";
+                if (XdriveS3Region.IsNullOrEmpty()) XdriveS3Region = "ap-northeast-1";
+                XdriveS3PathStyle = false;
+                break;
+            case "Yandex Cloud S3":
+                XdriveService = "s3";
+                if (XdriveS3Region.IsNullOrEmpty()) XdriveS3Region = "ru-central1";
+                XdriveS3PathStyle = true;
+                break;
+            case "ArvanCloud S3":
+                XdriveService = "s3";
+                if (XdriveS3Region.IsNullOrEmpty()) XdriveS3Region = "ir-tbz-sh1";
+                XdriveS3PathStyle = true;
+                break;
+            case "Custom S3":
+                XdriveService = "s3";
+                break;
+        }
     }
 
     private void UpdateCertSha()
@@ -612,6 +786,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
             nameof(ETransport.httpupgrade) => Host,
             nameof(ETransport.xhttp) => Host,
             nameof(ETransport.grpc) => GrpcAuthority,
+            nameof(ETransport.xdrive) => XdriveS3Endpoint,
             _ => string.Empty,
         };
     }

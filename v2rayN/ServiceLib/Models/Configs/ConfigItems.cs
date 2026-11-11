@@ -1,6 +1,5 @@
 namespace ServiceLib.Models.Configs;
 
-[Serializable]
 public class CoreBasicItem
 {
     public bool LogEnabled { get; set; }
@@ -26,7 +25,6 @@ public class CoreBasicItem
     public int? AetherListenPort { get; set; }
 }
 
-[Serializable]
 public class InItem
 {
     public int LocalPort { get; set; }
@@ -43,7 +41,6 @@ public class InItem
     public bool SecondLocalPortEnabled { get; set; }
 }
 
-[Serializable]
 public class KcpItem
 {
     public int Mtu { get; set; }
@@ -59,7 +56,6 @@ public class KcpItem
     public int MaxSendingWindow { get; set; }
 }
 
-[Serializable]
 public class GrpcItem
 {
     public int? IdleTimeout { get; set; }
@@ -68,7 +64,6 @@ public class GrpcItem
     public int? InitialWindowsSize { get; set; }
 }
 
-[Serializable]
 public class GUIItem
 {
     public bool AutoRun { get; set; }
@@ -82,14 +77,12 @@ public class GUIItem
     public string? RootCertProvider { get; set; }
 }
 
-[Serializable]
 public class MsgUIItem
 {
     public string? MainMsgFilter { get; set; }
     public bool? AutoRefresh { get; set; }
 }
 
-[Serializable]
 public class UIItem
 {
     public bool EnableAutoAdjustMainLvColWidth { get; set; }
@@ -109,9 +102,9 @@ public class UIItem
     public List<ColumnItem> MainColumnItem { get; set; }
     public List<WindowSizeItem> WindowSizeItem { get; set; }
     public bool HideColumnIpInfo { get; set; }
+    public int? FrozenColumnCount { get; set; }
 }
 
-[Serializable]
 public class ConstItem
 {
     public string? SubConvertUrl { get; set; }
@@ -120,7 +113,6 @@ public class ConstItem
     public string? RouteRulesTemplateSourceUrl { get; set; }
 }
 
-[Serializable]
 public class KeyEventItem
 {
     public EGlobalHotkey EGlobalHotkey { get; set; }
@@ -134,7 +126,6 @@ public class KeyEventItem
     public int? KeyCode { get; set; }
 }
 
-[Serializable]
 public class CoreTypeItem
 {
     public EConfigType ConfigType { get; set; }
@@ -142,7 +133,6 @@ public class CoreTypeItem
     public ECoreType CoreType { get; set; }
 }
 
-[Serializable]
 public class TunModeItem
 {
     public bool EnableTun { get; set; }
@@ -155,12 +145,12 @@ public class TunModeItem
     public string IcmpRouting { get; set; }
     // PattN: default to Xray's native TUN inbound; sing-box legacy protect is opt-in
     public bool EnableLegacyProtect { get; set; }
+    public string? DnsMode { get; set; }
     public List<string>? RouteExcludeAddress { get; set; }
     public string IPv4Address { get; set; }
     public string IPv6Address { get; set; }
 }
 
-[Serializable]
 public class SpeedTestItem
 {
     public int SpeedTestTimeout { get; set; }
@@ -173,7 +163,6 @@ public class SpeedTestItem
     public int? SpeedTestDelayInterval { get; set; }
 }
 
-[Serializable]
 public class RoutingBasicItem
 {
     public string DomainStrategy { get; set; }
@@ -181,7 +170,6 @@ public class RoutingBasicItem
     public string RoutingIndexId { get; set; }
 }
 
-[Serializable]
 public class ColumnItem
 {
     public string Name { get; set; }
@@ -189,7 +177,6 @@ public class ColumnItem
     public int Index { get; set; }
 }
 
-[Serializable]
 public class Mux4RayItem
 {
     public int? Concurrency { get; set; }
@@ -197,7 +184,6 @@ public class Mux4RayItem
     public string? XudpProxyUDP443 { get; set; }
 }
 
-[Serializable]
 public class Mux4SboxItem
 {
     public string Protocol { get; set; }
@@ -205,7 +191,6 @@ public class Mux4SboxItem
     public bool? Padding { get; set; }
 }
 
-[Serializable]
 public class HysteriaItem
 {
     public int UpMbps { get; set; }
@@ -213,7 +198,6 @@ public class HysteriaItem
     public int HopInterval { get; set; } = Global.Hysteria2DefaultHopInt;
 }
 
-[Serializable]
 public class ClashUIItem
 {
     public bool EnableIPv6 { get; set; }
@@ -226,7 +210,6 @@ public class ClashUIItem
     public List<ColumnItem> ConnectionsColumnItem { get; set; }
 }
 
-[Serializable]
 public class SystemProxyItem
 {
     public ESysProxyType SysProxyType { get; set; }
@@ -237,7 +220,6 @@ public class SystemProxyItem
     public string? CustomSystemProxyScriptPath { get; set; }
 }
 
-[Serializable]
 public class WebDavItem
 {
     public string? Url { get; set; }
@@ -246,7 +228,6 @@ public class WebDavItem
     public string? DirName { get; set; }
 }
 
-[Serializable]
 public class CheckUpdateItem
 {
     public bool UpdateViaProxy { get; set; } = true;
@@ -254,7 +235,6 @@ public class CheckUpdateItem
     public List<string>? CheckPreReleaseCoreTypes { get; set; }
 }
 
-[Serializable]
 public class Fragment4RayItem
 {
     public string? Packets { get; set; }
@@ -269,7 +249,6 @@ public class Fragment4RayItem
     // migration end
 }
 
-[Serializable]
 public class WindowSizeItem
 {
     public string TypeName { get; set; }
@@ -277,7 +256,6 @@ public class WindowSizeItem
     public int Height { get; set; }
 }
 
-[Serializable]
 public class SimpleDNSItem
 {
     public bool? UseSystemHosts { get; set; }
@@ -299,7 +277,6 @@ public class SimpleDNSItem
     public bool? EnableHappyEyeballs { get; set; }
 }
 
-[Serializable]
 public class HappyEyeballs4RayItem
 {
     public int? TryDelayMs { get; set; }

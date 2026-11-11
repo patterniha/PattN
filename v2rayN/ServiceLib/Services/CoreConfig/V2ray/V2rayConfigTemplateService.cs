@@ -98,7 +98,7 @@ public partial class CoreConfigV2rayService
             echOutbound["tag"] = item.Tag;
             // PattN: the ECH queries of the Xray of an Aether scan, key run or latency test leave by the uplink under a TUN (D2)
             BindEchOutboundToUplink(echOutbound);
-            outboundsNode.Add(echOutbound);
+            outboundsNode.Add((JsonNode)echOutbound);
         }
         coreConfigContent = JsonUtils.Serialize(coreConfigNode);
         return null;
@@ -378,7 +378,7 @@ public partial class CoreConfigV2rayService
 
     private void ApplyOutboundBindInterface()
     {
-        var bindInterface = _config.CoreBasicItem.BindInterface?.TrimEx();
+        var bindInterface = NetworkUtils.GetRealBindInterfaceName(_config.CoreBasicItem.BindInterface);
         // PattN: with none set, the Xray of an Aether scan, key run or latency test binds to the uplink under a TUN (D2)
         if (bindInterface.IsNullOrEmpty())
         {
