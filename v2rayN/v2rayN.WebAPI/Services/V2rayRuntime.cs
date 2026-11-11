@@ -1400,6 +1400,8 @@ public sealed partial class V2rayRuntime(
             ? overrideAddress
             : null,
         OverridePort = (input.OverridePort ?? existing?.OverridePort) is int overridePort and > 0 ? overridePort : null,
+        // PattN: the API has no field for the pre-resolver (#10220), so an edit keeps the one the desktop editor set
+        PreResolver = existing?.PreResolver,
     };
 
     internal static SubscriptionView ToSubscriptionView(SubItem item) => new(

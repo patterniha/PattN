@@ -119,6 +119,26 @@ public class SubscriptionParityTests
     }
 
     [Test]
+    public async Task AnEditKeepsThePreResolver()
+    {
+        // The API has no field for the pre-resolver the desktop's subscription editor sets (#10220): saving the
+        // subscription through the API must not erase it
+        var original = new SubItem
+        {
+            Id = "pre-resolver-subscription",
+            Remarks = "Pre-resolved",
+            Url = "https://main.example/sub",
+            PreResolver = "https://1.1.1.1/dns-query",
+        };
+
+        var edited = V2rayRuntime.ToSubItem(new SubscriptionInput("Renamed", original.Url), original);
+        var added = V2rayRuntime.ToSubItem(new SubscriptionInput("New", "https://new.example/sub"), null);
+
+        await edited.PreResolver.Should().BeEqualTo("https://1.1.1.1/dns-query");
+        await added.PreResolver.Should().BeNull();
+    }
+
+    [Test]
     public async Task NullAndEmptySubscriptionFieldsAreNotCollapsedDuringMapping()
     {
         var original = new SubItem
