@@ -2520,4 +2520,7 @@ Tindakan "Ambil sertifikat" mungkin gagal jika sertifikat self-signed digunakan 
   <data name="TransportPathTip6" xml:space="preserve">
     <value>Folder jarak jauh XDRIVE</value>
   </data>
+  <data name="FillCorrectFakeIPv4Range" xml:space="preserve">
+    <value>Masukkan rentang CIDR IPv4 yang valid dengan sedikitnya dua alamat, misalnya 198.18.0.0/15.</value>
+  </data>
 </root>

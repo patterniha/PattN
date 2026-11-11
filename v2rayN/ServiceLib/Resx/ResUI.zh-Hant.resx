@@ -2626,6 +2626,9 @@
   <data name="TbFakeIPv6Tips" xml:space="preserve">
     <value>同時傳回 IPv6 假位址，需啟用 FakeIP 且未封鎖 AAAA 查詢。</value>
   </data>
+  <data name="FillCorrectFakeIPv4Range" xml:space="preserve">
+    <value>請輸入至少包含兩個位址的有效 IPv4 網段，例如 198.18.0.0/15。</value>
+  </data>
   <data name="FillCorrectFakeIPv6Range" xml:space="preserve">
     <value>請輸入至少包含兩個位址的有效 IPv6 網段，例如 fc00::/18。</value>
   </data>

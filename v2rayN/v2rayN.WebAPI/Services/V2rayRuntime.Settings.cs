@@ -515,11 +515,16 @@ public sealed partial class V2rayRuntime
     public Task<SimpleDNSItem> GetSimpleDNSAsync() => Task.FromResult(Config.SimpleDNSItem);
 
     /// <summary>
-    /// PattN: refuses an IPv6 FakeIP range the core configurations cannot use while the IPv6 pool is on, as the DNS
-    /// settings window does: no core would start with it.
+    /// PattN: refuses a FakeIP range the core configurations cannot use while its pool is on, as the DNS settings
+    /// window does: no core would start with it.
     /// </summary>
     internal static bool TryValidateSimpleDns(SimpleDNSItem input, out string code)
     {
+        if (input.FakeIP != false && !FakeIPUtils.TryParseIPv4Range(input.FakeIPRange, out _, out _))
+        {
+            code = "dns_fakeip_ipv4_range_invalid";
+            return false;
+        }
         if (input.FakeIP != false && input.FakeIPv6 != false && input.BlockAAAAQuery != true
             && !FakeIPUtils.TryParseIPv6Range(input.FakeIPv6Range, out _, out _))
         {

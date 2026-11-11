@@ -2496,4 +2496,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="TransportPathTip6" xml:space="preserve">
     <value>XDRIVE távoli mappa</value>
   </data>
+  <data name="FillCorrectFakeIPv4Range" xml:space="preserve">
+    <value>Kérjük, adjon meg egy legalább két címet tartalmazó érvényes IPv4 CIDR-tartományt, például 198.18.0.0/15.</value>
+  </data>
 </root>

@@ -25,6 +25,58 @@ public class DualStackFakeIPTests
         await FakeIPUtils.TryParseIPv6Range(input, out _, out _).Should().BeFalse();
     }
 
+    // PattN: the IPv4 range by the same rule as the IPv6 one
+    [Test]
+    [Arguments(null, "198.18.0.0/15", 65535L)]
+    [Arguments(" 11.0.0.0/8 ", "11.0.0.0/8", 65535L)]
+    [Arguments("198.18.0.1/15", "198.18.0.0/15", 65535L)]
+    [Arguments("198.18.0.0/24", "198.18.0.0/24", 255L)]
+    [Arguments("198.18.0.0/31", "198.18.0.0/31", 1L)]
+    public async Task IPv4Range_ShouldUseTheSamePoolSizeRuleAsIPv6(string? input, string expectedRange, long expectedSize)
+    {
+        var valid = FakeIPUtils.TryParseIPv4Range(input, out var range, out var size);
+
+        await valid.Should().BeTrue();
+        await range.Should().BeEqualTo(expectedRange);
+        await size.Should().BeEqualTo(expectedSize);
+    }
+
+    [Test]
+    [Arguments("2001:2::/48")]
+    [Arguments("not-a-network")]
+    [Arguments("198.18.0.1/32")]
+    public async Task IPv4Range_ShouldRejectInvalidOrSingleAddressPools(string input)
+    {
+        await FakeIPUtils.TryParseIPv4Range(input, out _, out _).Should().BeFalse();
+    }
+
+    [Test]
+    [Arguments(ECoreType.Xray)]
+    [Arguments(ECoreType.sing_box)]
+    public async Task AnUnusableIPv6Range_ShouldFailTheConfiguration(ECoreType coreType)
+    {
+        // PattN: Xray's GenDns only logged the error, which left the configuration without its DNS
+        var context = CreateContext(coreType, true, false);
+        context.AppConfig.SimpleDNSItem.FakeIPv6Range = "not-a-range";
+
+        var result = coreType == ECoreType.Xray
+            ? new CoreConfigV2rayService(context).GenerateClientConfigContent()
+            : new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Singbox_ShouldRefuseAnUnusableIPv4Range()
+    {
+        var context = CreateContext(ECoreType.sing_box, false, false);
+        context.AppConfig.SimpleDNSItem.FakeIPRange = "198.18.0.1/32";
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeFalse();
+    }
+
     [Test]
     public async Task OldDnsSettings_ShouldTurnIPv6FakeIPOn()
     {

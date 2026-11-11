@@ -122,9 +122,11 @@ public partial class CoreConfigSingboxService
         // fake ip
         if (simpleDnsItem.FakeIP == true)
         {
-            var fakeipRange = simpleDnsItem.FakeIPRange.IsNullOrEmpty()
-                ? Global.FakeIPRanges.First()
-                : simpleDnsItem.FakeIPRange;
+            // PattN: the IPv4 range is checked as the IPv6 one is
+            if (!FakeIPUtils.TryParseIPv4Range(simpleDnsItem.FakeIPRange, out var fakeipRange, out _))
+            {
+                throw new ArgumentException("Invalid IPv4 FakeIP range.");
+            }
             var fakeip = new Server4Sbox
             {
                 tag = Global.SingboxFakeDNSTag,

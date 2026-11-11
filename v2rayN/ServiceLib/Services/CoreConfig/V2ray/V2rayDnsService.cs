@@ -4,6 +4,12 @@ public partial class CoreConfigV2rayService
 {
     private void GenDns()
     {
+        // PattN: an unusable FakeIP range fails the configuration, as it fails sing-box's, before the try below: there,
+        // where errors are only logged, it left the configuration without its DNS
+        if (context.RawDnsItem is not { Enabled: true })
+        {
+            CheckFakeIPRanges();
+        }
         try
         {
             var item = context.RawDnsItem;
@@ -138,25 +144,30 @@ public partial class CoreConfigV2rayService
         }
     }
 
+    private void CheckFakeIPRanges()
+    {
+        var simpleDnsItem = _config.SimpleDNSItem;
+        if (simpleDnsItem?.FakeIP != true)
+        {
+            return;
+        }
+        if (!FakeIPUtils.TryParseIPv4Range(simpleDnsItem.FakeIPRange, out _, out _))
+        {
+            throw new ArgumentException("Invalid IPv4 FakeIP range.");
+        }
+        if (simpleDnsItem.FakeIPv6 != false && simpleDnsItem.BlockAAAAQuery != true
+            && !FakeIPUtils.TryParseIPv6Range(simpleDnsItem.FakeIPv6Range, out _, out _))
+        {
+            throw new ArgumentException("Invalid IPv6 FakeIP range.");
+        }
+    }
+
     private void GenFakeDns()
     {
-        var fakeipRange = _config.SimpleDNSItem.FakeIPRange.IsNullOrEmpty() ? Global.FakeIPRanges.First() : _config.SimpleDNSItem.FakeIPRange;
-        var poolSize = 65535L;
-        try
+        // PattN: the IPv4 pool is checked and sized by the same rule as the IPv6 one, min(addresses - 1, 65535)
+        if (!FakeIPUtils.TryParseIPv4Range(_config.SimpleDNSItem.FakeIPRange, out var fakeipRange, out var poolSize))
         {
-            var fakeipNetwork = IPNetwork2.Parse(fakeipRange);
-            var totalIPs = fakeipNetwork.Total;
-            // see https://github.com/XTLS/Xray-core/blob/6e3322d219140a025285ded1114fe17a5edb74d8/app/dns/fakedns/fake.go#L88
-            // if math.Log2(float64(lruSize)) >= float64(rooms) { return errors.New("LRU size is bigger than subnet size").AtError() }
-            totalIPs -= 1;
-            if (totalIPs > 0)
-            {
-                poolSize = (totalIPs >= long.MaxValue) ? long.MaxValue : (long)totalIPs;
-            }
-        }
-        catch
-        {
-            // Ignore
+            throw new ArgumentException("Invalid IPv4 FakeIP range.");
         }
         var fakeDns = new FakeDns4Ray
         {

@@ -232,6 +232,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 Enter a valid IPv4 CIDR range with at least two addresses, for example 198.18.0.0/15. 的本地化字符串。
+        /// </summary>
+        public static string FillCorrectFakeIPv4Range {
+            get {
+                return ResourceManager.GetString("FillCorrectFakeIPv4Range", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 Enter a valid IPv6 CIDR range with at least two addresses, for example fc00::/18. 的本地化字符串。
         /// </summary>
         public static string FillCorrectFakeIPv6Range {

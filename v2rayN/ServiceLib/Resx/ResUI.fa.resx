@@ -2502,4 +2502,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
   <data name="TransportPathTip6" xml:space="preserve">
     <value>پوشه ریموت XDRIVE</value>
   </data>
+  <data name="FillCorrectFakeIPv4Range" xml:space="preserve">
+    <value>لطفاً یک محدوده CIDR معتبر IPv4 با حداقل دو آدرس وارد کنید، برای مثال 198.18.0.0/15.</value>
+  </data>
 </root>

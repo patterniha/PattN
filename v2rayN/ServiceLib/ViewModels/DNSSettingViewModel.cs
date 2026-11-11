@@ -120,6 +120,14 @@ public partial class DNSSettingViewModel : MyReactiveObject, ICloseable
 
     private async Task SaveSettingAsync()
     {
+        // PattN: the IPv4 range is checked as the IPv6 one is
+        if (IsSimpleDNSEnabled && FakeIP
+            && !FakeIPUtils.TryParseIPv4Range(FakeIPRange, out _, out _))
+        {
+            NoticeManager.Instance.Enqueue(ResUI.FillCorrectFakeIPv4Range);
+            return;
+        }
+
         if (IsSimpleDNSEnabled && IsFakeIPv6Available && FakeIPv6
             && !FakeIPUtils.TryParseIPv6Range(FakeIPv6Range, out _, out _))
         {

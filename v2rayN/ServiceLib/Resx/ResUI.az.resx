@@ -2628,4 +2628,7 @@ Təyin edildikdə sertifikat sabitlənəcək və "Təhlükəsiz olmayan əlaqəy
   <data name="TransportPathTip6" xml:space="preserve">
     <value>XDRIVE uzaqdakı qovluq</value>
   </data>
+  <data name="FillCorrectFakeIPv4Range" xml:space="preserve">
+    <value>Ən azı iki ünvan olan düzgün IPv4 CIDR aralığı daxil edin, məsələn, 198.18.0.0/15.</value>
+  </data>
 </root>

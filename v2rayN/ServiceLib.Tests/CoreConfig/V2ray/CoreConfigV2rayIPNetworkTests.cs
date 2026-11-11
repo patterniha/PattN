@@ -73,20 +73,17 @@ public class CoreConfigV2rayIPNetworkTests
         }
     }
 
+    // PattN: the IPv4 pool by the IPv6 one's rule, min(addresses - 1, 65535), and an unusable range refused
     [Test]
-    [Arguments("198.18.0.0/15", 131071L)]
-    [Arguments("0.0.0.0/0", 4294967295L)]
-    [Arguments("198.18.0.0/31", 1L)]
-    [Arguments("198.18.0.1/32", 65535L)]
-    [Arguments("fd00::/64", long.MaxValue)]
-    [Arguments("fd00::/66", 4611686018427387903L)]
-    [Arguments("fd00::/127", 1L)]
-    [Arguments("fd00::1/128", 65535L)]
-    [Arguments("invalid-network", 65535L)]
-    [Arguments("198.18.0.0/33", 65535L)]
-    [Arguments("fd00::/129", 65535L)]
-    public async Task GenerateClientConfigContent_FakeDns_ShouldDerivePoolSizeOrUseFallback(
-        string range, long expectedPoolSize)
+    [Arguments("198.18.0.0/15", "198.18.0.0/15", 65535L)]
+    [Arguments("198.18.0.1/15", "198.18.0.0/15", 65535L)]
+    [Arguments("0.0.0.0/0", "0.0.0.0/0", 65535L)]
+    [Arguments("198.18.0.0/16", "198.18.0.0/16", 65535L)]
+    [Arguments("198.18.0.0/17", "198.18.0.0/17", 32767L)]
+    [Arguments("198.18.0.0/24", "198.18.0.0/24", 255L)]
+    [Arguments("198.18.0.0/31", "198.18.0.0/31", 1L)]
+    public async Task GenerateClientConfigContent_FakeDns_ShouldSizeTheIPv4PoolAsTheIPv6One(
+        string range, string expectedRange, long expectedPoolSize)
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
         config.SimpleDNSItem.FakeIP = true;
@@ -111,8 +108,37 @@ public class CoreConfigV2rayIPNetworkTests
         var generated = JsonUtils.Deserialize<V2rayConfig>(result.Data!.ToString())!;
 
         await generated.fakedns.Should().NotBeNull();
-        await generated.fakedns!["ipPool"]!.GetValue<string>().Should().BeEqualTo(range);
+        await generated.fakedns!["ipPool"]!.GetValue<string>().Should().BeEqualTo(expectedRange);
         await generated.fakedns["poolSize"]!.GetValue<long>().Should().BeEqualTo(expectedPoolSize);
+    }
+
+    [Test]
+    [Arguments("198.18.0.1/32")]
+    [Arguments("198.18.0.0/33")]
+    [Arguments("fd00::/64")]
+    [Arguments("invalid-network")]
+    public async Task GenerateClientConfigContent_FakeDns_ShouldRefuseAnUnusableIPv4Range(string range)
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
+        config.SimpleDNSItem.FakeIP = true;
+        config.SimpleDNSItem.FakeIPRange = range;
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.Xray);
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.Xray);
+        context.RoutingItem!.RuleSet = JsonUtils.Serialize(new List<RulesItem>
+        {
+            new()
+            {
+                Enabled = true,
+                RuleType = ERuleType.DNS,
+                OutboundTag = Global.ProxyTag,
+                Domain = ["full:example.com"],
+            }
+        });
+
+        var result = new CoreConfigV2rayService(context).GenerateClientConfigContent();
+
+        await result.Success.Should().BeFalse();
     }
 
     private static async Task<V2rayConfig> GenerateConfig(Config config)
