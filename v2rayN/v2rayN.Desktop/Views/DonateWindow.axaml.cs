@@ -7,7 +7,7 @@ namespace v2rayN.Desktop.Views;
 /// <summary>
 /// PattN: PattN's donation wallets, <see cref="Global.DonationWallets" />, a twin of the WPF window: each network beside
 /// its address, which can be selected, and a button that copies the address whole, showing a check mark for a moment;
-/// OK closes the window.
+/// below them the author's ID, <see cref="Global.AuthorId" />, a link to the author's Telegram; OK closes the window.
 /// </summary>
 public partial class DonateWindow : Window
 {
@@ -69,6 +69,32 @@ public partial class DonateWindow : Window
             gridWallets.Children.Add(box);
             gridWallets.Children.Add(copy);
         }
+
+        // The author's ID below the wallets, a link to the author's Telegram
+        var idRow = gridWallets.RowDefinitions.Count;
+        gridWallets.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        var idLabel = new TextBlock
+        {
+            Text = "ID",
+            Margin = margin,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        var idLink = new HyperlinkButton
+        {
+            Content = Global.AuthorId,
+            Margin = margin,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            FontFamily = new FontFamily("Cascadia Code,Consolas,Monospace"),
+        };
+        ToolTip.SetTip(idLink, Global.AuthorTelegramUrl);
+        AutomationProperties.SetName(idLink, $"ID {Global.AuthorId}");
+        idLink.Click += (_, _) => ProcUtils.ProcessStart(Global.AuthorTelegramUrl);
+        Grid.SetRow(idLabel, idRow);
+        Grid.SetRow(idLink, idRow);
+        Grid.SetColumn(idLink, 1);
+        gridWallets.Children.Add(idLabel);
+        gridWallets.Children.Add(idLink);
 
         btnOk.Click += (_, _) => Close();
         CanMinimize = false;

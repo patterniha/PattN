@@ -1,12 +1,14 @@
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace v2rayN.Views;
 
 /// <summary>
 /// PattN: PattN's donation wallets, <see cref="Global.DonationWallets" />: each network beside its address, which can be
-/// selected, and a button that copies the address whole, showing a check mark for a moment; OK closes the window.
+/// selected, and a button that copies the address whole, showing a check mark for a moment; below them the author's ID,
+/// <see cref="Global.AuthorId" />, a link to the author's Telegram; OK closes the window.
 /// </summary>
 public partial class DonateWindow
 {
@@ -70,6 +72,34 @@ public partial class DonateWindow
             gridWallets.Children.Add(box);
             gridWallets.Children.Add(copy);
         }
+
+        // The author's ID below the wallets, a link to the author's Telegram
+        var idRow = gridWallets.RowDefinitions.Count;
+        gridWallets.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var idLabel = new TextBlock
+        {
+            Text = "ID",
+            Margin = margin,
+            VerticalAlignment = VerticalAlignment.Center,
+            Style = (Style)FindResource("ToolbarTextBlock"),
+        };
+        var idLink = new Hyperlink(new Run(Global.AuthorId)) { ToolTip = Global.AuthorTelegramUrl };
+        // The theme draws a hyperlink as plain text: the primary color marks it as one, as in the Avalonia window
+        idLink.SetResourceReference(TextElement.ForegroundProperty, "MaterialDesign.Brush.Primary");
+        idLink.Click += (_, _) => ProcUtils.ProcessStart(Global.AuthorTelegramUrl);
+        AutomationProperties.SetName(idLink, $"ID {Global.AuthorId}");
+        var idText = new TextBlock(idLink)
+        {
+            Margin = margin,
+            VerticalAlignment = VerticalAlignment.Center,
+            FontFamily = new FontFamily("Consolas, Courier New"),
+            Style = (Style)FindResource("ToolbarTextBlock"),
+        };
+        Grid.SetRow(idLabel, idRow);
+        Grid.SetRow(idText, idRow);
+        Grid.SetColumn(idText, 1);
+        gridWallets.Children.Add(idLabel);
+        gridWallets.Children.Add(idText);
 
         WindowsUtils.SetDarkBorder(this, AppManager.Instance.Config.UiItem.CurrentTheme);
     }

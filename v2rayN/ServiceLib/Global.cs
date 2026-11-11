@@ -24,6 +24,10 @@ public class Global
         ("BTC (BTC)", "bc1q8cptsn497hlfay6ypaaladldlrjalvx2ah233g"),
     ];
 
+    // PattN: the author's ID the Donate window shows below the wallets, a link to the author's Telegram
+    public const string AuthorId = "@patterniha";
+    public const string AuthorTelegramUrl = "https://t.me/patterniha";
+
     public const string ConfigFileName = "guiNConfig.json";
     public const string CoreConfigFileName = "config.json";
     public const string CorePreConfigFileName = "configPre.json";

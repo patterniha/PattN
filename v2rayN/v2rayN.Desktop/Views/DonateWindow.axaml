@@ -28,7 +28,7 @@
                 IsCancel="True"
                 IsDefault="True" />
         </StackPanel>
-        <!--  One row a wallet, built from Global.DonationWallets: the network, the address, its Copy button  -->
+        <!--  One row a wallet, built from Global.DonationWallets: the network, the address, its Copy button; then the author's ID, a link to the author's Telegram  -->
         <Grid
             x:Name="gridWallets"
             Margin="{StaticResource Margin4}"
