@@ -49,16 +49,38 @@ public static class TlsSettingsCheck
 
     /// <summary>
     /// Whether the check applies to <paramref name="profile" />, which is where PattN's editor shows cipherSuites,
-    /// curvePreferences, alpn and the fingerprint: under TLS on VMess, VLESS, Shadowsocks, Trojan, SOCKS and HTTP, as for
-    /// the ECH outbound (NodeValidator.EchOutboundApplies); PattNG's editor offers TLS on the first four alone. Hysteria2
-    /// and MASQUE, whose editor disables these fields, WireGuard and Aether, which have no TLS settings, and the types
+    /// curvePreferences, alpn and the fingerprint: under TLS on VMess, VLESS, Shadowsocks, Trojan, SOCKS, HTTP and MASQUE,
+    /// as for the ECH outbound (NodeValidator.EchOutboundApplies); PattNG's editor offers TLS on the first four and MASQUE
+    /// alone. MASQUE over HTTP/3 takes no fingerprint and no cipherSuites, see <see cref="IsMasqueOverHttp3" />.
+    /// Hysteria2, whose editor disables these fields, WireGuard and Aether, which have no TLS settings, and the types
     /// sing-box alone runs are left out.
     /// </summary>
     public static bool AppliesTo(ProfileItem profile)
     {
         return profile.ConfigType is EConfigType.VMess or EConfigType.VLESS or EConfigType.Shadowsocks or EConfigType.Trojan
-                   or EConfigType.SOCKS or EConfigType.HTTP
+                   or EConfigType.SOCKS or EConfigType.HTTP or EConfigType.MASQUE
                && profile.StreamSecurity == Global.StreamSecurity;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="profile" /> is MASQUE that the fork runs over HTTP/3, as it does unless its alpn has h2 and
+    /// not h3 (the fork's MASQUE dialer): QUIC with Go's crypto/tls, which takes no fingerprint and, TLS 1.3 alone, no
+    /// cipherSuites, but curvePreferences, session resumption and ECH (PattNG CoreOutboundBuilder.toOutboundMasque). Its
+    /// editor disables those two, and its outbound leaves them out.
+    /// </summary>
+    public static bool IsMasqueOverHttp3(ProfileItem profile)
+    {
+        return profile.ConfigType == EConfigType.MASQUE && !MasqueAlpnIsHttp2(profile.Alpn);
+    }
+
+    /// <summary>
+    /// Whether a MASQUE profile of <paramref name="alpn" /> runs over HTTP/2: its alpn, split as its outbound offers it
+    /// (ProfileItem.GetAlpn), has h2 and not h3.
+    /// </summary>
+    public static bool MasqueAlpnIsHttp2(string? alpn)
+    {
+        var protocols = Utils.String2List(alpn);
+        return protocols is not null && protocols.Contains("h2") && !protocols.Contains("h3");
     }
 
     /// <summary>
@@ -98,7 +120,8 @@ public static class TlsSettingsCheck
     /// </summary>
     public static bool CipherSuitesNeedUnsafe(ProfileItem profile, string? defaultFingerprint, ECoreType core)
     {
-        if (core != ECoreType.Xray || !AppliesTo(profile) || KotlinText.IsBlank(profile.CipherSuites))
+        // MASQUE over HTTP/3 writes no cipherSuites (IsMasqueOverHttp3)
+        if (core != ECoreType.Xray || !AppliesTo(profile) || KotlinText.IsBlank(profile.CipherSuites) || IsMasqueOverHttp3(profile))
         {
             return false;
         }
@@ -108,11 +131,12 @@ public static class TlsSettingsCheck
     /// <summary>
     /// Whether <paramref name="profile" />, run by <paramref name="core" />, holds curvePreferences the fork would not
     /// apply, weighed as <see cref="CipherSuitesNeedUnsafe" /> weighs cipherSuites: curvePreferences that are not blank,
-    /// with a fingerprint other than unsafe, on a profile Xray runs.
+    /// with a fingerprint other than unsafe, on a profile Xray runs; on MASQUE over HTTP/3, Go's crypto/tls applies them
+    /// whatever the fingerprint (IsMasqueOverHttp3).
     /// </summary>
     public static bool CurvePreferencesNeedUnsafe(ProfileItem profile, string? defaultFingerprint, ECoreType core)
     {
-        if (core != ECoreType.Xray || !AppliesTo(profile) || KotlinText.IsBlank(profile.CurvePreferences))
+        if (core != ECoreType.Xray || !AppliesTo(profile) || KotlinText.IsBlank(profile.CurvePreferences) || IsMasqueOverHttp3(profile))
         {
             return false;
         }
@@ -143,10 +167,13 @@ public static class TlsSettingsCheck
         }
     }
 
-    /// <summary>Whether <paramref name="profile" /> runs over WebSocket or HTTPUpgrade, its network read as its outbound reads it.</summary>
+    /// <summary>
+    /// Whether <paramref name="profile" /> runs over WebSocket or HTTPUpgrade, its network read as its outbound reads it;
+    /// MASQUE has a transport of its own, whatever network it holds.
+    /// </summary>
     private static bool IsUpgrade(ProfileItem profile)
     {
-        return profile.GetNetwork() is nameof(ETransport.ws) or nameof(ETransport.httpupgrade);
+        return profile.ConfigType != EConfigType.MASQUE && profile.GetNetwork() is nameof(ETransport.ws) or nameof(ETransport.httpupgrade);
     }
 
     /// <summary>

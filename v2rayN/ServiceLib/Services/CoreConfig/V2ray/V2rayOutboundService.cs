@@ -338,14 +338,16 @@ public partial class CoreConfigV2rayService
             {
                 streamSettings.security = _node.StreamSecurity;
 
+                // PattN: MASQUE over HTTP/3 takes no fingerprint and no cipherSuites (TlsSettingsCheck.IsMasqueOverHttp3)
+                var quic = TlsSettingsCheck.IsMasqueOverHttp3(_node);
                 TlsSettings4Ray tlsSettings = new()
                 {
                     alpn = _node.GetAlpn(),
-                    cipherSuites = _node.CipherSuites.IsNullOrEmpty() ? null : _node.CipherSuites,
+                    cipherSuites = quic || _node.CipherSuites.IsNullOrEmpty() ? null : _node.CipherSuites,
                     // PattN: curvePreferences as a list, and enableSessionResumption only when it is on
                     curvePreferences = _node.GetCurvePreferences(),
                     enableSessionResumption = _node.EnableSessionResumption ? true : null,
-                    fingerprint = _node.Fingerprint.IsNullOrEmpty() ? _config.CoreBasicItem.DefFingerprint : _node.Fingerprint,
+                    fingerprint = quic ? null : _node.Fingerprint.IsNullOrEmpty() ? _config.CoreBasicItem.DefFingerprint : _node.Fingerprint,
                     echConfigList = _node.EchConfigList.NullIfEmpty(),
                     verifyPeerCertByName = _node.VerifyPeerCertByName.NullIfEmpty(),
                 };

@@ -13,6 +13,8 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
         cmbNetwork.SelectionChanged += CmbNetwork_SelectionChanged;
         cmbHeaderTypeRaw.SelectionChanged += CmbHeaderTypeRaw_SelectionChanged;
         cmbStreamSecurity.SelectionChanged += CmbStreamSecurity_SelectionChanged;
+        // PattN: MASQUE's fingerprint and cipherSuites go by its alpn (SetMasqueTlsFields)
+        cmbAlpn.SelectionChanged += CmbAlpn_SelectionChanged;
         btnGUID.Click += btnGUID_Click;
         btnGUID5.Click += btnGUID_Click;
 
@@ -343,6 +345,7 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
                 gridMasque.IsVisible = true;
                 sepa2.IsVisible = false;
                 gridTransport.IsVisible = false;
+                SetMasqueTlsFields(profileItem.Alpn);
                 break;
         }
         cmbStreamSecurity.ItemsSource = lstStreamSecurity;
@@ -362,6 +365,25 @@ public partial class AddServerWindow : WindowBase<AddServerViewModel>
     private void CmbHeaderTypeRaw_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         SetRawHttpFieldsVisibility();
+    }
+
+    private void CmbAlpn_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (ViewModel?.SelectedSource?.ConfigType == EConfigType.MASQUE)
+        {
+            SetMasqueTlsFields(cmbAlpn.SelectedItem?.ToString());
+        }
+    }
+
+    /// <summary>
+    /// PattN: MASQUE over HTTP/3 takes no fingerprint and no cipherSuites, so they are disabled while its alpn
+    /// <paramref name="alpn" /> has it run there; over HTTP/2 both apply (TlsSettingsCheck.IsMasqueOverHttp3).
+    /// </summary>
+    private void SetMasqueTlsFields(string? alpn)
+    {
+        var http2 = TlsSettingsCheck.MasqueAlpnIsHttp2(alpn);
+        cmbFingerprint.IsEnabled = http2;
+        presetCipherSuites.IsEnabled = http2;
     }
 
     private void CmbStreamSecurity_SelectionChanged(object? sender, SelectionChangedEventArgs e)

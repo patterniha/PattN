@@ -49,6 +49,36 @@ public class TlsSettingsCheckTests
         return TlsSettingsCheck.Validate(profile, defaultFingerprint, core);
     }
 
+    // PattNG: MASQUE over HTTP/2 is weighed as the others are; over HTTP/3, Go's crypto/tls applies the curves whatever
+    // fingerprint is left, and no cipherSuites are written.
+    [Test]
+    public async Task AMasqueProfileIsCheckedOverHttp2AsTheOthersAreAndOverHttp3TakesCurvesWithoutCipherSuites()
+    {
+        const string curves = "X25519MLKEM768,X25519";
+        static ProfileItem Masque(string? alpn, string? fingerprint, string? cipherSuites = null, string? curvePreferences = null) =>
+            Profile(fingerprint, cipherSuites, EConfigType.MASQUE, network: "masque", alpn: alpn, curvePreferences: curvePreferences);
+
+        await Validate(Masque("h2", "chrome", cipherSuites: Suites)).Should().BeEqualTo(ETlsSettingsError.CipherSuitesNeedUnsafe);
+        await Validate(Masque("h2,http/1.1", "", cipherSuites: Suites)).Should().BeEqualTo(ETlsSettingsError.CipherSuitesNeedUnsafe);
+        await Validate(Masque("h2", "chrome", curvePreferences: curves)).Should().BeEqualTo(ETlsSettingsError.CurvePreferencesNeedUnsafe);
+        await Validate(Masque("h2", "unsafe", cipherSuites: Suites, curvePreferences: curves)).Should().BeNull();
+        foreach (var alpn in new[] { "h3", "h3,h2", "http/1.1", "", null })
+        {
+            await Validate(Masque(alpn, "chrome", cipherSuites: Suites, curvePreferences: curves)).Should().BeNull();
+        }
+        await TlsSettingsCheck.IsMasqueOverHttp3(Masque("h2", "chrome")).Should().BeFalse();
+        await TlsSettingsCheck.IsMasqueOverHttp3(Masque("h3,h2", "chrome")).Should().BeTrue();
+        await TlsSettingsCheck.IsMasqueOverHttp3(Masque(null, "chrome")).Should().BeTrue();
+        // Another protocol is never MASQUE over HTTP/3; sing-box is not asked (X1).
+        await TlsSettingsCheck.IsMasqueOverHttp3(Profile(alpn: "h3")).Should().BeFalse();
+        await Validate(Masque("h2", "chrome", cipherSuites: Suites), core: ECoreType.sing_box).Should().BeNull();
+        // MASQUE has no transport of its own: a network left on it is no WebSocket, whose alpn rule it does not meet.
+        var leftOnWs = Profile("chrome", type: EConfigType.MASQUE, network: "ws", alpn: "h2");
+        await Validate(leftOnWs).Should().BeNull();
+        TlsSettingsCheck.FixImportedAlpn(leftOnWs);
+        await leftOnWs.Alpn.Should().BeEqualTo("h2");
+    }
+
     [Test]
     public async Task CipherSuitesNeedTheUnsafeFingerprint()
     {
@@ -90,8 +120,9 @@ public class TlsSettingsCheckTests
         await NeedUnsafe(Profile(fingerprint: "chrome", cipherSuites: Suites, type: EConfigType.Hysteria2)).Should().BeFalse();
         await Validate(Profile(fingerprint: "chrome", cipherSuites: Suites, type: EConfigType.Hysteria2)).Should().BeNull();
         await Validate(Profile(fingerprint: "unsafe", type: EConfigType.Hysteria2, alpn: "h2")).Should().BeNull();
-        // PattN: nor where the editor disables them or there is no TLS of its own, nor on the types sing-box alone runs.
-        foreach (var type in new[] { EConfigType.MASQUE, EConfigType.WireGuard, EConfigType.Aether, EConfigType.TUIC, EConfigType.Anytls, EConfigType.Naive })
+        // PattN: nor where there is no TLS of its own, nor on the types sing-box alone runs; MASQUE goes by its alpn, see
+        // AMasqueProfileIsCheckedOverHttp2AsTheOthersAreAndOverHttp3TakesCurvesWithoutCipherSuites.
+        foreach (var type in new[] { EConfigType.WireGuard, EConfigType.Aether, EConfigType.TUIC, EConfigType.Anytls, EConfigType.Naive })
         {
             await Validate(Profile(fingerprint: "chrome", cipherSuites: Suites, type: type)).Should().BeNull().Because(type.ToString());
             await Validate(Profile(fingerprint: "chrome", type: type, alpn: "h2")).Should().BeNull().Because(type.ToString());
