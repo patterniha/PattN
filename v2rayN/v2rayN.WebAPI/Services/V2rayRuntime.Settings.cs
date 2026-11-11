@@ -789,7 +789,7 @@ public sealed partial class V2rayRuntime
         var items = rules.ToArray();
         var before = await AppManager.Instance.GetRoutingItem(routingId);
         var changed = before is not null && before.IsActive
-            && before.RuleSet != JsonUtils.Serialize(items, false);
+            && before.RuleSet != JsonUtils.Serialize(items.ToList(), false);
         var saved = await _mutations.RunAsync(() => SaveRoutingRulesLockedAsync(routingId, items));
         if (saved == -2)
         {
@@ -837,14 +837,15 @@ public sealed partial class V2rayRuntime
         return null;
     }
 
-    private static async Task<int> SaveRoutingRulesLockedAsync(string routingId, IReadOnlyList<RulesItem> rules)
+    internal static async Task<int> SaveRoutingRulesLockedAsync(string routingId, IReadOnlyList<RulesItem> rules)
     {
         var item = await AppManager.Instance.GetRoutingItem(routingId);
         if (item is null)
         {
             return -2;
         }
-        return await ConfigHandler.AddBatchRoutingRules(item, JsonUtils.Serialize(rules, false));
+        // PattN: as a List, the type the source-generated JSON context knows
+        return await ConfigHandler.AddBatchRoutingRules(item, JsonUtils.Serialize(rules.ToList(), false));
     }
 
     private async Task<string> GetActiveRoutingSignatureAsync()

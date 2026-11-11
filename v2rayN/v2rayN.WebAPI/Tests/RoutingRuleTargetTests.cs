@@ -144,4 +144,35 @@ public class RoutingRuleTargetTests
         await refusal.MessageKey.Should().BeEqualTo(ApiMessageKeys.RoutingProfileNotFound);
         await (await AppManager.Instance.GetRoutingItem(routingId)).Should().BeNull();
     }
+
+    [Test]
+    public async Task TheSaveStoresTheRulesItIsGiven()
+    {
+        // The API hands the rules on as an IReadOnlyList, which the source-generated JSON context does not know: they
+        // were serialized to nothing, and the save failed.
+        SQLiteHelper.Instance.CreateTable<RoutingItem>();
+        var routing = new RoutingItem
+        {
+            Id = $"routing-{Guid.NewGuid():N}",
+            Remarks = "routing",
+            Url = string.Empty,
+            RuleSet = JsonUtils.Serialize(new List<RulesItem> { Rule("old", Global.DirectTag) }, false),
+        };
+        await SQLiteHelper.Instance.ReplaceAsync(routing);
+        try
+        {
+            IReadOnlyList<RulesItem> rules = [Rule(null, Global.ProxyTag), Rule(null, Global.BlockTag)];
+
+            await (await V2rayRuntime.SaveRoutingRulesLockedAsync(routing.Id, rules)).Should().BeEqualTo(0);
+
+            var stored = await AppManager.Instance.GetRoutingItem(routing.Id);
+            await stored!.RuleNum.Should().BeEqualTo(2);
+            var storedRules = JsonUtils.Deserialize<List<RulesItem>>(stored.RuleSet)!;
+            await storedRules.Select(rule => rule.OutboundTag).SequenceEqual([Global.ProxyTag, Global.BlockTag]).Should().BeTrue();
+        }
+        finally
+        {
+            await SQLiteHelper.Instance.DeleteAsync(routing);
+        }
+    }
 }
