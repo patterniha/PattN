@@ -122,18 +122,25 @@ public partial class CoreConfigSingboxService
         // fake ip
         if (simpleDnsItem.FakeIP == true)
         {
+            var fakeipRange = simpleDnsItem.FakeIPRange.IsNullOrEmpty()
+                ? Global.FakeIPRanges.First()
+                : simpleDnsItem.FakeIPRange;
             var fakeip = new Server4Sbox
             {
                 tag = Global.SingboxFakeDNSTag,
                 type = "fakeip",
-                inet4_range = Global.SingboxFakeIPv4Range,
+                inet4_range = fakeipRange,
             };
-            // PattN: no IPv6 range when AAAA queries are blocked, like Xray-core's pools under UseIPv4, or when
-            // the tun has no IPv6 address, as sing-box then routes no IPv6 into it and fake IPv6 would be unreachable
-            if (simpleDnsItem.BlockAAAAQuery != true
+            // PattN: the IPv6 range is on unless turned off (ConfigHandler sets it on), and left out when the tun has
+            // no IPv6 address: sing-box then routes no IPv6 into it, and fake IPv6 addresses would be unreachable
+            if (simpleDnsItem.FakeIPv6 != false && simpleDnsItem.BlockAAAAQuery != true
                 && (!context.IsTunEnabled || TunTakesIPv6()))
             {
-                fakeip.inet6_range = Global.SingboxFakeIPv6Range;
+                if (!FakeIPUtils.TryParseIPv6Range(simpleDnsItem.FakeIPv6Range, out var range6, out _))
+                {
+                    throw new ArgumentException("Invalid IPv6 FakeIP range.");
+                }
+                fakeip.inet6_range = range6;
             }
             _coreConfig.dns.servers.Add(fakeip);
         }

@@ -132,9 +132,6 @@ public class Global
     public const string SingboxLocalDNSTag = "local-local";
     public const string SingboxHostsDNSTag = "hosts-dns";
     public const string SingboxFakeDNSTag = "fake-dns";
-    // PattN: sing-box's fake IP ranges are XTLS/Xray-core's default fake DNS pools (features/dns/fakedns.go)
-    public const string SingboxFakeIPv4Range = "198.18.0.0/15";
-    public const string SingboxFakeIPv6Range = "2001:2::/48";
     public const string SingboxSrsDownloadHttpClientTag = "srs-download-http-client";
 
     public const int Hysteria2DefaultHopInt = 30;
@@ -971,6 +968,20 @@ public class Global
         "unreachable",
         "drop",
         "reply",
+    ];
+
+    public static readonly List<string> FakeIPRanges =
+    [
+        "198.18.0.0/15",
+        "11.0.0.0/8",
+    ];
+
+    // PattN: Xray-core's default IPv6 fake DNS pool (features/dns/fakedns.go, since XTLS/Xray-core#6815) first, as the
+    // default
+    public static readonly List<string> FakeIPv6Ranges =
+    [
+        "2001:2::/48",
+        "fc00::/18",
     ];
 
     public static readonly List<string> RootCertProviders =

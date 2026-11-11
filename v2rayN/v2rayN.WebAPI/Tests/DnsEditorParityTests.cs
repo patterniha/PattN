@@ -79,6 +79,24 @@ public class DnsEditorParityTests
         await options.Dns.DomainStrategies4Freedom.SequenceEqual(Global.DomainStrategy).Should().BeTrue();
         await options.Dns.DomainStrategies4Singbox.SequenceEqual(Global.DomainStrategies4Sbox).Should().BeTrue();
         await options.Dns.DomainDnsAddresses.SequenceEqual(Global.DomainPureIPDNSAddress).Should().BeTrue();
+        await options.Dns.FakeIpRanges.SequenceEqual(Global.FakeIPRanges).Should().BeTrue();
+        await options.Dns.FakeIpv6Ranges.SequenceEqual(Global.FakeIPv6Ranges).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task AnUnusableIPv6FakeIPRangeIsRefusedWhileThePoolIsOn()
+    {
+        // PattN: as the DNS settings window refuses it; no core configuration could be made with it
+        static SimpleDNSItem Settings(bool? fakeIPv6, string? range, bool? blockAAAA = false) =>
+            new() { FakeIP = true, FakeIPv6 = fakeIPv6, FakeIPv6Range = range, BlockAAAAQuery = blockAAAA };
+
+        await V2rayRuntime.TryValidateSimpleDns(Settings(true, "not-a-range"), out var code).Should().BeFalse();
+        await code.Should().BeEqualTo("dns_fakeip_ipv6_range_invalid");
+        await V2rayRuntime.TryValidateSimpleDns(Settings(null, "198.18.0.0/15"), out _).Should().BeFalse();
+        await V2rayRuntime.TryValidateSimpleDns(Settings(true, "2001:2::/48"), out _).Should().BeTrue();
+        await V2rayRuntime.TryValidateSimpleDns(Settings(true, null), out _).Should().BeTrue();
+        await V2rayRuntime.TryValidateSimpleDns(Settings(false, "not-a-range"), out _).Should().BeTrue();
+        await V2rayRuntime.TryValidateSimpleDns(Settings(true, "not-a-range", blockAAAA: true), out _).Should().BeTrue();
     }
 
     [Test]

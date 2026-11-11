@@ -722,7 +722,7 @@ public class CoreConfigV2rayServiceTests
     }
 
     [Test]
-    public async Task GenerateClientConfigContent_FakeIP_ShouldLeaveFakeDnsPoolsToXrayDefaults()
+    public async Task GenerateClientConfigContent_FakeIP_ShouldWriteBothPoolsByDefault()
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
         config.SimpleDNSItem.FakeIP = true;
@@ -750,9 +750,14 @@ public class CoreConfigV2rayServiceTests
         var result = new CoreConfigV2rayService(context).GenerateClientConfigContent();
 
         await result.Success.Should().BeTrue();
-        // PattN: no "fakedns" block, so Xray-core applies its default fake IP pools
+        // PattN: by default both pools, Xray-core's ranges (ConfigHandler turns IPv6 FakeIP on)
         var root = JsonUtils.ParseJson(result.Data!.ToString())!.AsObject();
-        await root.ContainsKey("fakedns").Should().BeFalse();
+        var pools = root["fakedns"]!.AsArray();
+        await pools.Count.Should().BeEqualTo(2);
+        await pools[0]!["ipPool"]!.GetValue<string>().Should().BeEqualTo("198.18.0.0/15");
+        await pools[0]!["poolSize"]!.GetValue<long>().Should().BeEqualTo(131071L);
+        await pools[1]!["ipPool"]!.GetValue<string>().Should().BeEqualTo("2001:2::/48");
+        await pools[1]!["poolSize"]!.GetValue<long>().Should().BeEqualTo(65535L);
 
         var cfg = JsonUtils.Deserialize<V2rayConfig>(result.Data!.ToString())!;
         var dns = JsonUtils.Deserialize<Dns4Ray>(JsonUtils.Serialize(cfg.dns))!;

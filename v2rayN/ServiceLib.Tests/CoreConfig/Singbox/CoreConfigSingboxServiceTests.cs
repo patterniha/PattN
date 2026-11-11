@@ -84,7 +84,7 @@ public class CoreConfigSingboxServiceTests
         await tun.address.Should().NotBeNull();
         await tun.address!.Any(a => a.Contains(':')).Should().BeEqualTo(hasGlobalIPv6Address);
         var fakeip = cfg.dns.servers.Single(s => s.tag == Global.SingboxFakeDNSTag);
-        await (fakeip.inet6_range == Global.SingboxFakeIPv6Range).Should().BeEqualTo(hasGlobalIPv6Address);
+        await (fakeip.inet6_range == Global.FakeIPv6Ranges.First()).Should().BeEqualTo(hasGlobalIPv6Address);
     }
 
     [Test]

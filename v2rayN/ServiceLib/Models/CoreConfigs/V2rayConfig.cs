@@ -8,6 +8,7 @@ public class V2rayConfig
 
     public Log4Ray log { get; set; }
     public JsonObject? dns { get; set; }
+    public JsonNode? fakedns { get; set; }
     public List<Inbounds4Ray> inbounds { get; set; }
     public List<Outbounds4Ray> outbounds { get; set; }
     public Routing4Ray routing { get; set; }
@@ -54,6 +55,12 @@ public class Log4Ray
     public string? error { get; set; }
 
     public string? loglevel { get; set; }
+}
+
+public class FakeDns4Ray
+{
+    public string? ipPool { get; set; }
+    public long? poolSize { get; set; }
 }
 
 public class Inbounds4Ray

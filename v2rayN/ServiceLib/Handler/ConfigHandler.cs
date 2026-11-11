@@ -141,6 +141,10 @@ public static class ConfigHandler
 
         config.SimpleDNSItem ??= InitBuiltinSimpleDNS();
         config.SimpleDNSItem.BlockAAAAQuery ??= false;
+        config.SimpleDNSItem.FakeIPRange ??= Global.FakeIPRanges.FirstOrDefault();
+        // PattN: IPv6 FakeIP is on by default, as PattN gave it from Xray-core's default pools before the setting
+        config.SimpleDNSItem.FakeIPv6 ??= true;
+        config.SimpleDNSItem.FakeIPv6Range ??= Global.FakeIPv6Ranges.First();
         // PattN: FakeIP is on by default
         config.SimpleDNSItem.FakeIP ??= true;
         config.SimpleDNSItem.GlobalFakeIp ??= true;

@@ -16,6 +16,8 @@ public partial class DNSSettingWindow
         cmbDirectDNS.ItemsSource = Global.DomainDirectDNSAddress;
         cmbRemoteDNS.ItemsSource = Global.DomainRemoteDNSAddress;
         cmbBootstrapDNS.ItemsSource = Global.DomainPureIPDNSAddress;
+        cmbFakeIPRange.ItemsSource = Global.FakeIPRanges;
+        cmbFakeIPv6Range.ItemsSource = Global.FakeIPv6Ranges;
         cmbDirectExpectedIPs.ItemsSource = Global.ExpectedIPs;
 
         cmbdomainStrategy4FreedomCompatible.ItemsSource = Global.DomainStrategy;
@@ -28,6 +30,10 @@ public partial class DNSSettingWindow
             this.Bind(ViewModel, vm => vm.UseSystemHosts, v => v.togUseSystemHosts.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.AddCommonHosts, v => v.togAddCommonHosts.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.FakeIP, v => v.togFakeIP.IsChecked).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.FakeIPRange, v => v.cmbFakeIPRange.Text).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.FakeIPv6, v => v.togFakeIPv6.IsChecked).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.FakeIPv6Range, v => v.cmbFakeIPv6Range.Text).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.IsFakeIPv6Available, v => v.gridFakeIPv6.IsEnabled).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.BlockBindingQuery, v => v.togBlockBindingQuery.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.BlockAAAAQuery, v => v.togBlockAAAAQuery.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.DirectDNS, v => v.cmbDirectDNS.Text).DisposeWith(disposables);

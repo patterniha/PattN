@@ -177,6 +177,8 @@ public sealed partial class V2rayRuntime
         Global.DomainDirectDNSAddress.ToArray(),
         Global.DomainRemoteDNSAddress.ToArray(),
         Global.DomainPureIPDNSAddress.ToArray(),
+        Global.FakeIPRanges.ToArray(),
+        Global.FakeIPv6Ranges.ToArray(),
         Global.ExpectedIPs.ToArray());
 
     public IReadOnlyList<DnsDefaultProfileView> GetDefaultDnsProfiles() =>
@@ -512,8 +514,28 @@ public sealed partial class V2rayRuntime
 
     public Task<SimpleDNSItem> GetSimpleDNSAsync() => Task.FromResult(Config.SimpleDNSItem);
 
+    /// <summary>
+    /// PattN: refuses an IPv6 FakeIP range the core configurations cannot use while the IPv6 pool is on, as the DNS
+    /// settings window does: no core would start with it.
+    /// </summary>
+    internal static bool TryValidateSimpleDns(SimpleDNSItem input, out string code)
+    {
+        if (input.FakeIP != false && input.FakeIPv6 != false && input.BlockAAAAQuery != true
+            && !FakeIPUtils.TryParseIPv6Range(input.FakeIPv6Range, out _, out _))
+        {
+            code = "dns_fakeip_ipv6_range_invalid";
+            return false;
+        }
+        code = "ok";
+        return true;
+    }
+
     public async Task<OperationView> UpdateSimpleDNSAsync(SimpleDNSItem input)
     {
+        if (!TryValidateSimpleDns(input, out var invalidCode))
+        {
+            return OperationView.Fail(invalidCode, ApiMessageKeys.CommonInvalidInput);
+        }
         await using var applyContext = await BeginCoreSettingsApplyAsync();
         if (applyContext.Failure is { } applyFailure) return applyFailure;
         var fingerprint = GetCoreConfigurationFingerprint();
