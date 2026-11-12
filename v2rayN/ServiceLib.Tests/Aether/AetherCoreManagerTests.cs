@@ -358,16 +358,17 @@ public class AetherCoreManagerTests : IDisposable
     {
         var closing = new TcpListener(IPAddress.Loopback, 0);
         closing.Start();
+        using var stopping = new CancellationTokenSource();
         var serving = Task.Run(async () =>
         {
             try
             {
                 while (true)
                 {
-                    using var client = await closing.AcceptTcpClientAsync();
+                    using var client = await closing.AcceptTcpClientAsync(stopping.Token);
                 }
             }
-            catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
+            catch (OperationCanceledException) when (stopping.IsCancellationRequested)
             {
             }
         });
@@ -377,8 +378,16 @@ public class AetherCoreManagerTests : IDisposable
         }
         finally
         {
-            closing.Stop();
-            await serving;
+            // Finish the accept loop before stopping the listener so it cannot accept after Stop.
+            stopping.Cancel();
+            try
+            {
+                await serving;
+            }
+            finally
+            {
+                closing.Stop();
+            }
         }
     }
 
