@@ -408,16 +408,20 @@ public class AetherCoreManagerTests : IDisposable
     {
         var server = new TcpListener(IPAddress.Loopback, 0);
         server.Start();
+        using var stopping = new CancellationTokenSource();
         var serving = Task.Run(async () =>
         {
             try
             {
-                using var client = await server.AcceptTcpClientAsync();
+                using var client = await server.AcceptTcpClientAsync(stopping.Token);
                 var stream = client.GetStream();
                 await stream.ReadExactlyAsync(new byte[3]);
                 await stream.WriteAsync(reply);
                 // The connection stays open until the probe is done with it.
                 await stream.CopyToAsync(Stream.Null);
+            }
+            catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+            {
             }
             catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException)
             {
@@ -429,8 +433,17 @@ public class AetherCoreManagerTests : IDisposable
         }
         finally
         {
-            server.Stop();
-            await serving.WaitAsync(Soon);
+            // As in AListenerThatClosesEveryConnectionDoesNotCount: a server task the thread pool starts only after the
+            // probe gave up must not accept after Stop, so its accept is cancelled and awaited first.
+            stopping.Cancel();
+            try
+            {
+                await serving.WaitAsync(Soon);
+            }
+            finally
+            {
+                server.Stop();
+            }
         }
     }
 
