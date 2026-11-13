@@ -211,6 +211,40 @@ public class AetherProcessTests : IDisposable
         await AetherLeftovers.IsLeftover(entry, entry.StartTicks, null, core).Should().BeFalse();
     }
 
+    // On Linux and macOS the system names the program of a process with every symbolic link on its way resolved
+    // (/proc/[pid]/exe, proc_pidpath): a core reached through a link, as everything under /var is on macOS (/private/var,
+    // where the temporary folders are), is still the core the file names.
+    [Test]
+    public async Task ACoreReachedThroughALinkIsTheProgramTheSystemNames()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+        var real = Path.Combine(_root, "real");
+        var core = Path.Combine(real, "bin", "aether", "aether");
+        Runnable(core);
+        var link = Path.Combine(_root, "link");
+        Directory.CreateSymbolicLink(link, real);
+        var relative = Path.Combine(_root, "relative");
+        Directory.CreateSymbolicLink(relative, "real");
+        var realCore = AetherLeftovers.RealPathOf(core);
+        var throughLink = Path.Combine(link, "bin", "aether", "aether");
+        var throughRelative = Path.Combine(relative, "bin", "aether", "aether");
+
+        await AetherLeftovers.RealPathOf(throughLink).Should().BeEqualTo(realCore);
+        await AetherLeftovers.RealPathOf(throughRelative).Should().BeEqualTo(realCore);
+        // A part that is not there ends the resolving, and what follows it stays as it is.
+        await AetherLeftovers.RealPathOf(Path.Combine(link, "gone", "aether"))
+            .Should().BeEqualTo(Path.Combine(AetherLeftovers.RealPathOf(real), "gone", "aether"));
+
+        // The system names the core by its real path, the file by the path PattN started it from.
+        var entry = new AetherLeftovers.Entry(4242, new DateTime(2026, 10, 21, 8, 30, 0, DateTimeKind.Utc).Ticks);
+        await AetherLeftovers.IsLeftover(entry, entry.StartTicks, realCore, throughLink).Should().BeTrue();
+        await AetherLeftovers.IsLeftover(entry, entry.StartTicks, realCore, throughRelative).Should().BeTrue();
+        await AetherLeftovers.IsLeftover(entry, entry.StartTicks, realCore, Path.Combine(link, "bin", "xray", "xray")).Should().BeFalse();
+    }
+
     [Test]
     public async Task APidFileThatNamesNoLivingCoreIsRemoved()
     {

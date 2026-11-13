@@ -383,10 +383,11 @@ public static class AetherLeftovers
 
     /// <summary>
     /// Whether the process that runs under the id of <paramref name="entry" /> is the core the file names: it runs
-    /// <paramref name="coreFile" />, and it started when the file says, by its start since boot where both are known (on
-    /// Linux, where .NET derives the start time from the wall clock, which a clock step moves between two runs of PattN),
-    /// or else at the time written down, within a second. A process id the system gave to another program since, or a
-    /// process whose start or program cannot be read, is never killed.
+    /// <paramref name="coreFile" /> (on Linux and macOS by its real path, see <see cref="RealPathOf" />), and it started
+    /// when the file says, by its start since boot where both are known (on Linux, where .NET derives the start time from
+    /// the wall clock, which a clock step moves between two runs of PattN), or else at the time written down, within a
+    /// second. A process id the system gave to another program since, or a process whose start or program cannot be read,
+    /// is never killed.
     /// </summary>
     /// <param name="liveStartTicks">When the living process with that id started, in UTC ticks; null when none lives.</param>
     /// <param name="livePath">The program of that process; null when it cannot be read.</param>
@@ -401,7 +402,64 @@ public static class AetherLeftovers
         var sameStart = entry.BootTicks is { } boot && liveBootTicks is { } liveBoot
             ? boot == liveBoot
             : Math.Abs(started - entry.StartTicks) < TimeSpan.TicksPerSecond;
-        return sameStart && string.Equals(Path.GetFullPath(livePath), Path.GetFullPath(coreFile), comparison);
+        return sameStart && string.Equals(ProgramPathOf(livePath), ProgramPathOf(coreFile), comparison);
+    }
+
+    /// <summary>The path of a program as the system names it for a process that runs it: on Windows in full, elsewhere real.</summary>
+    private static string ProgramPathOf(string path)
+    {
+        return OperatingSystem.IsWindows() ? Path.GetFullPath(path) : RealPathOf(path);
+    }
+
+    /// <summary>
+    /// <paramref name="path" /> in full with every symbolic link on its way resolved, as Linux (/proc/[pid]/exe) and macOS
+    /// (proc_pidpath) name the program a process runs: a core under /var or /tmp on macOS, which link to /private/var and
+    /// /private/tmp, runs there as /private/var/… The resolving ends at a part that does not exist or cannot be read; what
+    /// follows it is kept as it is.
+    /// </summary>
+    public static string RealPathOf(string path)
+    {
+        var full = Path.GetFullPath(path);
+        // At most as many links as the systems follow on one path (SYMLOOP_MAX), so that a loop of links ends.
+        for (var links = 0; links < 40; links++)
+        {
+            var root = Path.GetPathRoot(full) ?? string.Empty;
+            var parts = full[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+            var resolved = root;
+            string? relinked = null;
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var next = Path.Combine(resolved, parts[i]);
+                var target = LinkTargetOf(next);
+                if (target == null)
+                {
+                    resolved = next;
+                    continue;
+                }
+                // A target is relative to the folder that holds the link, unless it is a full path itself.
+                relinked = Path.GetFullPath(Path.Combine(resolved, target, string.Join(Path.DirectorySeparatorChar, parts[(i + 1)..])));
+                break;
+            }
+            if (relinked == null)
+            {
+                return resolved;
+            }
+            full = relinked;
+        }
+        return full;
+    }
+
+    /// <summary>What the symbolic link <paramref name="path" /> points to; null when it is no link, or is not there.</summary>
+    private static string? LinkTargetOf(string path)
+    {
+        try
+        {
+            return new FileInfo(path).LinkTarget;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Writes the pid file of <paramref name="process" />.</summary>
