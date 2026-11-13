@@ -653,7 +653,6 @@ public class Global
         "https://doh.opendns.com/dns-query",
         "https://common.dot.dns.yandex.net/dns-query",
         "https://1.1.1.1/dns-query",
-        "https://8.8.8.8/dns-query",
         "https://1.1.1.1/dns-query,https://8.8.8.8/dns-query",
         "8.8.8.8",
         "1.1.1.1",
