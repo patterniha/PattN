@@ -1326,7 +1326,7 @@
                     x:Name="gridFinalmask"
                     Grid.Row="5"
                     ColumnDefinitions="300,Auto"
-                    RowDefinitions="Auto,Auto,Auto">
+                    RowDefinitions="Auto,Auto,Auto,Auto">
                     <TextBlock
                         Grid.Row="0"
                         Grid.Column="0"
@@ -1387,15 +1387,32 @@
                         Grid.Column="1"
                         HorizontalAlignment="Left" />
 
+                    <!--  PattN: tcpUserTimeout after dialMode, shown only where the outbound connects over TCP (TcpUserTimeoutRule)  -->
                     <TextBlock
+                        x:Name="tbTcpUserTimeout"
                         Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Text="{x:Static resx:ResUI.TbTcpUserTimeout}" />
+                    <TextBox
+                        x:Name="txtTcpUserTimeout"
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Width="400"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left"
+                        PlaceholderText="{x:Static resx:ResUI.TbTcpUserTimeoutHint}" />
+
+                    <TextBlock
+                        Grid.Row="3"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
                         Text="{x:Static resx:ResUI.TbTargetStrategy}" />
                     <ComboBox
                         x:Name="cmbTargetStrategy"
-                        Grid.Row="2"
+                        Grid.Row="3"
                         Grid.Column="1"
                         Width="200"
                         Margin="{StaticResource Margin4}"

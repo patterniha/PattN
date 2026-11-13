@@ -102,6 +102,49 @@ public static class AetherArguments
                && (transport == AetherTransport.Http2 || tor == AetherTor.Reverse || psiphon == AetherPsiphon.Reverse);
     }
 
+    /// <summary>
+    /// Whether the core connects out over TCP, which is what it dials through the exit-node (PattNG
+    /// AetherCore.connectsOverTcp): Tor or Psiphon alone or around the tunnel, which carry TCP alone, or a tunnel over
+    /// MASQUE that runs over HTTP/2 (<see cref="MasqueOverHttp2" />); not WireGuard, WARP-in-WARP or MASQUE over HTTP/3,
+    /// which reach WARP over UDP. Where it does, the tcpUserTimeout of the profile counts (TcpUserTimeoutRule).
+    /// </summary>
+    public static bool ConnectsOverTcp(AetherProtocol protocol, AetherTransport transport, AetherTor tor, AetherPsiphon psiphon)
+    {
+        var warpUsed = psiphon != AetherPsiphon.Only && tor != AetherTor.Only;
+        return !warpUsed || MasqueOverHttp2(protocol, transport, tor, psiphon);
+    }
+
+    /// <summary><see cref="ConnectsOverTcp(AetherProtocol, AetherTransport, AetherTor, AetherPsiphon)" /> for the tunnel <paramref name="argv" /> runs.</summary>
+    public static bool ConnectsOverTcp(IReadOnlyList<string> argv)
+    {
+        return ConnectsOverTcp(ProtocolOf(argv), MasqueTransportOf(argv), TorModeOf(argv), PsiphonModeOf(argv));
+    }
+
+    /// <summary>
+    /// The MASQUE transport <paramref name="argv" /> selects, read the way the core reads it: the last of --h2 and
+    /// --http2, for HTTP/2, and --h3 and --quic, for HTTP/3, wins, and nothing at all is HTTP/3 (aether cli.rs).
+    /// </summary>
+    public static AetherTransport MasqueTransportOf(IReadOnlyList<string> argv)
+    {
+        var transport = AetherTransport.Http3;
+        foreach (var word in argv)
+        {
+            switch (word)
+            {
+                case "--h2":
+                case "--http2":
+                    transport = AetherTransport.Http2;
+                    break;
+
+                case "--h3":
+                case "--quic":
+                    transport = AetherTransport.Http3;
+                    break;
+            }
+        }
+        return transport;
+    }
+
     /// <summary>True when a core on <paramref name="arguments" /> reaches WARP through Tor or Psiphon, which then has to come up before anything else can.</summary>
     public static bool ReachesWarpThroughCarrier(IReadOnlyList<string> arguments)
     {

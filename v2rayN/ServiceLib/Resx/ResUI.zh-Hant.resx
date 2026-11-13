@@ -594,6 +594,12 @@
   <data name="TbDialMode" xml:space="preserve">
     <value>dialMode</value>
   </data>
+  <data name="TbTcpUserTimeout" xml:space="preserve">
+    <value>tcpUserTimeout</value>
+  </data>
+  <data name="TbTcpUserTimeoutHint" xml:space="preserve">
+    <value>毫秒（例如 10000）。留空則使用系統預設值</value>
+  </data>
   <data name="TbTargetStrategy" xml:space="preserve">
     <value>targetStrategy</value>
   </data>
@@ -2153,13 +2159,16 @@
     <value>freedom（預設）</value>
   </data>
   <data name="TbAetherExitNodeHint" xml:space="preserve">
-    <value>核心經由此設定檔的出站向外連線，如同經由代理鏈的一跳；下方的 finalMask 和 dialMode 只用於 freedom</value>
+    <value>核心經由此設定檔的出站向外連線，如同經由代理鏈的一跳；下方的 finalMask、dialMode 和 tcpUserTimeout 只用於 freedom</value>
   </data>
   <data name="TbAetherExitFinalMask" xml:space="preserve">
     <value>exit-node 的 finalMask 原始 JSON，格式：{ FinalMaskObject }</value>
   </data>
   <data name="TbAetherExitDialMode" xml:space="preserve">
     <value>exit-node dialMode</value>
+  </data>
+  <data name="TbAetherExitTcpUserTimeout" xml:space="preserve">
+    <value>exit-node tcpUserTimeout</value>
   </data>
   <data name="TbLabelNumbered" xml:space="preserve">
     <value>{0}（{1}）</value>

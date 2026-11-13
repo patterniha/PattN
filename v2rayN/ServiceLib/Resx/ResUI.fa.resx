@@ -591,6 +591,12 @@
   <data name="TbDialMode" xml:space="preserve">
     <value>dialMode</value>
   </data>
+  <data name="TbTcpUserTimeout" xml:space="preserve">
+    <value>tcpUserTimeout</value>
+  </data>
+  <data name="TbTcpUserTimeoutHint" xml:space="preserve">
+    <value>میلی‌ثانیه (مثلا 10000). خالی = پیش‌فرض سیستم.</value>
+  </data>
   <data name="TbTargetStrategy" xml:space="preserve">
     <value>targetStrategy</value>
   </data>
@@ -2023,13 +2029,16 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>freedom (پیش‌فرض)</value>
   </data>
   <data name="TbAetherExitNodeHint" xml:space="preserve">
-    <value>هسته از راه خروجی این پروفایل به بیرون وصل می‌شود، مانند گامی از زنجیرهٔ پروکسی؛ finalMask و dialMode پایین فقط برای freedom است</value>
+    <value>هسته از راه خروجی این پروفایل به بیرون وصل می‌شود، مانند گامی از زنجیرهٔ پروکسی؛ finalMask، dialMode و tcpUserTimeout پایین فقط برای freedom است</value>
   </data>
   <data name="TbAetherExitFinalMask" xml:space="preserve">
     <value>JSON خام finalMask برای exit-node، قالب: { FinalMaskObject }</value>
   </data>
   <data name="TbAetherExitDialMode" xml:space="preserve">
     <value>exit-node dialMode</value>
+  </data>
+  <data name="TbAetherExitTcpUserTimeout" xml:space="preserve">
+    <value>exit-node tcpUserTimeout</value>
   </data>
   <data name="TbLabelNumbered" xml:space="preserve">
     <value>{0} ({1})</value>

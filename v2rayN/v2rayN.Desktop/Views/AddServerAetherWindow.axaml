@@ -678,6 +678,22 @@
                                 HorizontalAlignment="Left"
                                 PlaceholderText="{x:Static resx:ResUI.TbAetherExitLocHint}" />
                         </Grid>
+                        <!--  The tcpUserTimeout of the freedom exit-node, only where the core connects out over TCP  -->
+                        <Grid x:Name="rowTcpUserTimeout" ColumnDefinitions="280,Auto">
+                            <TextBlock
+                                Grid.Column="0"
+                                Margin="{StaticResource Margin4}"
+                                VerticalAlignment="Center"
+                                Text="{x:Static resx:ResUI.TbAetherExitTcpUserTimeout}"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                x:Name="txtTcpUserTimeout"
+                                Grid.Column="1"
+                                Width="400"
+                                Margin="{StaticResource Margin4}"
+                                HorizontalAlignment="Left"
+                                PlaceholderText="{x:Static resx:ResUI.TbTcpUserTimeoutHint}" />
+                        </Grid>
                         <Grid ColumnDefinitions="280,Auto">
                             <TextBlock
                                 Grid.Column="0"

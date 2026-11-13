@@ -298,6 +298,7 @@ public static class ConfigHandler
             item.CurvePreferences = profileItem.CurvePreferences;
             item.EnableSessionResumption = profileItem.EnableSessionResumption;
             item.DialMode = profileItem.DialMode;
+            item.TcpUserTimeout = profileItem.TcpUserTimeout;
             item.TargetStrategy = profileItem.TargetStrategy;
 
             item.PublicKey = profileItem.PublicKey;
@@ -1121,7 +1122,7 @@ public static class ConfigHandler
     /// <summary>
     /// PattN: add or edit an Aether profile. Xray alone runs it. Its settings are the Aether fields of its protocol
     /// extra; besides them it keeps only its pinned endpoint (Address/Port; none for a profile that scans) and the
-    /// finalMask, dialMode and targetStrategy of its outbounds. Every other column is cleared, so that an imported
+    /// finalMask, dialMode, tcpUserTimeout and targetStrategy of its outbounds. Every other column is cleared, so that an imported
     /// profile and an edited one with the same settings are the same profile to the duplicate check. As in PattNG, a
     /// profile is stored as it comes and never refused: the Aether editor refuses a profile with a problem on its next
     /// save, and normalizes it before it calls this.
@@ -1469,10 +1470,11 @@ public static class ConfigHandler
                && AreEqual(o.EchOutbound, n.EchOutbound)
                // PattN: two Aether profiles are the same only with every setting alike (PattNG duplicateIdentity): the
                // whole protocol extra, which holds their Aether settings and is a record compared field by field, and
-               // the dialMode and targetStrategy of their outbounds
+               // the dialMode, tcpUserTimeout and targetStrategy of their outbounds
                && (o.ConfigType != EConfigType.Aether
                    || (oProtocolExtra == nProtocolExtra
                        && AreEqual(o.DialMode, n.DialMode)
+                       && (o.TcpUserTimeout is > 0 ? o.TcpUserTimeout : null) == (n.TcpUserTimeout is > 0 ? n.TcpUserTimeout : null)
                        && AreEqual(o.TargetStrategy, n.TargetStrategy)))
                && (!remarks || o.Remarks == n.Remarks);
 

@@ -284,6 +284,12 @@ public partial class CoreConfigV2rayService
                 streamSettings.sockopt ??= new();
                 streamSettings.sockopt.dialMode = _node.DialMode;
             }
+            // PattN: tcpUserTimeout, the same way, only where the outbound connects over TCP (TcpUserTimeoutRule)
+            if (TcpUserTimeoutRule.ValueOf(_node) is { } tcpUserTimeout)
+            {
+                streamSettings.sockopt ??= new();
+                streamSettings.sockopt.tcpUserTimeout = tcpUserTimeout;
+            }
             var transport = _node.GetTransportExtra();
             var protocolExtra = _node.GetProtocolExtra();
             var host = string.Empty;

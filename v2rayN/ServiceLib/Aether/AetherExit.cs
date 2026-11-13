@@ -1,10 +1,12 @@
+using System.Globalization;
+
 namespace ServiceLib.Aether;
 
 /// <summary>
 /// The exit-node of an Aether core (PattNG core/AetherCore.kt), the outbound that what the core dials out through
-/// leaves Xray by. As a rule it is a plain freedom outbound with the finalMask and the dialMode of the core's Aether
-/// profile, as an ordinary profile sets them on its own outbound: an Aether profile's outbound only reaches the core on
-/// the loopback address, where they would do nothing.
+/// leaves Xray by. As a rule it is a plain freedom outbound with the finalMask, the dialMode and the tcpUserTimeout of
+/// the core's Aether profile, as an ordinary profile sets them on its own outbound: an Aether profile's outbound only
+/// reaches the core on the loopback address, where they would do nothing.
 /// <para>
 /// In a proxy chain where the Aether profile is not the entry hop, the core dials out through the hop on its entry side
 /// instead: that hop's outbound, as the chain builds it, is the exit-node, and <see cref="Hops" /> tells those hops
@@ -22,25 +24,35 @@ namespace ServiceLib.Aether;
 /// <see cref="Hops" /> does for the hops of a chain, it tells the profile the core dials out through from the one that
 /// has the name by now, which an update of its subscription may have changed. See <see cref="WithNodeContent" />.
 /// </param>
+/// <param name="TcpUserTimeout">
+/// PattN: the tcpUserTimeout of the freedom exit-node, in milliseconds: the profile's where its core connects out over
+/// TCP (TcpUserTimeoutRule.ValueOf), else null. The WARP keys window sets none.
+/// </param>
 public sealed record AetherExit(
     string? FinalMask = null,
     string? DialMode = null,
     string? Hops = null,
     string? Node = null,
-    string? NodeContent = null)
+    string? NodeContent = null,
+    int? TcpUserTimeout = null)
 {
     /// <summary>An exit-node with nothing set: a freedom outbound with neither finalMask nor dialMode.</summary>
     public static readonly AetherExit Plain = new();
 
     /// <summary>
     /// What tells this exit-node from another without what it is made of: a SHA-256 digest of it (lowercase hex). A
-    /// node and its content join only where there are some, so that the key of any other exit-node stays what it was.
+    /// node and its content join only where there are some, and so does a tcpUserTimeout, named, so that the key of any
+    /// other exit-node stays what it was.
     /// </summary>
     public string Key
     {
         get
         {
             var parts = new[] { FinalMask, DialMode, Hops }.Concat(new[] { Node, NodeContent }.Where(part => part != null));
+            if (TcpUserTimeout is { } tcpUserTimeout)
+            {
+                parts = parts.Append($"tcpUserTimeout={tcpUserTimeout.ToString(CultureInfo.InvariantCulture)}");
+            }
             return Digest(string.Join('\u0000', parts.Select(part => part ?? string.Empty)));
         }
     }
@@ -62,7 +74,7 @@ public sealed record AetherExit(
 
     /// <summary>
     /// The exit-node of the core of <paramref name="profile" />: the profile it names as its node, or else a plain one
-    /// with its finalMask and dialMode.
+    /// with its finalMask and dialMode, and its tcpUserTimeout where the core connects out over TCP.
     /// </summary>
     public static AetherExit Of(ProfileItem profile)
     {
@@ -71,7 +83,8 @@ public sealed record AetherExit(
         {
             return new AetherExit(Node: KotlinText.Trim(node));
         }
-        return new AetherExit(KotlinText.NullIfBlank(profile.Finalmask), KotlinText.NullIfBlank(profile.DialMode));
+        return new AetherExit(KotlinText.NullIfBlank(profile.Finalmask), KotlinText.NullIfBlank(profile.DialMode),
+            TcpUserTimeout: TcpUserTimeoutRule.ValueOf(profile));
     }
 
     /// <summary>

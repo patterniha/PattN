@@ -114,6 +114,7 @@ public partial class AetherFmt : BaseFmt
         // The exit-node's, under the names the link of an ordinary profile gives its own outbound's.
         item.Finalmask = query["fm"] ?? string.Empty;
         item.DialMode = query["dialMode"] ?? string.Empty;
+        item.TcpUserTimeout = TcpUserTimeoutRule.Parse(query["tut"]);
 
         return item;
     }
@@ -308,6 +309,11 @@ public partial class AetherFmt : BaseFmt
             query.Add(("fm", ToShareJson(item.Finalmask)));
         }
         AddUnlessBlank(query, "dialMode", item.DialMode);
+        // tcpUserTimeout (tut), only where the core, as the link sets it up, connects out over TCP (TcpUserTimeoutRule).
+        if (item.TcpUserTimeout is { } tcpUserTimeout && tcpUserTimeout > 0 && AetherArguments.ConnectsOverTcp(protocol, transport, tor, psiphon))
+        {
+            query.Add(("tut", tcpUserTimeout.ToString(CultureInfo.InvariantCulture)));
+        }
 
         var endpoint = protocol.TwoHops ? null : AetherEndpoint.Of(item.Address, item.Port.ToString(CultureInfo.InvariantCulture));
         var queryText = string.Join("&", query.Select(it => $"{it.Key}={Utils.UrlEncode(it.Value)}"));

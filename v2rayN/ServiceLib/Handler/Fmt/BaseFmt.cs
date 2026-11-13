@@ -120,6 +120,11 @@ public class BaseFmt
         {
             dicQuery.Add("dialMode", Utils.UrlEncode(item.DialMode));
         }
+        // PattN: tcpUserTimeout (tut), only where the outbound connects over TCP (TcpUserTimeoutRule)
+        if (TcpUserTimeoutRule.ValueOf(item) is { } tcpUserTimeout)
+        {
+            dicQuery.Add("tut", tcpUserTimeout.ToString());
+        }
 
         var network = item.GetNetwork();
         if (!Global.Networks.Contains(network))
@@ -245,6 +250,7 @@ public class BaseFmt
         item.VerifyPeerCertByName = GetQueryDecoded(query, "vcn");
         item.CertSha = GetQueryDecoded(query, "pcs");
         item.DialMode = GetQueryDecoded(query, "dialMode");
+        item.TcpUserTimeout = TcpUserTimeoutRule.Parse(GetQueryValue(query, "tut"));
 
         var finalmaskDecoded = GetQueryDecoded(query, "fm");
         if (finalmaskDecoded.IsNotEmpty())

@@ -109,6 +109,7 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
         EchDomain = KotlinText.NullIfBlank(extra.AetherEchDomain) ?? AetherArguments.DefaultEchDomain;
         Dns = extra.AetherDns ?? string.Empty;
         ExitLoc = extra.AetherExitLoc ?? string.Empty;
+        TcpUserTimeout = _initial.TcpUserTimeout is > 0 ? _initial.TcpUserTimeout : null;
         PsiphonIndex = IndexIn(AetherPsiphon.All, AetherPsiphon.FromString(extra.AetherPsiphon));
         PsiphonModeIndex = IndexIn(AetherPsiphonMode.All, AetherPsiphonMode.FromString(extra.AetherPsiphonMode));
         PsiphonCdnIps = extra.AetherPsiphonCdnIps ?? string.Empty;
@@ -233,6 +234,12 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
     [Reactive] public partial string Dns { get; set; }
     [Reactive] public partial string ExitLoc { get; set; }
 
+    /// <summary>
+    /// The tcpUserTimeout of the freedom exit-node, in milliseconds; blank for none. It counts only where the core
+    /// connects out over TCP, see <see cref="ShowTcpUserTimeout" />.
+    /// </summary>
+    [Reactive] public partial int? TcpUserTimeout { get; set; }
+
     /// <summary>The targetStrategy chosen; blank while the profile follows its default, see <see cref="DefaultTargetStrategy" />.</summary>
     [Reactive] public partial string TargetStrategy { get; set; }
 
@@ -283,6 +290,12 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
 
     /// <summary>Obfuscation shapes the UDP of WireGuard and HTTP/3 alone; MASQUE over HTTP/2, chosen or forced by a carrier around the tunnel, takes none.</summary>
     [Reactive] public partial bool ShowObfuscation { get; set; }
+
+    /// <summary>
+    /// The tcpUserTimeout counts only where the core connects out over TCP (AetherCore.ConnectsOverTcp): Tor or Psiphon
+    /// alone or around the tunnel, or MASQUE over HTTP/2; not WireGuard, WARP-in-WARP or MASQUE over HTTP/3.
+    /// </summary>
+    [Reactive] public partial bool ShowTcpUserTimeout { get; set; }
 
     [Reactive] public partial bool PsiphonOn { get; set; }
     [Reactive] public partial bool ShowPsiphonUnavailable { get; set; }
@@ -447,6 +460,7 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
         profile.Port = PortOf(Port);
         profile.Finalmask = KotlinText.IsBlank(FinalMask.Text) ? string.Empty : FinalMask.Text;
         profile.DialMode = KotlinText.IsBlank(DialMode.Text) ? string.Empty : DialMode.Text;
+        profile.TcpUserTimeout = TcpUserTimeout > 0 ? TcpUserTimeout : null;
         // Set below, against the default of the profile as built here.
         profile.TargetStrategy = string.Empty;
         profile.SetProtocolExtra(profile.GetProtocolExtra() with
@@ -1014,7 +1028,7 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
             or nameof(PsiphonCdnSni) or nameof(PsiphonCdnSets) or nameof(PsiphonRegion) or nameof(PsiphonBundledList)
             or nameof(TorIndex) or nameof(TorBridgesIndex) or nameof(TorRelaysIndex) or nameof(TorBridgeLines)
             or nameof(WiwOuter) or nameof(WiwInner) or nameof(Address) or nameof(Port) or nameof(IpVersionIndex)
-            or nameof(Dns) or nameof(ExitLoc) or nameof(TargetStrategy) or nameof(Command);
+            or nameof(Dns) or nameof(ExitLoc) or nameof(TcpUserTimeout) or nameof(TargetStrategy) or nameof(Command);
     }
 
     /// <summary>Recomputes what the fields decide: which are shown, which enabled, the command the settings build.</summary>
@@ -1065,11 +1079,13 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
             CanClearPsiphon = CoreAvailable && !IsScanning && SessionProtocol == null;
 
             var settings = ToProfileItem();
+            // As the profile would be saved, the command written by hand included, which runs in place of the settings.
+            ShowTcpUserTimeout = AetherCore.ConnectsOverTcp(settings);
             settings.SetProtocolExtra(settings.GetProtocolExtra() with { AetherCommand = null });
             BuiltCommand = AetherCore.Of(settings, ListenPort).Command;
             CommandIsCustom = !KotlinText.IsBlank(Command) && KotlinText.Trim(Command) != BuiltCommand;
             DefaultTargetStrategy = AetherOutbound.DefaultTargetStrategy(DefaultsProfile());
-            HasOtherSettings = !KotlinText.IsBlank(Dns) || !KotlinText.IsBlank(ExitLoc)
+            HasOtherSettings = !KotlinText.IsBlank(Dns) || !KotlinText.IsBlank(ExitLoc) || TcpUserTimeout > 0
                 || (!KotlinText.IsBlank(TargetStrategy) && TargetStrategy != DefaultTargetStrategy);
             PsiphonCdnSetsSummary = CdnSetsSummary();
         }

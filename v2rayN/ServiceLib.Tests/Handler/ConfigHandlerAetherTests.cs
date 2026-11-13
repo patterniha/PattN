@@ -137,9 +137,11 @@ public class ConfigHandlerAetherTests
         profile.VerifyPeerCertByName = "name.example";
         profile.MuxEnabled = true;
         profile.SetTransportExtra(new TransportExtraItem { Host = "host.example", Path = "/ws" });
-        // What it keeps beside its Aether settings: the exit-node's finalMask and dialMode, its outbound's targetStrategy.
+        // What it keeps beside its Aether settings: the exit-node's finalMask, dialMode and tcpUserTimeout, its outbound's
+        // targetStrategy.
         profile.Finalmask = """{"tcp":[]}""";
         profile.DialMode = "code-1";
+        profile.TcpUserTimeout = 10000;
         profile.TargetStrategy = "UseIPv4";
         var extra = profile.GetProtocolExtra();
 
@@ -153,6 +155,7 @@ public class ConfigHandlerAetherTests
         await (stored.GetProtocolExtra() == extra).Should().BeTrue();
         await stored.Finalmask.Should().BeEqualTo("""{"tcp":[]}""");
         await stored.DialMode.Should().BeEqualTo("code-1");
+        await stored.TcpUserTimeout.Should().BeEqualTo(10000);
         await stored.TargetStrategy.Should().BeEqualTo("UseIPv4");
         foreach (var (name, value) in new (string, string?)[]
                  {
@@ -188,6 +191,7 @@ public class ConfigHandlerAetherTests
         edited.Address = "162.159.192.1";
         edited.Port = 2408;
         edited.DialMode = string.Empty;
+        edited.TcpUserTimeout = null;
 
         await (await ConfigHandler.AddServer(config, edited)).Should().BeEqualTo(0);
         var stored2 = (await AppManager.Instance.GetProfileItem(profile.IndexId))!;
@@ -198,6 +202,7 @@ public class ConfigHandlerAetherTests
         await stored2.GetProtocolExtra().AetherProtocol.Should().BeEqualTo("wg");
         await stored2.GetProtocolExtra().AetherScanMode.Should().BeEqualTo("thorough");
         await stored2.DialMode.Should().BeEqualTo(string.Empty);
+        await stored2.TcpUserTimeout.Should().BeNull();
         await stored2.Finalmask.Should().BeEqualTo("""{"tcp":[]}""");
     }
 
@@ -247,6 +252,7 @@ public class ConfigHandlerAetherTests
             // Each differs from it in one setting.
             "aether://162.159.198.1:443?protocol=masque&scan=thorough&ip=both#Scan%20mode",
             "aether://162.159.198.1:443?protocol=masque&scan=verified&ip=both&dialMode=code-1#Dial%20mode",
+            "aether://162.159.198.1:443?protocol=masque&scan=verified&ip=both&tut=10000#TCP%20user%20timeout",
             "aether://162.159.198.1:443?protocol=masque&scan=verified&ip=both&fm=%7B%22tcp%22%3A%5B%5D%7D#Final%20mask",
             "aether://162.159.198.1:443?protocol=masque&scan=verified&ip=both&tor=chain#Tor",
             "aether://162.159.198.2:443?protocol=masque&scan=verified&ip=both#Endpoint",
@@ -273,10 +279,10 @@ public class ConfigHandlerAetherTests
         var (total, kept) = await ConfigHandler.DedupServerList(config, subId);
         var remarks = (await Profiles(subId)).Select(profile => profile.Remarks).ToList();
 
-        await total.Should().BeEqualTo(9);
-        await kept.Should().BeEqualTo(7);
+        await total.Should().BeEqualTo(10);
+        await kept.Should().BeEqualTo(8);
         await remarks.Count(name => name is "WARP MASQUE" or "Copy" or "Edited").Should().BeEqualTo(1).Because(string.Join(", ", remarks));
-        foreach (var name in new[] { "Scan mode", "Dial mode", "Final mask", "Tor", "Endpoint", "Target strategy" })
+        foreach (var name in new[] { "Scan mode", "Dial mode", "TCP user timeout", "Final mask", "Tor", "Endpoint", "Target strategy" })
         {
             await remarks.Contains(name).Should().BeTrue().Because(name);
         }

@@ -85,6 +85,7 @@ public partial class AddServerAetherWindow
             this.Bind(ViewModel, vm => vm.OtherSettingsExpanded, v => v.expOtherSettings.IsExpanded).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.Dns, v => v.txtDns.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.ExitLoc, v => v.txtExitLoc.Text).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.TcpUserTimeout, v => v.txtTcpUserTimeout.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TargetStrategyIndex, v => v.cmbTargetStrategy.SelectedIndex).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.CommandText, v => v.txtCommand.Text).DisposeWith(disposables);
 
@@ -125,6 +126,8 @@ public partial class AddServerAetherWindow
             this.OneWayBind(ViewModel, vm => vm.WarpUsed, v => v.rowIpVersion.Visibility, Shown).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.WarpUsed, v => v.rowDns.Visibility, Shown).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.WarpUsed, v => v.rowExitLoc.Visibility, Shown).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.ShowTcpUserTimeout, v => v.rowTcpUserTimeout.Visibility, Shown).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.ExitNode.IsFreedom, v => v.txtTcpUserTimeout.IsEnabled).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.WarpUsed, v => v.rowScan.Visibility, Shown).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.ShowScanBlocked, v => v.rowScanBlocked.Visibility, Shown).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.CoreAvailable, v => v.rowCoreUnavailable.Visibility, available => Shown(!available)).DisposeWith(disposables);

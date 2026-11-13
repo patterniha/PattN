@@ -134,8 +134,8 @@ public partial class CoreConfigV2rayService
     /// The exit-node of a core that dials out through <paramref name="exit" /> (PattNG toOutboundAetherExit), tagged
     /// exit-node: the outbound of the profile its node names, built as a proxy chain builds a hop and passing every name
     /// on as it is, whatever its profile sets, since a name Xray looked up for it would be asked of the DNS that reaches
-    /// out through the core itself, which is not up yet when it needs the name; or else a freedom one with the finalMask
-    /// and the dialMode of <paramref name="exit" />, set as an ordinary profile sets them on its own outbound, and, under
+    /// out through the core itself, which is not up yet when it needs the name; or else a freedom one with the finalMask,
+    /// the dialMode and the tcpUserTimeout of <paramref name="exit" />, set as an ordinary profile sets them on its own outbound, and, under
     /// the TUN, resolving names with Xray's DNS, as the direct outbound does. Null, with the localized
     /// <paramref name="failure" />, when the node gives none: no profile has the name any more, several have it, or the
     /// one that has it gives no outbound or an unusable ECH outbound; the core would reach the internet without it.
@@ -170,6 +170,12 @@ public partial class CoreConfigV2rayService
             freedom.streamSettings ??= new();
             freedom.streamSettings.sockopt ??= new();
             freedom.streamSettings.sockopt.dialMode = exit.DialMode;
+        }
+        if (exit.TcpUserTimeout is > 0)
+        {
+            freedom.streamSettings ??= new();
+            freedom.streamSettings.sockopt ??= new();
+            freedom.streamSettings.sockopt.tcpUserTimeout = exit.TcpUserTimeout;
         }
         if (context.IsTunEnabled)
         {

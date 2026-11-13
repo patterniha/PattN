@@ -213,6 +213,8 @@ public partial class AddServerWindow
             this.OneWayBind(ViewModel, vm => vm.FinalmaskPreset, v => v.presetFinalmask.ViewModel).DisposeWith(disposables);
             // PattN: dialMode as a preset field (design 3.3)
             this.OneWayBind(ViewModel, vm => vm.DialModePreset, v => v.presetDialMode.ViewModel).DisposeWith(disposables);
+            // PattN: tcpUserTimeout after dialMode
+            this.Bind(ViewModel, vm => vm.TcpUserTimeout, v => v.txtTcpUserTimeout.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TargetStrategy, v => v.cmbTargetStrategy.Text).DisposeWith(disposables);
 
             this.BindCommand(ViewModel, vm => vm.FetchCertCmd, v => v.btnFetchCert).DisposeWith(disposables);
@@ -340,6 +342,7 @@ public partial class AddServerWindow
         }
         cmbStreamSecurity.ItemsSource = lstStreamSecurity;
         cmbStreamSecurity.SelectedItem = profileItem.StreamSecurity;
+        SetTcpUserTimeoutVisibility();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -350,6 +353,7 @@ public partial class AddServerWindow
     private void CmbNetwork_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         SetTransportGridVisibility();
+        SetTcpUserTimeoutVisibility();
     }
 
     private void CmbHeaderTypeRaw_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -363,6 +367,7 @@ public partial class AddServerWindow
         {
             SetMasqueTlsFields(cmbAlpn.SelectedItem?.ToString());
         }
+        SetTcpUserTimeoutVisibility();
     }
 
     /// <summary>
@@ -374,6 +379,19 @@ public partial class AddServerWindow
         var http2 = TlsSettingsCheck.MasqueAlpnIsHttp2(alpn);
         cmbFingerprint.IsEnabled = http2;
         presetCipherSuites.IsEnabled = http2;
+    }
+
+    /// <summary>
+    /// PattN: tcpUserTimeout counts only where the outbound connects over TCP, so it shows only there, as the type, the
+    /// network, the security and the alpn chosen have it (TcpUserTimeoutRule.Applies); a hidden value is kept, unused.
+    /// </summary>
+    private void SetTcpUserTimeoutVisibility()
+    {
+        var configType = ViewModel?.SelectedSource?.ConfigType;
+        var visible = configType != null && TcpUserTimeoutRule.Applies(configType.Value, cmbNetwork.SelectedItem?.ToString(),
+            cmbStreamSecurity.SelectedItem?.ToString(), cmbAlpn.SelectedItem?.ToString());
+        tbTcpUserTimeout.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        txtTcpUserTimeout.Visibility = tbTcpUserTimeout.Visibility;
     }
 
     private void CmbStreamSecurity_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -394,6 +412,7 @@ public partial class AddServerWindow
             gridRealityMore.Visibility = Visibility.Collapsed;
             gridTlsMore.Visibility = Visibility.Collapsed;
         }
+        SetTcpUserTimeoutVisibility();
     }
 
     private void btnGUID_Click(object sender, RoutedEventArgs e)

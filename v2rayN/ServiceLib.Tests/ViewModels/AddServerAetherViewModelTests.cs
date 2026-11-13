@@ -622,6 +622,64 @@ public class AddServerAetherViewModelTests
     }
 
     [Test]
+    public async Task TheExitNodesTcpUserTimeoutShowsOnlyWhereTheCoreConnectsOutOverTcp()
+    {
+        // PattN: MASQUE over HTTP/3, the default, and WireGuard reach WARP over UDP; over HTTP/2, or through Tor or Psiphon
+        // alone or around the tunnel, the core dials out over TCP.
+        var vm = await Editor(new FakeSource());
+        await vm.ShowTcpUserTimeout.Should().BeFalse();
+        vm.TransportIndex = AetherTransport.All.ToList().IndexOf(AetherTransport.Http2);
+        await vm.ShowTcpUserTimeout.Should().BeTrue();
+        vm.ProtocolIndex = AetherProtocol.All.ToList().IndexOf(AetherProtocol.WireGuard);
+        await vm.ShowTcpUserTimeout.Should().BeFalse();
+        vm.TorIndex = AetherTor.All.ToList().IndexOf(AetherTor.Only);
+        await vm.ShowTcpUserTimeout.Should().BeTrue();
+        vm.TorIndex = AetherTor.All.ToList().IndexOf(AetherTor.Chain);
+        await vm.ShowTcpUserTimeout.Should().BeFalse();
+        vm.ProtocolIndex = AetherProtocol.All.ToList().IndexOf(AetherProtocol.Masque);
+        vm.TransportIndex = AetherTransport.All.ToList().IndexOf(AetherTransport.Http3);
+        vm.TorIndex = AetherTor.All.ToList().IndexOf(AetherTor.Reverse);
+        await vm.ShowTcpUserTimeout.Should().BeTrue();
+        vm.TorIndex = 0;
+        vm.PsiphonIndex = AetherPsiphon.All.ToList().IndexOf(AetherPsiphon.Only);
+        await vm.ShowTcpUserTimeout.Should().BeTrue();
+        vm.PsiphonIndex = 0;
+        await vm.ShowTcpUserTimeout.Should().BeFalse();
+
+        // A command written by hand runs in place of the settings.
+        vm.Command = "aether --protocol masque --h2";
+        await vm.ShowTcpUserTimeout.Should().BeTrue();
+        vm.Command = string.Empty;
+        await vm.ShowTcpUserTimeout.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task TheExitNodesTcpUserTimeoutIsKeptInTheFoldAndSavedAsAWholeNumberAboveZeroOrNone()
+    {
+        var vm = await Editor(new FakeSource());
+        await vm.TcpUserTimeout.Should().BeNull();
+        await vm.ToProfileItem().TcpUserTimeout.Should().BeNull();
+
+        vm.TcpUserTimeout = 10000;
+        await vm.HasOtherSettings.Should().BeTrue();
+        await vm.ToProfileItem().TcpUserTimeout.Should().BeEqualTo(10000);
+        // Kept while it does not count, as the other settings a choice hides are.
+        vm.ProtocolIndex = AetherProtocol.All.ToList().IndexOf(AetherProtocol.WireGuard);
+        await vm.ToProfileItem().TcpUserTimeout.Should().BeEqualTo(10000);
+        vm.TcpUserTimeout = 0;
+        await vm.HasOtherSettings.Should().BeFalse();
+        await vm.ToProfileItem().TcpUserTimeout.Should().BeNull();
+
+        // A profile that holds one opens with it, and with the fold open.
+        var profile = With(new ProtocolExtraItem { AetherProtocol = AetherProtocol.Masque.Type, AetherTransport = AetherTransport.Http2.Type });
+        profile.TcpUserTimeout = 7000;
+        var held = await Editor(new FakeSource(), profile);
+        await held.TcpUserTimeout.Should().BeEqualTo(7000);
+        await held.OtherSettingsExpanded.Should().BeTrue();
+        await held.ShowTcpUserTimeout.Should().BeTrue();
+    }
+
+    [Test]
     public async Task TheFingerprintStartsAsChromesAndIsStoredAsChosen()
     {
         var vm = await Editor(new FakeSource());

@@ -582,6 +582,9 @@ public class Sockopt4Ray
     public HappyEyeballs4Ray? happyEyeballs { get; set; }
 
     public string? dialMode { get; set; }
+
+    // PattN: milliseconds, after dialMode (TcpUserTimeoutRule)
+    public int? tcpUserTimeout { get; set; }
 }
 
 public class HappyEyeballs4Ray

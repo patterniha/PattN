@@ -52,4 +52,7 @@ public class VmessQRCode
     public string pcs { get; set; } = string.Empty;
 
     public string dialMode { get; set; } = string.Empty;
+
+    // PattN: tcpUserTimeout in milliseconds, written where it counts (TcpUserTimeoutRule), blank otherwise
+    public string tut { get; set; } = string.Empty;
 }

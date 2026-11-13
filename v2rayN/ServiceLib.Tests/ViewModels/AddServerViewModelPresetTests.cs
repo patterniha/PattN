@@ -261,6 +261,36 @@ public class AddServerViewModelPresetTests
 
     #endregion the preset fields
 
+    #region tcpUserTimeout, after dialMode
+
+    [Test]
+    public async Task TheTcpUserTimeoutOpensAsTheProfileHoldsItAndIsSavedAsAWholeNumberAboveZeroOrNone()
+    {
+        var profile = NewProfile();
+        profile.TcpUserTimeout = 10000;
+        await (await Editor(profile)).TcpUserTimeout.Should().BeEqualTo(10000);
+        var zero = NewProfile();
+        zero.TcpUserTimeout = 0;
+        await (await Editor(zero)).TcpUserTimeout.Should().BeNull();
+
+        var vm = await TlsEditor(EConfigType.VMess, fingerprint: TlsSettingsCheck.UnsafeFingerprint);
+        vm.TcpUserTimeout = 2500;
+
+        var shown = await Save(vm);
+
+        await shown.Should().Contain(ResUI.OperationFailed);
+        await vm.SelectedSource.TcpUserTimeout.Should().BeEqualTo(2500);
+
+        vm.TcpUserTimeout = 0;
+        await Save(vm);
+        await vm.SelectedSource.TcpUserTimeout.Should().BeNull();
+        vm.TcpUserTimeout = -1;
+        await Save(vm);
+        await vm.SelectedSource.TcpUserTimeout.Should().BeNull();
+    }
+
+    #endregion tcpUserTimeout, after dialMode
+
     #region the TLS save checks (PattNG TlsSettingsCheck)
 
     [Test]

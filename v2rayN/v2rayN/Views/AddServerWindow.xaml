@@ -1530,6 +1530,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="300" />
@@ -1590,8 +1591,27 @@
                         Grid.Column="1"
                         HorizontalAlignment="Left" />
 
+                    <!--  PattN: tcpUserTimeout after dialMode, shown only where the outbound connects over TCP (TcpUserTimeoutRule)  -->
                     <TextBlock
+                        x:Name="tbTcpUserTimeout"
                         Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ToolbarTextBlock}"
+                        Text="{x:Static resx:ResUI.TbTcpUserTimeout}" />
+                    <TextBox
+                        x:Name="txtTcpUserTimeout"
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Width="400"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left"
+                        materialDesign:HintAssist.Hint="{x:Static resx:ResUI.TbTcpUserTimeoutHint}"
+                        Style="{StaticResource DefTextBox}" />
+
+                    <TextBlock
+                        Grid.Row="3"
                         Grid.Column="0"
                         Margin="{StaticResource Margin4}"
                         VerticalAlignment="Center"
@@ -1599,7 +1619,7 @@
                         Text="{x:Static resx:ResUI.TbTargetStrategy}" />
                     <ComboBox
                         x:Name="cmbTargetStrategy"
-                        Grid.Row="2"
+                        Grid.Row="3"
                         Grid.Column="1"
                         Width="200"
                         Margin="{StaticResource Margin4}"

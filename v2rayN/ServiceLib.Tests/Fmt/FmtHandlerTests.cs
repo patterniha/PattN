@@ -227,6 +227,87 @@ public class FmtHandlerTests
     }
 
     [Test]
+    public async Task GetShareUriAndResolveConfig_Vless_ShouldRoundTripTcpUserTimeout()
+    {
+        // PattN: a sockopt option like dialMode, carried where the outbound connects over TCP (TcpUserTimeoutRule).
+        var source = CreateVlessProfile();
+        source.DialMode = "code-1";
+        source.TcpUserTimeout = 10000;
+
+        var resolved = await ExportThenImport(source);
+
+        await resolved.TcpUserTimeout.Should().BeEqualTo(10000);
+        await resolved.DialMode.Should().BeEqualTo("code-1");
+        await AssertExportContains(source, "dialMode=code-1", "tut=10000");
+    }
+
+    [Test]
+    public async Task GetShareUri_TcpUserTimeoutStaysOutOfALinkWhoseConnectionIsUdp()
+    {
+        // PattN: mKCP runs over UDP, as do Hysteria2 and WireGuard: the profile keeps its value, no link carries it.
+        var kcp = CreateVlessProfile();
+        kcp.Network = nameof(ETransport.kcp);
+        kcp.TcpUserTimeout = 10000;
+        var hysteria2 = CreateHysteria2Profile();
+        hysteria2.TcpUserTimeout = 10000;
+        var wireguard = CreateWireguardProfile();
+        wireguard.TcpUserTimeout = 10000;
+
+        foreach (var source in new[] { kcp, hysteria2, wireguard })
+        {
+            var uri = FmtHandler.GetShareUri(source);
+            await QueryKeys(uri!).Contains("tut").Should().BeFalse().Because(uri);
+            var resolved = await ExportThenImport(source);
+            await resolved.TcpUserTimeout.Should().BeNull();
+        }
+    }
+
+    [Test]
+    public async Task ResolveConfig_TcpUserTimeoutTakesAWholeNumberAboveZeroAlone()
+    {
+        // PattN: as a field takes it; anything else leaves the profile without one.
+        const string link = "vless://5783a3e7-e373-51cd-8642-c83782b807c5@vless.example:8443?encryption=none&type=tcp&tut=";
+        await (FmtHandler.ResolveConfig(link + "2500", out _)?.TcpUserTimeout).Should().BeEqualTo(2500);
+        await (FmtHandler.ResolveConfig(link + "0", out _)?.TcpUserTimeout).Should().BeNull();
+        await (FmtHandler.ResolveConfig(link + "-1", out _)?.TcpUserTimeout).Should().BeNull();
+        await (FmtHandler.ResolveConfig(link + "2s", out _)?.TcpUserTimeout).Should().BeNull();
+    }
+
+    [Test]
+    public async Task GetShareUriAndResolveConfig_Vmess_ShouldRoundTripTcpUserTimeout()
+    {
+        // PattN: the QR-code JSON carries it in a member of its own, blank where it does not count.
+        var source = CreateVmessProfile();
+        source.TcpUserTimeout = 10000;
+
+        var resolved = await ExportThenImport(source);
+
+        await resolved.TcpUserTimeout.Should().BeEqualTo(10000);
+
+        source.Network = nameof(ETransport.kcp);
+        var kcp = await ExportThenImport(source);
+        await kcp.TcpUserTimeout.Should().BeNull();
+    }
+
+    [Test]
+    public async Task GetShareUriAndResolveConfig_Aether_ShouldCarryTcpUserTimeoutWhereItsCoreConnectsOverTcp()
+    {
+        // PattN: the exit-node's, under the name of an ordinary link, only where the core of the link dials out over TCP.
+        var source = CreateAetherProfile();
+        source.TcpUserTimeout = 10000;
+        source.SetProtocolExtra(source.GetProtocolExtra() with { AetherTransport = AetherTransport.Http2.Type });
+
+        var resolved = await ExportThenImport(source);
+
+        await resolved.TcpUserTimeout.Should().BeEqualTo(10000);
+        await AssertExportContains(source, "tut=10000");
+
+        source.SetProtocolExtra(source.GetProtocolExtra() with { AetherTransport = AetherTransport.Http3.Type });
+        var overHttp3 = FmtHandler.GetShareUri(source)!;
+        await QueryKeys(overHttp3).Contains("tut").Should().BeFalse().Because(overHttp3);
+    }
+
+    [Test]
     public async Task GetShareUriAndResolveConfig_Shadowsocks_ShouldRoundTripBasicFields()
     {
         var source = CreateShadowsocksProfile();
@@ -527,6 +608,12 @@ public class FmtHandlerTests
     /// agree on the wrong spelling of a parameter, and the insecure flag is spelled differently by
     /// every protocol.
     /// </summary>
+    // PattN: the keys of the query of a link.
+    private static List<string> QueryKeys(string uri)
+    {
+        return uri.Split('#')[0].Split('?').Skip(1).FirstOrDefault()?.Split('&').Select(pair => pair.Split('=')[0]).ToList() ?? [];
+    }
+
     private static async Task AssertExportContains(ProfileItem source, params string[] expectedFragments)
     {
         var uri = FmtHandler.GetShareUri(source);

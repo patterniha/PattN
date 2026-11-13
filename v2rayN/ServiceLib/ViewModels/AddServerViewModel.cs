@@ -161,6 +161,11 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
 
     public PresetFieldViewModel DialModePreset { get; }
 
+    // PattN: sockopt.tcpUserTimeout in milliseconds, after dialMode; blank for none. The editor shows it only where the
+    // outbound connects over TCP (TcpUserTimeoutRule), and keeps it, unused, elsewhere.
+    [Reactive]
+    public partial int? TcpUserTimeout { get; set; }
+
     [Reactive]
     public partial string XdriveProvider { get; set; }
 
@@ -398,6 +403,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         FinalmaskPreset = new PresetFieldViewModel(FieldPresets.FinalMask, SelectedSource?.Finalmask);
         CipherSuitesPreset = new PresetFieldViewModel(FieldPresets.CipherSuites, SelectedSource?.CipherSuites);
         DialModePreset = new PresetFieldViewModel(FieldPresets.DialMode, SelectedSource?.DialMode);
+        TcpUserTimeout = SelectedSource?.TcpUserTimeout is > 0 ? SelectedSource.TcpUserTimeout : null;
 
         var protocolExtra = SelectedSource?.GetProtocolExtra() ?? new();
         var transport = SelectedSource?.GetTransportExtra() ?? new();
@@ -492,6 +498,7 @@ public partial class AddServerViewModel : MyReactiveObject, ICloseable
         SelectedSource.Finalmask = string.IsNullOrWhiteSpace(FinalmaskPreset.Text) ? string.Empty : FinalmaskPreset.Text;
         SelectedSource.CipherSuites = string.IsNullOrWhiteSpace(CipherSuitesPreset.Text) ? string.Empty : CipherSuitesPreset.Text;
         SelectedSource.DialMode = string.IsNullOrWhiteSpace(DialModePreset.Text) ? string.Empty : DialModePreset.Text;
+        SelectedSource.TcpUserTimeout = TcpUserTimeout > 0 ? TcpUserTimeout : null;
 
         if (SelectedSource.Remarks.IsNullOrEmpty())
         {

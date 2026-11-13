@@ -314,6 +314,23 @@ public sealed record AetherCore
         return AetherArguments.LeavesThroughWarp(AetherTor.FromString(extra.AetherTor), AetherPsiphon.FromString(extra.AetherPsiphon));
     }
 
+    /// <summary>
+    /// Whether the core of <paramref name="profile" /> connects out over TCP, see
+    /// <see cref="AetherArguments.ConnectsOverTcp(IReadOnlyList{string})" />: as the command line the profile carries says,
+    /// or else, as for <see cref="Of" />, as its settings say.
+    /// </summary>
+    public static bool ConnectsOverTcp(ProfileItem profile)
+    {
+        var extra = profile.GetProtocolExtra();
+        var arguments = KotlinText.IsBlank(extra.AetherCommand) ? null : ReadableArguments(extra.AetherCommand!);
+        if (arguments != null)
+        {
+            return AetherArguments.ConnectsOverTcp(arguments);
+        }
+        return AetherArguments.ConnectsOverTcp(AetherProtocol.FromString(extra.AetherProtocol), AetherTransport.FromString(extra.AetherTransport),
+            AetherTor.FromString(extra.AetherTor), AetherPsiphon.FromString(extra.AetherPsiphon));
+    }
+
     /// <summary>The arguments of <paramref name="command" />: its <see cref="Words" />, without a program name in front.</summary>
     public static List<string> ArgumentsOf(string command)
     {

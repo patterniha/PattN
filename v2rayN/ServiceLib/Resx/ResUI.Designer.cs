@@ -4003,11 +4003,20 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
-        ///   查找类似 The core dials out through this profile&apos;s outbound, as through a hop of a proxy chain; finalMask and dialMode below are for freedom only 的本地化字符串。
+        ///   查找类似 The core dials out through this profile&apos;s outbound, as through a hop of a proxy chain; finalMask, dialMode and tcpUserTimeout below are for freedom only 的本地化字符串。
         /// </summary>
         public static string TbAetherExitNodeHint {
             get {
                 return ResourceManager.GetString("TbAetherExitNodeHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 exit-node tcpUserTimeout 的本地化字符串。
+        /// </summary>
+        public static string TbAetherExitTcpUserTimeout {
+            get {
+                return ResourceManager.GetString("TbAetherExitTcpUserTimeout", resourceCulture);
             }
         }
         
@@ -7260,6 +7269,24 @@ namespace ServiceLib.Resx {
         public static string TbTargetStrategy {
             get {
                 return ResourceManager.GetString("TbTargetStrategy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 tcpUserTimeout 的本地化字符串。
+        /// </summary>
+        public static string TbTcpUserTimeout {
+            get {
+                return ResourceManager.GetString("TbTcpUserTimeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Milliseconds (e.g., 10000). Empty = system default. 的本地化字符串。
+        /// </summary>
+        public static string TbTcpUserTimeoutHint {
+            get {
+                return ResourceManager.GetString("TbTcpUserTimeoutHint", resourceCulture);
             }
         }
         

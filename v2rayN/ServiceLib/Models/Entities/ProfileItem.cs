@@ -226,6 +226,10 @@ public class ProfileItem
     public bool EnableSessionResumption { get; set; }
 
     public string DialMode { get; set; } = string.Empty;
+
+    // PattN: sockopt.tcpUserTimeout in milliseconds, after dialMode; null when unset (TcpUserTimeoutRule)
+    public int? TcpUserTimeout { get; set; }
+
     public string TargetStrategy { get; set; } = string.Empty;
     public string Fingerprint { get; set; }
     public string PublicKey { get; set; }

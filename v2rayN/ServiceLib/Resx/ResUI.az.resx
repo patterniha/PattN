@@ -591,6 +591,12 @@
   <data name="TbDialMode" xml:space="preserve">
     <value>dialMode</value>
   </data>
+  <data name="TbTcpUserTimeout" xml:space="preserve">
+    <value>tcpUserTimeout</value>
+  </data>
+  <data name="TbTcpUserTimeoutHint" xml:space="preserve">
+    <value>Millisaniyə (məsələn, 10000). Boş = sistemin standartı.</value>
+  </data>
   <data name="TbTargetStrategy" xml:space="preserve">
     <value>targetStrategy</value>
   </data>
@@ -2149,13 +2155,16 @@ Təyin edildikdə sertifikat sabitlənəcək və "Təhlükəsiz olmayan əlaqəy
     <value>freedom (standart)</value>
   </data>
   <data name="TbAetherExitNodeHint" xml:space="preserve">
-    <value>Nüvə bu profilin çıxışı vasitəsilə, proksi zəncirinin bir halqası kimi xaricə qoşulur; aşağıdakı finalMask və dialMode yalnız freedom üçündür</value>
+    <value>Nüvə bu profilin çıxışı vasitəsilə, proksi zəncirinin bir halqası kimi xaricə qoşulur; aşağıdakı finalMask, dialMode və tcpUserTimeout yalnız freedom üçündür</value>
   </data>
   <data name="TbAetherExitFinalMask" xml:space="preserve">
     <value>exit-node finalMask xam JSON, format: { FinalMaskObject }</value>
   </data>
   <data name="TbAetherExitDialMode" xml:space="preserve">
     <value>exit-node dialMode</value>
+  </data>
+  <data name="TbAetherExitTcpUserTimeout" xml:space="preserve">
+    <value>exit-node tcpUserTimeout</value>
   </data>
   <data name="TbLabelNumbered" xml:space="preserve">
     <value>{0} ({1})</value>

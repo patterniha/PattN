@@ -594,6 +594,12 @@
   <data name="TbDialMode" xml:space="preserve">
     <value>dialMode</value>
   </data>
+  <data name="TbTcpUserTimeout" xml:space="preserve">
+    <value>tcpUserTimeout</value>
+  </data>
+  <data name="TbTcpUserTimeoutHint" xml:space="preserve">
+    <value>Миллисекунды (например, 10000). Пусто = системное значение</value>
+  </data>
   <data name="TbTargetStrategy" xml:space="preserve">
     <value>targetStrategy</value>
   </data>
@@ -2155,13 +2161,16 @@
     <value>freedom (по умолчанию)</value>
   </data>
   <data name="TbAetherExitNodeHint" xml:space="preserve">
-    <value>Ядро выходит наружу через исходящее соединение этого профиля, как через звено цепочки прокси; finalMask и dialMode ниже относятся только к freedom</value>
+    <value>Ядро выходит наружу через исходящее соединение этого профиля, как через звено цепочки прокси; finalMask, dialMode и tcpUserTimeout ниже относятся только к freedom</value>
   </data>
   <data name="TbAetherExitFinalMask" xml:space="preserve">
     <value>Необработанный JSON finalMask для exit-node, формат: { FinalMaskObject }</value>
   </data>
   <data name="TbAetherExitDialMode" xml:space="preserve">
     <value>exit-node dialMode</value>
+  </data>
+  <data name="TbAetherExitTcpUserTimeout" xml:space="preserve">
+    <value>exit-node tcpUserTimeout</value>
   </data>
   <data name="TbLabelNumbered" xml:space="preserve">
     <value>{0} ({1})</value>
