@@ -264,7 +264,7 @@ internal static class CoreProcessTracker
                 executablePath = executablePath[..^" (deleted)".Length];
             }
 
-            if (!OperatingSystem.IsLinux())
+            if (OperatingSystem.IsWindows())
             {
                 var target = new FileInfo(executablePath).ResolveLinkTarget(returnFinalTarget: true);
                 return Path.GetFullPath(target?.FullName ?? executablePath);
