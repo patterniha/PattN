@@ -201,9 +201,11 @@ public class DownloadService : IDisposable
     /// </summary>
     public async Task<string?> UrlRedirectAsync(string url, CancellationToken cancellationToken = default)
     {
-        using var client = new HttpClient(GetHandler(), false);
+        // The configured handler follows redirects automatically, so a dedicated
+        // non-redirecting handler is required to observe the redirect response.
+        using var client = new HttpClient(CreateNonRedirectHandler());
 
-        var response = await client.GetAsync(url, cancellationToken);
+        using var response = await client.GetAsync(url, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Redirect && response.Headers.Location is not null)
         {
             return response.Headers.Location.ToString();
@@ -211,6 +213,36 @@ public class DownloadService : IDisposable
         Error?.Invoke(this, new ErrorEventArgs(new Exception("StatusCode error: " + response.StatusCode)));
         Logging.SaveLog("StatusCode error: " + url);
         return null;
+    }
+
+    /// <summary>
+    ///     Creates a handler with the same proxy settings as the configured handler, but with automatic redirects disabled.
+    /// </summary>
+    private HttpMessageHandler CreateNonRedirectHandler()
+    {
+        if (Handler is SocketsHttpHandler configured)
+        {
+            var handler = new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                UseProxy = configured.UseProxy,
+                Proxy = configured.Proxy,
+                UseCookies = configured.UseCookies,
+                CookieContainer = configured.CookieContainer,
+                ConnectTimeout = configured.ConnectTimeout,
+            };
+            var certificateChainPolicy = CertPemManager.Instance.BuildCertificateChainPolicy();
+            if (certificateChainPolicy != null)
+            {
+                handler.SslOptions.CertificateChainPolicy = certificateChainPolicy;
+                handler.SslOptions.RemoteCertificateValidationCallback = null;
+            }
+            return handler;
+        }
+
+        var direct = HttpClientHelper.CreateSocketsHttpHandler(false);
+        direct.AllowAutoRedirect = false;
+        return direct;
     }
 
     /// <summary>
