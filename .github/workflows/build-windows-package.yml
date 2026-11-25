@@ -15,6 +15,8 @@ permissions:
 jobs:
   build:
     name: build Windows all architectures
+    # PattN: upstream's installers bundle upstream's cores, geo files and names, and take no P tag
+    if: github.repository == '2dust/v2rayN'
     runs-on: windows-latest
     permissions:
       contents: read
@@ -109,7 +111,7 @@ jobs:
 
   release:
     name: sign and upload windows ${{ matrix.arch }} ${{ matrix.flavor }}
-    if: inputs.release_tag != ''
+    if: github.repository == '2dust/v2rayN' && inputs.release_tag != ''
     needs: build
     strategy:
       fail-fast: false

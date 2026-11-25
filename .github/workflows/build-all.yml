@@ -102,7 +102,8 @@ jobs:
             }"
 
       - name: Trigger build windows package
-        if: inputs.release_tag != ''
+        # PattN: upstream's installers bundle upstream's cores, geo files and names, and take no P tag
+        if: inputs.release_tag != '' && github.repository == '2dust/v2rayN'
         run: |
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
