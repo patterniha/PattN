@@ -206,18 +206,20 @@ public partial class UpdateService(DownloadService downloadService, Config confi
 
     private static string GetProgressMsg(GitHubReleaseProgress progress)
     {
+        // PattN: the app is named PattN, as in the other update messages
+        var name = progress.CoreType == ECoreType.v2rayN ? Global.AppName : progress.CoreType.ToString();
         switch (progress.Stage)
         {
             case EGitHubReleaseStage.LatestRedirect:
-                return string.Format(ResUI.MsgCheckUpdateViaLatest, progress.CoreType);
+                return string.Format(ResUI.MsgCheckUpdateViaLatest, name);
             case EGitHubReleaseStage.ReleasesApi:
-                return string.Format(ResUI.MsgCheckUpdateViaApi, progress.CoreType);
+                return string.Format(ResUI.MsgCheckUpdateViaApi, name);
             case EGitHubReleaseStage.ReleasesApiFailed:
-                return string.Format(ResUI.MsgCheckUpdateViaApiFailed, progress.CoreType);
+                return string.Format(ResUI.MsgCheckUpdateViaApiFailed, name);
             case EGitHubReleaseStage.GitRefs:
-                return string.Format(ResUI.MsgCheckUpdateViaGitRefs, progress.CoreType);
+                return string.Format(ResUI.MsgCheckUpdateViaGitRefs, name);
             case EGitHubReleaseStage.GitRefsFailed:
-                return string.Format(ResUI.MsgCheckUpdateViaGitRefsFailed, progress.CoreType);
+                return string.Format(ResUI.MsgCheckUpdateViaGitRefsFailed, name);
             default:
                 return string.Empty;
         }
