@@ -1486,8 +1486,7 @@
                         Grid.Row="3"
                         Grid.Column="1"
                         Width="200"
-                        Margin="{StaticResource Margin4}"
-                        IsEditable="True" />
+                        Margin="{StaticResource Margin4}" />
 
                     <!--  PattN: at the top, 10 px down, level with the preset field's text above the name of the preset it holds (design 3.3)  -->
                     <TextBlock
