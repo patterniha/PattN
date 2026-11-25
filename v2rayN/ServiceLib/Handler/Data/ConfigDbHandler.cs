@@ -1525,7 +1525,8 @@ public static class ConfigDbHandler
                     if (!profileItem.StreamSecurity.IsNullOrEmpty()
                         && profileItem.Sni.IsNullOrEmpty())
                     {
-                        profileItem.Sni = profileItem.Address;
+                        // PattN: the name the address had, not the IP that replaced it
+                        profileItem.Sni = address;
                     }
                     var requestHostTransport = new HashSet<string>
                     {
