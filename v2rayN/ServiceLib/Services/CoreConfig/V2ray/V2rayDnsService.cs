@@ -138,7 +138,8 @@ public partial class CoreConfigV2rayService
         }
     }
 
-    private static bool IsCatchAllRule(RulesItem rule)
+    // PattN: internal, for the sing-box configuration too (SingboxDnsService.UseDirectDns)
+    internal static bool IsCatchAllRule(RulesItem rule)
     {
         if (!rule.Enabled)
         {
@@ -269,7 +270,8 @@ public partial class CoreConfigV2rayService
 
         var routing = context.RoutingItem;
         var rules = JsonUtils.Deserialize<List<RulesItem>>(routing?.RuleSet) ?? [];
-        var useDirectDns = rules.Where(IsCatchAllRule).Any(r => r.OutboundTag == Global.DirectTag);
+        // PattN: the first rule that takes everything decides, as it does for the traffic: one after it is never reached
+        var useDirectDns = rules.FirstOrDefault(IsCatchAllRule)?.OutboundTag == Global.DirectTag;
         foreach (var item in rules)
         {
             if (!item.Enabled || item.Domain is null || item.Domain.Count == 0)
