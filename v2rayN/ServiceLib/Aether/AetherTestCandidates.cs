@@ -27,11 +27,11 @@ public sealed class AetherTestCandidates(
     public static AetherTestCandidates FromDatabase()
     {
         return new AetherTestCandidates(
-            subId => AppManager.Instance.GetSubItem(subId),
+            subId => ConfigDbQuery.GetSubItem(subId),
             CoreConfigContextBuilder.FindSubscriptionNeighbourAsync,
             async group => (await GroupProfileManager.GetAllChildProfileItems(group)).Values,
             // As the test's own checks (AetherTestHost.Build): a routing rule's target never refuses a test (E2).
-            async profile => !(await CoreConfigContextBuilder.Build(AppManager.Instance.Config, profile, refuseRuleTargets: false)).ValidatorResult.Success);
+            async profile => !(await CoreConfigContextBuilder.Build(ConfigTextHandler.Config, profile, refuseRuleTargets: false)).ValidatorResult.Success);
     }
 
     /// <summary>

@@ -16,7 +16,7 @@ public class SubOverrideTests
     {
         var profile = CreateProfile();
 
-        ConfigHandler.ApplySubOverrides(profile, new SubItem { OverrideAddress = "example.com", OverridePort = 8443 });
+        ConfigDbHandler.ApplySubOverrides(profile, new SubItem { OverrideAddress = "example.com", OverridePort = 8443 });
 
         await profile.Address.Should().BeEqualTo("example.com");
         await profile.Port.Should().BeEqualTo(8443);
@@ -26,12 +26,12 @@ public class SubOverrideTests
     public async Task ApplySubOverrides_ShouldReplaceOnlyTheConfiguredValue()
     {
         var addressOnly = CreateProfile();
-        ConfigHandler.ApplySubOverrides(addressOnly, new SubItem { OverrideAddress = "example.com" });
+        ConfigDbHandler.ApplySubOverrides(addressOnly, new SubItem { OverrideAddress = "example.com" });
         await addressOnly.Address.Should().BeEqualTo("example.com");
         await addressOnly.Port.Should().BeEqualTo(443);
 
         var portOnly = CreateProfile();
-        ConfigHandler.ApplySubOverrides(portOnly, new SubItem { OverridePort = 8443 });
+        ConfigDbHandler.ApplySubOverrides(portOnly, new SubItem { OverridePort = 8443 });
         await portOnly.Address.Should().BeEqualTo("188.114.97.3");
         await portOnly.Port.Should().BeEqualTo(8443);
     }
@@ -51,7 +51,7 @@ public class SubOverrideTests
         {
             var profile = CreateProfile();
 
-            ConfigHandler.ApplySubOverrides(profile, subItem);
+            ConfigDbHandler.ApplySubOverrides(profile, subItem);
 
             await profile.Address.Should().BeEqualTo("188.114.97.3");
             await profile.Port.Should().BeEqualTo(443);
@@ -63,7 +63,7 @@ public class SubOverrideTests
     {
         var profile = CreateProfile();
 
-        ConfigHandler.ApplySubOverrides(profile, new SubItem { OverrideAddress = " example.com " });
+        ConfigDbHandler.ApplySubOverrides(profile, new SubItem { OverrideAddress = " example.com " });
 
         await profile.Address.Should().BeEqualTo("example.com");
     }

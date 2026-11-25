@@ -1,10 +1,5 @@
-using ServiceLib;
-using ServiceLib.Enums;
 using ServiceLib.Handler;
 using ServiceLib.Helper;
-using ServiceLib.Manager;
-using ServiceLib.Models.Configs;
-using ServiceLib.Models.Entities;
 using ServiceLib.Resx;
 using v2rayN.WebAPI.Contracts;
 using v2rayN.WebAPI.Services;
@@ -32,7 +27,7 @@ public class ParityValidationTests
         await code.Should().BeEqualTo("ok");
         await profile.IsValid().Should().BeFalse();
 
-        var result = await ConfigHandler.AddShadowsocksServer(new Config(), profile, toFile: false);
+        var result = await ConfigDbHandler.AddShadowsocksServer(profile, toFile: false);
 
         await result.Should().BeEqualTo(0);
         await profile.ConfigVersion.Should().BeEqualTo(4);
@@ -49,7 +44,7 @@ public class ParityValidationTests
         await code.Should().BeEqualTo("ok");
         await profile.IsValid().Should().BeTrue();
 
-        var result = await ConfigHandler.AddShadowsocksServer(new Config(), profile, toFile: false);
+        var result = await ConfigDbHandler.AddShadowsocksServer(profile, toFile: false);
 
         await result.Should().BeEqualTo(0);
     }
@@ -62,7 +57,7 @@ public class ParityValidationTests
         var valid = V2rayRuntime.TryValidateProfile(profile, out _, out _);
         await valid.Should().BeTrue();
 
-        var result = await ConfigHandler.AddShadowsocksServer(new Config(), profile, toFile: false);
+        var result = await ConfigDbHandler.AddShadowsocksServer(profile, toFile: false);
 
         await result.Should().BeEqualTo(-1);
     }
@@ -210,10 +205,10 @@ public class ParityValidationTests
     [NotInParallel]
     public async Task TheApiRefusesToSaveTheTlsSettingsTheServerEditorRefuses()
     {
-        var manager = AppManager.Instance;
-        var configField = typeof(AppManager).GetField("_config", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-            ?? throw new MissingFieldException(typeof(AppManager).FullName, "_config");
-        var previousConfig = configField.GetValue(manager);
+        var state = ConfigState.Instance;
+        var configField = typeof(ConfigState).GetField("_current", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?? throw new MissingFieldException(typeof(ConfigState).FullName, "_current");
+        var previousConfig = configField.GetValue(state);
         var remarks = $"tls-{Guid.NewGuid():N}";
         static Config Settings(ECoreType vlessCore) => new()
         {
@@ -231,7 +226,7 @@ public class ParityValidationTests
         }
         try
         {
-            configField.SetValue(manager, Settings(ECoreType.Xray));
+            configField.SetValue(state, Settings(ECoreType.Xray));
             SQLiteHelper.Instance.CreateTable<ProfileItem>();
             var runtime = new V2rayRuntime(null!, null!, null!, null!, null!);
 
@@ -240,17 +235,17 @@ public class ParityValidationTests
             await AssertTlsRefused(cipherSuites, "profile_cipher_suites_need_unsafe", ResUI.MsgCipherSuitesNeedUnsafe, "settings Xray");
 
             // The settings give VLESS sing-box: a profile that names Xray is refused all the same, and the alpn rule holds.
-            configField.SetValue(manager, Settings(ECoreType.sing_box));
+            configField.SetValue(state, Settings(ECoreType.sing_box));
             var namedXray = await runtime.SaveProfileAsync(Tls("raw", "chrome", string.Empty, CipherSuites, ECoreType.Xray));
             await AssertTlsRefused(namedXray, "profile_cipher_suites_need_unsafe", ResUI.MsgCipherSuitesNeedUnsafe, "named Xray");
             var alpn = await runtime.SaveProfileAsync(Tls("ws", "chrome", "h2,http/1.1", CipherSuites));
             await AssertTlsRefused(alpn, "profile_websocket_alpn_http1_only", ResUI.MsgWebsocketAlpnHttp1Only, "settings sing-box");
 
-            await (await manager.GetProfileItemViaRemarks(remarks)).Should().BeNull();
+            await (await ConfigDbQuery.GetProfileItemViaRemarks(remarks)).Should().BeNull();
         }
         finally
         {
-            configField.SetValue(manager, previousConfig);
+            configField.SetValue(state, previousConfig);
         }
     }
 
@@ -293,7 +288,7 @@ public class ParityValidationTests
             EConfigType.Hysteria2,
             EConfigType.WireGuard,
         };
-        await (editableTypes.SequenceEqual(expected)).Should().BeTrue();
+        await editableTypes.SequenceEqual(expected).Should().BeTrue();
 
         var validMappings = expected.Select(configType => new CoreTypeMapping(configType, ECoreType.Xray)).ToArray();
         await V2rayRuntime.AreWebCoreTypeMappingsValid(validMappings).Should().BeTrue();

@@ -33,10 +33,10 @@ public class SubscriptionNameRefusalTests
     private static async Task WithProfilesAsync(Func<Names, V2rayRuntime, Task> body)
     {
         var previousLocalData = Environment.GetEnvironmentVariable(Global.LocalAppData);
-        var manager = AppManager.Instance;
-        var configField = typeof(AppManager).GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new MissingFieldException(typeof(AppManager).FullName, "_config");
-        var previousConfig = configField.GetValue(manager);
+        var state = ConfigState.Instance;
+        var configField = typeof(ConfigState).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new MissingFieldException(typeof(ConfigState).FullName, "_current");
+        var previousConfig = configField.GetValue(state);
         var suffix = Guid.NewGuid().ToString("N");
         var shared = $"shared-{suffix}";
         var profiles = new[]
@@ -49,7 +49,7 @@ public class SubscriptionNameRefusalTests
         try
         {
             Environment.SetEnvironmentVariable(Global.LocalAppData, "0");
-            configField.SetValue(manager, new Config { SubIndexId = string.Empty });
+            configField.SetValue(state, new Config { SubIndexId = string.Empty });
             SQLiteHelper.Instance.CreateTable<ProfileItem>();
             SQLiteHelper.Instance.CreateTable<SubItem>();
             foreach (var profile in profiles)
@@ -73,14 +73,14 @@ public class SubscriptionNameRefusalTests
             }
             finally
             {
-                configField.SetValue(manager, previousConfig);
+                configField.SetValue(state, previousConfig);
                 Environment.SetEnvironmentVariable(Global.LocalAppData, previousLocalData);
             }
         }
     }
 
     private static async Task<List<SubItem>> SavedAsync(Names names) =>
-        (await AppManager.Instance.SubItems() ?? []).Where(item => item.Remarks == names.Subscription).ToList();
+        (await ConfigDbQuery.SubItems() ?? []).Where(item => item.Remarks == names.Subscription).ToList();
 
     private static SubscriptionInput Input(Names names, string? prevProfile = null, string? nextProfile = null) =>
         new(names.Subscription, string.Empty, MoreUrl: string.Empty, Enabled: false, AutoUpdateInterval: 0,
@@ -169,7 +169,7 @@ public class SubscriptionNameRefusalTests
             var none = await runtime.UpdateSubscriptionAsync(id, Input(names, prevProfile: names.Missing));
             await (await DetailOf(none)).Should().BeEqualTo(string.Format(ResUI.MsgRoutingRuleTargetNotFound, names.Missing));
 
-            var stored = await AppManager.Instance.GetSubItem(id);
+            var stored = await ConfigDbQuery.GetSubItem(id);
             await stored!.PrevProfile.Should().BeEqualTo(names.Found.Remarks);
             await stored.NextProfile.Should().BeNull();
 
@@ -182,7 +182,7 @@ public class SubscriptionNameRefusalTests
 
             var cleared = await runtime.UpdateSubscriptionAsync(id, Input(names, prevProfile: string.Empty));
             await cleared.Success.Should().BeTrue();
-            await (await AppManager.Instance.GetSubItem(id))!.PrevProfile.Should().BeEqualTo(string.Empty);
+            await (await ConfigDbQuery.GetSubItem(id))!.PrevProfile.Should().BeEqualTo(string.Empty);
         });
     }
 }

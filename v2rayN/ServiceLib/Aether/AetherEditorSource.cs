@@ -112,7 +112,7 @@ public sealed class AetherEditorSource(Config config) : IAetherEditorSource
 
     public async Task<List<AetherExitNode>> ExitNodesAsync()
     {
-        return AetherExit.NodesOf(await AppManager.Instance.ProfileItems(string.Empty) ?? []);
+        return AetherExit.NodesOf(await ConfigDbQuery.ProfileItems(string.Empty) ?? []);
     }
 
     public async Task<ExitNodeLookup> FindExitNodeAsync(string name)
@@ -145,6 +145,6 @@ public sealed class AetherEditorSource(Config config) : IAetherEditorSource
 
     public async Task<bool> SaveAsync(ProfileItem profile)
     {
-        return await ConfigHandler.AddServer(config, profile) == 0;
+        return await ConfigDbHandler.AddServer(profile) == 0;
     }
 }

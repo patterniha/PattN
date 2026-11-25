@@ -20,7 +20,8 @@ internal static class CoreProcessTracker
         {
             using (process)
             {
-                try { ids.Add(process.Id); }
+                try
+                { ids.Add(process.Id); }
                 catch (InvalidOperationException) { }
             }
         }
@@ -42,7 +43,10 @@ internal static class CoreProcessTracker
             .Where(path => path is not null)
             .Select(path => path!)
             .ToHashSet(PathComparer);
-        if (expected.Count == 0) return [];
+        if (expected.Count == 0)
+        {
+            return [];
+        }
 
         var processes = new List<CoreProcessIdentity>();
         foreach (var process in Process.GetProcesses())
@@ -51,7 +55,11 @@ internal static class CoreProcessTracker
             {
                 try
                 {
-                    if (existingProcessIds.Contains(process.Id) || process.HasExited) continue;
+                    if (existingProcessIds.Contains(process.Id) || process.HasExited)
+                    {
+                        continue;
+                    }
+
                     var startTimeTicks = GetStartTimeUtcTicks(process);
                     var executablePath = GetProcessExecutablePath(process);
                     if (startTimeTicks is null || executablePath is null
@@ -94,9 +102,16 @@ internal static class CoreProcessTracker
                 }
 
                 var startTimeTicks = GetStartTimeUtcTicks(process);
-                if (startTimeTicks is long observedStartTime && observedStartTime != identity.StartTimeUtcTicks) continue;
+                if (startTimeTicks is long observedStartTime && observedStartTime != identity.StartTimeUtcTicks)
+                {
+                    continue;
+                }
+
                 var executablePath = GetProcessExecutablePath(process);
-                if (executablePath is not null && !PathComparer.Equals(executablePath, identity.ExecutablePath)) continue;
+                if (executablePath is not null && !PathComparer.Equals(executablePath, identity.ExecutablePath))
+                {
+                    continue;
+                }
 
                 // If an otherwise matching live PID becomes inaccessible, keep it as an
                 // uncertain active identity. This may report a conservative stop failure,
@@ -162,7 +177,10 @@ internal static class CoreProcessTracker
         HashSet<string> expectedPaths,
         HashSet<string>? expectedConfigPaths)
     {
-        if (!OperatingSystem.IsLinux()) return expectedPaths.Contains(executablePath);
+        if (!OperatingSystem.IsLinux())
+        {
+            return expectedPaths.Contains(executablePath);
+        }
 
         try
         {
@@ -194,7 +212,10 @@ internal static class CoreProcessTracker
     private static bool CommandLineReferencesConfig(int processId, IEnumerable<string> arguments, HashSet<string> expectedConfigPaths)
     {
         var workingDirectory = GetProcessWorkingDirectory(processId);
-        if (workingDirectory is null) return false;
+        if (workingDirectory is null)
+        {
+            return false;
+        }
 
         foreach (var argument in arguments)
         {
@@ -203,11 +224,18 @@ internal static class CoreProcessTracker
                 : argument.StartsWith("--config-file=", StringComparison.Ordinal)
                     ? argument["--config-file=".Length..]
                     : argument;
-            if (configArgument.Length == 0 || configArgument.StartsWith("-", StringComparison.Ordinal)) continue;
+            if (configArgument.Length == 0 || configArgument.StartsWith("-", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             var fullPath = NormalizeAbsolutePath(Path.IsPathRooted(configArgument)
                 ? configArgument
                 : Path.Combine(workingDirectory, configArgument));
-            if (fullPath is not null && expectedConfigPaths.Contains(fullPath)) return true;
+            if (fullPath is not null && expectedConfigPaths.Contains(fullPath))
+            {
+                return true;
+            }
         }
 
         return false;
@@ -227,7 +255,8 @@ internal static class CoreProcessTracker
 
     private static long? GetStartTimeUtcTicks(Process process)
     {
-        try { return process.StartTime.ToUniversalTime().Ticks; }
+        try
+        { return process.StartTime.ToUniversalTime().Ticks; }
         catch (Exception exception) when (exception is InvalidOperationException or Win32Exception or NotSupportedException or UnauthorizedAccessException)
         {
             return null;
@@ -255,7 +284,11 @@ internal static class CoreProcessTracker
     private static string? NormalizeExecutablePath(string? path)
     {
         var fullPath = NormalizeAbsolutePath(path);
-        if (fullPath is null) return null;
+        if (fullPath is null)
+        {
+            return null;
+        }
+
         try
         {
             var executablePath = fullPath;
@@ -277,7 +310,10 @@ internal static class CoreProcessTracker
                 current = Path.Combine(current, segment);
                 FileSystemInfo info = Directory.Exists(current) ? new DirectoryInfo(current) : new FileInfo(current);
                 var linkTarget = info.ResolveLinkTarget(returnFinalTarget: false);
-                if (linkTarget is not null) current = linkTarget.FullName;
+                if (linkTarget is not null)
+                {
+                    current = linkTarget.FullName;
+                }
             }
             return Path.GetFullPath(current);
         }
@@ -289,8 +325,13 @@ internal static class CoreProcessTracker
 
     private static string? NormalizeAbsolutePath(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) return null;
-        try { return Path.GetFullPath(path.TrimEnd('\0')); }
+        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path))
+        {
+            return null;
+        }
+
+        try
+        { return Path.GetFullPath(path.TrimEnd('\0')); }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
             return null;
@@ -306,27 +347,49 @@ internal static class CoreProcessTracker
             var prefix = new byte[256];
             var length = stream.Read(prefix);
             var lineEnd = Array.IndexOf(prefix, (byte)'\n', 0, length);
-            if (lineEnd < 0) lineEnd = length;
+            if (lineEnd < 0)
+            {
+                lineEnd = length;
+            }
+
             var firstLine = System.Text.Encoding.UTF8.GetString(prefix, 0, lineEnd).TrimEnd('\r');
-            if (!firstLine.StartsWith("#!", StringComparison.Ordinal)) return interpreters;
+            if (!firstLine.StartsWith("#!", StringComparison.Ordinal))
+            {
+                return interpreters;
+            }
 
             var tokens = firstLine[2..].Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length == 0) return interpreters;
+            if (tokens.Length == 0)
+            {
+                return interpreters;
+            }
+
             var interpreter = tokens[0];
             if (string.Equals(Path.GetFileName(interpreter), "env", StringComparison.Ordinal))
             {
                 var index = 1;
                 while (index < tokens.Length && tokens[index].StartsWith("-", StringComparison.Ordinal))
                 {
-                    if (tokens[index] is "-u" or "--unset" or "-C" or "--chdir" or "-a" or "--argv0") index++;
+                    if (tokens[index] is "-u" or "--unset" or "-C" or "--chdir" or "-a" or "--argv0")
+                    {
+                        index++;
+                    }
+
                     index++;
                 }
-                if (index >= tokens.Length) return interpreters;
+                if (index >= tokens.Length)
+                {
+                    return interpreters;
+                }
+
                 interpreter = FindOnPath(tokens[index]) ?? string.Empty;
             }
 
             var normalized = NormalizeExecutablePath(interpreter);
-            if (normalized is not null) interpreters.Add(normalized);
+            if (normalized is not null)
+            {
+                interpreters.Add(normalized);
+            }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
@@ -338,13 +401,24 @@ internal static class CoreProcessTracker
 
     private static string? FindOnPath(string executableName)
     {
-        if (Path.IsPathRooted(executableName)) return executableName;
+        if (Path.IsPathRooted(executableName))
+        {
+            return executableName;
+        }
+
         var path = Environment.GetEnvironmentVariable("PATH");
-        if (string.IsNullOrEmpty(path)) return null;
+        if (string.IsNullOrEmpty(path))
+        {
+            return null;
+        }
+
         foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
             var candidate = Path.Combine(directory, executableName);
-            if (File.Exists(candidate)) return candidate;
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
         }
         return null;
     }

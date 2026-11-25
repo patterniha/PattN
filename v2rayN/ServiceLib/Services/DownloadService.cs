@@ -99,17 +99,36 @@ public class DownloadService : IDisposable
         {
             UpdateCompleted?.Invoke(this, new UpdateResult(false, $"{ResUI.Downloading}   {request.FileUrl}"));
 
+            Exception? downloadError = null;
+
             await DownloaderHelper.DownloadFileAsync(
                 request,
                 OnProgress,
                 cancellationToken);
 
+            if (downloadError != null)
+            {
+                Logging.SaveLog(_tag, downloadError);
+                Error?.Invoke(this, new ErrorEventArgs(downloadError));
+            }
+
             void OnProgress(FileDownloadState state)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                if (state.Error != null)
+                {
+                    downloadError = state.Error;
+                    return;
+                }
+
+                var speedText = $"{Utils.HumanFy((long)state.SpeedBytesPerSecond / 1024)}/s";
+                var progressText = $"{Utils.HumanFy(state.DownloadedBytes / 1024)}/{Utils.HumanFy(state.TotalBytes / 1024)}";
+
                 UpdateCompleted?.Invoke(this,
-                    new UpdateResult(state.Completed,
-                        $"{Utils.HumanFy((long)state.SpeedBytesPerSecond / 1024)}/s | {Utils.HumanFy(state.DownloadedBytes / 1024)}/{Utils.HumanFy(state.TotalBytes / 1024)}"));
+                    new UpdateResult(state.Completed, $"{speedText} | {progressText}"));
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -119,18 +138,16 @@ public class DownloadService : IDisposable
         catch (Exception ex)
         {
             Logging.SaveLog(_tag, ex);
-
             Error?.Invoke(this, new ErrorEventArgs(ex));
-            if (ex.InnerException != null)
-            {
-                Error?.Invoke(this, new ErrorEventArgs(ex.InnerException));
-            }
         }
     }
 
     public async Task DownloadSmallFilesAsync(List<FileDownloadRequest> requests,
         CancellationToken cancellationToken = default)
     {
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        Exception? firstError = null;
+
         try
         {
             UpdateCompleted?.Invoke(this, new UpdateResult(false, $"{ResUI.Downloading} 0/{requests.Count}"));
@@ -138,111 +155,94 @@ public class DownloadService : IDisposable
             await DownloaderHelper.DownloadSmallFilesAsync(
                 requests,
                 OnProgress,
-                cancellationToken);
+                linkedCts.Token);
+
+            if (firstError != null)
+            {
+                Logging.SaveLog(_tag, firstError);
+                Error?.Invoke(this, new ErrorEventArgs(firstError));
+            }
 
             void OnProgress(ReadOnlyMemory<FileDownloadState> states)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (cancellationToken.IsCancellationRequested || linkedCts.IsCancellationRequested)
+                {
+                    return;
+                }
                 var span = states.Span;
-                var completedCount = 0;
-                var failedCount = 0;
-                FileDownloadState? failedState = null;
-                var downloadingStates = new List<FileDownloadState>();
+                var successCount = 0;
+                double totalSpeed = 0;
+                long totalDownloadedBytes = 0;
+                long totalTotalBytes = 0;
+                List<string>? downloadingNames = null;
+
                 foreach (ref readonly var item in span)
                 {
+                    if (item.Error != null)
+                    {
+                        if (Interlocked.CompareExchange(ref firstError, item.Error, null) == null)
+                        {
+                            linkedCts.Cancel();
+                        }
+                        continue;
+                    }
+
                     if (item.Completed)
                     {
-                        completedCount++;
-                        if (item.IsFailed)
-                        {
-                            failedCount++;
-                            failedState ??= item;
-                        }
+                        successCount++;
                     }
                     else if (item.TotalBytes > 0)
                     {
-                        downloadingStates.Add(item);
+                        totalSpeed += item.SpeedBytesPerSecond;
+                        totalDownloadedBytes += item.DownloadedBytes;
+                        totalTotalBytes += item.TotalBytes;
+                        downloadingNames ??= new List<string>(span.Length);
+                        downloadingNames.Add(item.Request.FileName);
                     }
                 }
-                var totalSpeed = downloadingStates.Sum(x => x.SpeedBytesPerSecond);
-                var totalDownloadedBytes = downloadingStates.Sum(x => x.DownloadedBytes);
-                var totalTotalBytes = downloadingStates.Sum(x => x.TotalBytes);
-                var downloadingFileName = string.Join(", ", downloadingStates.Select(x => x.Request.FileName));
-                var allCompleted = completedCount == span.Length;
-                if (allCompleted && failedCount > 0 && failedState?.Error != null)
-                {
-                    // do not throw here (the downloader swallows it); report and let the caller see Success=false
-                    Logging.SaveLog(_tag, failedState.Error);
-                    Error?.Invoke(this, new ErrorEventArgs(failedState.Error));
-                }
+
+                var allSuccess = successCount == span.Length;
+                var downloadingFileName = downloadingNames != null ? string.Join(", ", downloadingNames) : string.Empty;
+
                 UpdateCompleted?.Invoke(this,
-                    new UpdateResult(allCompleted && failedCount == 0,
-                        $"{completedCount}/{span.Length} | {Utils.HumanFy((long)totalSpeed / 1024)}/s {Utils.HumanFy(totalDownloadedBytes / 1024)}/{Utils.HumanFy(totalTotalBytes / 1024)} {downloadingFileName}"));
+                    new UpdateResult(allSuccess,
+                        $"{successCount}/{span.Length} | {Utils.HumanFy((long)totalSpeed / 1024)}/s {Utils.HumanFy(totalDownloadedBytes / 1024)}/{Utils.HumanFy(totalTotalBytes / 1024)} {downloadingFileName}"));
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
+        catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && firstError != null)
+        {
+            Logging.SaveLog(_tag, firstError);
+            Error?.Invoke(this, new ErrorEventArgs(firstError));
+        }
         catch (Exception ex)
         {
             Logging.SaveLog(_tag, ex);
-
             Error?.Invoke(this, new ErrorEventArgs(ex));
-            if (ex.InnerException != null)
-            {
-                Error?.Invoke(this, new ErrorEventArgs(ex.InnerException));
-            }
         }
     }
 
     /// <summary>
     ///     Gets redirect target URL without following redirects automatically.
     /// </summary>
-    public async Task<string?> UrlRedirectAsync(string url, CancellationToken cancellationToken = default)
+    public async Task<string?> GetFinalUrlAsync(string url, CancellationToken cancellationToken = default)
     {
-        // The configured handler follows redirects automatically, so a dedicated
-        // non-redirecting handler is required to observe the redirect response.
-        using var client = new HttpClient(CreateNonRedirectHandler());
-
+        using var client = new HttpClient(GetHandler(), false);
         using var response = await client.GetAsync(url, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Redirect && response.Headers.Location is not null)
+
+        var originalUri = new Uri(url);
+        var finalUri = response.RequestMessage?.RequestUri;
+        if (finalUri is not null && !Uri.Equals(originalUri, finalUri))
         {
-            return response.Headers.Location.ToString();
+            return finalUri.ToString();
         }
+
         Error?.Invoke(this, new ErrorEventArgs(new Exception("StatusCode error: " + response.StatusCode)));
         Logging.SaveLog("StatusCode error: " + url);
         return null;
-    }
-
-    /// <summary>
-    ///     Creates a handler with the same proxy settings as the configured handler, but with automatic redirects disabled.
-    /// </summary>
-    private HttpMessageHandler CreateNonRedirectHandler()
-    {
-        if (Handler is SocketsHttpHandler configured)
-        {
-            var handler = new SocketsHttpHandler
-            {
-                AllowAutoRedirect = false,
-                UseProxy = configured.UseProxy,
-                Proxy = configured.Proxy,
-                UseCookies = configured.UseCookies,
-                CookieContainer = configured.CookieContainer,
-                ConnectTimeout = configured.ConnectTimeout,
-            };
-            var certificateChainPolicy = CertPemManager.Instance.BuildCertificateChainPolicy();
-            if (certificateChainPolicy != null)
-            {
-                handler.SslOptions.CertificateChainPolicy = certificateChainPolicy;
-                handler.SslOptions.RemoteCertificateValidationCallback = null;
-            }
-            return handler;
-        }
-
-        var direct = HttpClientHelper.CreateSocketsHttpHandler(false);
-        direct.AllowAutoRedirect = false;
-        return direct;
     }
 
     /// <summary>

@@ -29,7 +29,7 @@ public class ConfigHandlerCurvePreferencesTests
     /// <summary>Removes what the test stored under <paramref name="subId" />, so that the test database does not grow with each run.</summary>
     private static async Task Remove(string subId)
     {
-        foreach (var profile in await AppManager.Instance.ProfileItems(subId) ?? [])
+        foreach (var profile in await ConfigDbQuery.ProfileItems(subId) ?? [])
         {
             await SQLiteHelper.Instance.DeleteAsync(profile);
         }
@@ -46,8 +46,8 @@ public class ConfigHandlerCurvePreferencesTests
 
         try
         {
-            await (await ConfigHandler.AddBatchServers(config, links, subId, false)).Should().BeEqualTo(2);
-            var profiles = (await AppManager.Instance.ProfileItems(subId) ?? []).ToDictionary(profile => profile.Remarks);
+            await (await ConfigDbHandler.AddBatchServers(links, subId, false)).Should().BeEqualTo(2);
+            var profiles = (await ConfigDbQuery.ProfileItems(subId) ?? []).ToDictionary(profile => profile.Remarks);
 
             await profiles["both"].CurvePreferences.Should().BeEqualTo("X25519MLKEM768,X25519");
             await profiles["both"].EnableSessionResumption.Should().BeTrue();
@@ -58,16 +58,16 @@ public class ConfigHandlerCurvePreferencesTests
             var edited = JsonUtils.DeepCopy(profiles["both"])!;
             edited.CurvePreferences = "X25519";
             edited.EnableSessionResumption = false;
-            await (await ConfigHandler.AddServer(config, edited)).Should().BeEqualTo(0);
-            var stored = (await AppManager.Instance.GetProfileItem(edited.IndexId))!;
+            await (await ConfigDbHandler.AddServer(edited)).Should().BeEqualTo(0);
+            var stored = (await ConfigDbQuery.GetProfileItem(edited.IndexId))!;
             await stored.CurvePreferences.Should().BeEqualTo("X25519");
             await stored.EnableSessionResumption.Should().BeFalse();
 
             var turnedOn = JsonUtils.DeepCopy(profiles["neither"])!;
             turnedOn.CurvePreferences = "X25519MLKEM768";
             turnedOn.EnableSessionResumption = true;
-            await (await ConfigHandler.AddServer(config, turnedOn)).Should().BeEqualTo(0);
-            var stored2 = (await AppManager.Instance.GetProfileItem(turnedOn.IndexId))!;
+            await (await ConfigDbHandler.AddServer(turnedOn)).Should().BeEqualTo(0);
+            var stored2 = (await ConfigDbQuery.GetProfileItem(turnedOn.IndexId))!;
             await stored2.CurvePreferences.Should().BeEqualTo("X25519MLKEM768");
             await stored2.EnableSessionResumption.Should().BeTrue();
         }
@@ -97,8 +97,8 @@ public class ConfigHandlerCurvePreferencesTests
 
         try
         {
-            await (await ConfigHandler.AddHysteria2Server(config, profile)).Should().BeEqualTo(0);
-            var stored = (await AppManager.Instance.GetProfileItem(profile.IndexId))!;
+            await (await ConfigDbHandler.AddHysteria2Server(profile)).Should().BeEqualTo(0);
+            var stored = (await ConfigDbQuery.GetProfileItem(profile.IndexId))!;
 
             await stored.CipherSuites.Should().BeEqualTo(string.Empty);
             await stored.CurvePreferences.Should().BeEqualTo(string.Empty);

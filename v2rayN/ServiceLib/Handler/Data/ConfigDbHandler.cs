@@ -1,0 +1,3361 @@
+namespace ServiceLib.Handler.Data;
+
+public static class ConfigDbHandler
+{
+    private static readonly string _tag = "ConfigDbHandler";
+
+    private static Config CurrentConfig => ConfigState.Instance.Current;
+
+    private static async Task<int> SaveConfig()
+    {
+        return await ConfigTextHandler.SaveConfig();
+    }
+
+    #region Server
+
+    /// <summary>
+    /// Add a server profile to the configuration
+    /// Dispatches the request to the appropriate method based on the config type
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Server profile to add</param>
+    /// <returns>Result of the operation (0 if successful, -1 if failed)</returns>
+    public static async Task<int> AddServer(ProfileItem profileItem)
+    {
+        var item = await ConfigDbQuery.GetProfileItem(profileItem.IndexId);
+        if (item is null)
+        {
+            item = profileItem;
+        }
+        else
+        {
+            item.CoreType = profileItem.CoreType;
+            item.Remarks = profileItem.Remarks;
+            item.Address = profileItem.Address;
+            item.Port = profileItem.Port;
+
+            item.Username = profileItem.Username;
+            item.Password = profileItem.Password;
+
+            item.Network = profileItem.Network;
+
+            item.StreamSecurity = profileItem.StreamSecurity;
+            item.Sni = profileItem.Sni;
+            item.AllowInsecure = profileItem.AllowInsecure;
+            item.Fingerprint = profileItem.Fingerprint;
+            item.Alpn = profileItem.Alpn;
+            item.CipherSuites = profileItem.CipherSuites;
+            item.CurvePreferences = profileItem.CurvePreferences;
+            item.EnableSessionResumption = profileItem.EnableSessionResumption;
+            item.DialMode = profileItem.DialMode;
+            item.TcpUserTimeout = profileItem.TcpUserTimeout;
+            item.TargetStrategy = profileItem.TargetStrategy;
+
+            item.PublicKey = profileItem.PublicKey;
+            item.ShortId = profileItem.ShortId;
+            item.SpiderX = profileItem.SpiderX;
+            item.Mldsa65Verify = profileItem.Mldsa65Verify;
+            item.MuxEnabled = profileItem.MuxEnabled;
+            item.Cert = profileItem.Cert;
+            item.CertSha = profileItem.CertSha;
+            item.EchConfigList = profileItem.EchConfigList;
+            item.EchOutbound = profileItem.EchOutbound;
+            item.VerifyPeerCertByName = profileItem.VerifyPeerCertByName;
+            item.Finalmask = profileItem.Finalmask;
+            item.ProtoExtra = profileItem.ProtoExtra;
+            item.TransportExtra = profileItem.TransportExtra;
+        }
+
+        var ret = item.ConfigType switch
+        {
+            EConfigType.VMess => await AddVMessServer(item),
+            EConfigType.Shadowsocks => await AddShadowsocksServer(item),
+            EConfigType.SOCKS => await AddSocksServer(item),
+            EConfigType.HTTP => await AddHttpServer(item),
+            EConfigType.Trojan => await AddTrojanServer(item),
+            EConfigType.VLESS => await AddVlessServer(item),
+            EConfigType.Hysteria2 => await AddHysteria2Server(item),
+            EConfigType.TUIC => await AddTuicServer(item),
+            EConfigType.WireGuard => await AddWireguardServer(item),
+            EConfigType.Anytls => await AddAnytlsServer(item),
+            EConfigType.Naive => await AddNaiveServer(item),
+            EConfigType.MASQUE => await AddMasqueServer(item),
+            // PattN: the fork's Aether profiles
+            EConfigType.Aether => await AddAetherServer(item),
+            _ => -1,
+        };
+        return ret;
+    }
+
+    /// <summary>
+    /// Add or edit a VMess server
+    /// Validates and processes VMess-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">VMess profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddVMessServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.VMess;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+        {
+            VmessSecurity = profileItem.GetProtocolExtra().VmessSecurity?.TrimEx()
+        });
+        profileItem.Network = profileItem.Network.TrimEx();
+        profileItem.StreamSecurity = profileItem.StreamSecurity.TrimEx();
+
+        if (!Global.VmessSecurities.Contains(profileItem.GetProtocolExtra().VmessSecurity))
+        {
+            return -1;
+        }
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Remove multiple servers from the configuration
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="indexes">List of server profiles to remove</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> RemoveServers(List<ProfileItem> indexes)
+    {
+        var subid = "TempRemoveSubId";
+        foreach (var item in indexes)
+        {
+            item.Subid = subid;
+        }
+
+        await SQLiteHelper.Instance.UpdateAllAsync(indexes);
+        await RemoveServersViaSubid(subid, false);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Clone server profiles
+    /// Creates copies of the specified server profiles with "-clone" appended to the remarks
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="indexes">List of server profiles to clone</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> CopyServer(List<ProfileItem> indexes)
+    {
+        foreach (var it in indexes)
+        {
+            var item = await ConfigDbQuery.GetProfileItem(it.IndexId);
+            if (item is null)
+            {
+                continue;
+            }
+
+            var profileItem = JsonUtils.DeepCopy(item);
+            profileItem.IndexId = string.Empty;
+            profileItem.Remarks = $"{item.Remarks}-clone";
+
+            if (profileItem.ConfigType == EConfigType.Custom)
+            {
+                profileItem.Address = Utils.GetConfigPath(profileItem.Address);
+                if (await AddCustomServer(profileItem, false) == 0)
+                {
+                }
+            }
+            else if (profileItem.ConfigType == EConfigType.Outbound)
+            {
+                profileItem.Address = Utils.GetConfigPath(profileItem.Address);
+                if (await AddCustomOutboundServer(profileItem, false) == 0)
+                {
+                }
+            }
+            else
+            {
+                await AddServerCommon(profileItem, true);
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Move a server in the list to a different position
+    /// Supports moving to top, up, down, bottom or specific position
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="lstProfile">List of server profile index ids</param>
+    /// <param name="index">Index of the server to move</param>
+    /// <param name="eMove">Direction to move the server</param>
+    /// <param name="pos">Target position when using EMove.Position</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> MoveServer(List<string> lstProfile, int index, EMove eMove, int pos = -1)
+    {
+        var count = lstProfile.Count;
+        if (index < 0 || index > lstProfile.Count - 1)
+        {
+            return -1;
+        }
+
+        for (var i = 0; i < lstProfile.Count; i++)
+        {
+            ProfileExManager.Instance.SetSort(lstProfile[i], (i + 1) * 10);
+        }
+
+        var sort = 0;
+        switch (eMove)
+        {
+            case EMove.Top:
+                {
+                    if (index == 0)
+                    {
+                        return 0;
+                    }
+                    sort = ProfileExManager.Instance.GetSort(lstProfile.First()) - 1;
+
+                    break;
+                }
+            case EMove.Up:
+                {
+                    if (index == 0)
+                    {
+                        return 0;
+                    }
+                    sort = ProfileExManager.Instance.GetSort(lstProfile[index - 1]) - 1;
+
+                    break;
+                }
+
+            case EMove.Down:
+                {
+                    if (index == count - 1)
+                    {
+                        return 0;
+                    }
+                    sort = ProfileExManager.Instance.GetSort(lstProfile[index + 1]) + 1;
+
+                    break;
+                }
+            case EMove.Bottom:
+                {
+                    if (index == count - 1)
+                    {
+                        return 0;
+                    }
+                    sort = ProfileExManager.Instance.GetSort(lstProfile[^1]) + 1;
+
+                    break;
+                }
+            case EMove.Position:
+                sort = (pos * 10) + 1;
+                break;
+        }
+
+        ProfileExManager.Instance.SetSort(lstProfile[index], sort);
+        return await Task.FromResult(0);
+    }
+
+    public static Task<int> MoveServersTo(
+        IReadOnlyList<string> orderedProfileIds,
+        IReadOnlyList<int> sourceIndices,
+        int insertIndex)
+    {
+        ArgumentNullException.ThrowIfNull(orderedProfileIds);
+        ArgumentNullException.ThrowIfNull(sourceIndices);
+
+        if (orderedProfileIds.Count == 0 ||
+            sourceIndices.Count == 0 ||
+            insertIndex < 0 ||
+            insertIndex > orderedProfileIds.Count)
+        {
+            return Task.FromResult(-1);
+        }
+
+        var movingIndices = sourceIndices
+            .Distinct()
+            .OrderBy(index => index)
+            .ToArray();
+
+        if (movingIndices.Length != sourceIndices.Count ||
+            movingIndices.Any(index =>
+                index < 0 || index >= orderedProfileIds.Count))
+        {
+            return Task.FromResult(-1);
+        }
+
+        var movingIndexSet = movingIndices.ToHashSet();
+
+        var movingIds = movingIndices
+            .Select(index => orderedProfileIds[index])
+            .ToList();
+
+        var remainingIds = orderedProfileIds
+            .Where((_, index) => !movingIndexSet.Contains(index))
+            .ToList();
+
+        if (insertIndex > remainingIds.Count)
+        {
+            return Task.FromResult(-1);
+        }
+
+        remainingIds.InsertRange(insertIndex, movingIds);
+
+        if (remainingIds.Count != orderedProfileIds.Count)
+        {
+            return Task.FromResult(-1);
+        }
+
+        for (var index = 0; index < remainingIds.Count; index++)
+        {
+            ProfileExManager.Instance.SetSort(
+                remainingIds[index],
+                (index + 1) * 10);
+        }
+
+        return Task.FromResult(0);
+    }
+
+    /// <summary>
+    /// Add a custom server configuration from a file
+    /// Copies the configuration file to the app's config directory
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Profile item with the file path in Address</param>
+    /// <param name="blDelete">Whether to delete the source file after copying</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddCustomServer(ProfileItem profileItem, bool blDelete)
+    {
+        var fileName = profileItem.Address;
+        if (!File.Exists(fileName))
+        {
+            return -1;
+        }
+        var ext = Path.GetExtension(fileName);
+        var newFileName = $"{Utils.GetGuid()}{ext}";
+        //newFileName = Path.Combine(Utile.GetTempPath(), newFileName);
+
+        try
+        {
+            File.Copy(fileName, Utils.GetConfigPath(newFileName));
+            if (blDelete)
+            {
+                File.Delete(fileName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+            return -1;
+        }
+
+        profileItem.Address = newFileName;
+        profileItem.ConfigType = EConfigType.Custom;
+        if (profileItem.Remarks.IsNullOrEmpty())
+        {
+            profileItem.Remarks = $"import custom@{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
+        }
+
+        await AddServerCommon(profileItem, true);
+
+        return 0;
+    }
+
+    public static async Task<int> AddCustomOutboundServer(ProfileItem profileItem, bool blDelete, bool toFile = true)
+    {
+        var fileName = profileItem.Address;
+        if (!File.Exists(fileName))
+        {
+            return -1;
+        }
+        var ext = Path.GetExtension(fileName);
+        var newFileName = $"{Utils.GetGuid()}{ext}";
+        //newFileName = Path.Combine(Utile.GetTempPath(), newFileName);
+
+        try
+        {
+            File.Copy(fileName, Utils.GetConfigPath(newFileName));
+            if (blDelete)
+            {
+                File.Delete(fileName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+            return -1;
+        }
+
+        profileItem.Address = newFileName;
+        profileItem.ConfigType = EConfigType.Outbound;
+        if (profileItem.Remarks.IsNullOrEmpty())
+        {
+            profileItem.Remarks = $"import custom outbound@{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Edit an existing custom server configuration
+    /// Updates the server's properties without changing the file
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Profile item with updated properties</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> EditCustomServer(ProfileItem profileItem)
+    {
+        var item = await ConfigDbQuery.GetProfileItem(profileItem.IndexId);
+        if (item is null)
+        {
+            item = profileItem;
+        }
+        else
+        {
+            item.Remarks = profileItem.Remarks;
+            item.Address = profileItem.Address;
+            item.CoreType = profileItem.CoreType;
+            item.DisplayLog = profileItem.DisplayLog;
+            item.PreSocksPort = profileItem.PreSocksPort;
+
+            item.ProtoExtra = profileItem.ProtoExtra;
+        }
+
+        if (await SQLiteHelper.Instance.UpdateAsync(item) > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+
+        //ToJsonFile(config);
+    }
+
+    /// <summary>
+    /// Add or edit a Shadowsocks server
+    /// Validates and processes Shadowsocks-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Shadowsocks profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddShadowsocksServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.Shadowsocks;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+        {
+            SsMethod = profileItem.GetProtocolExtra().SsMethod?.TrimEx()
+        });
+
+        if (!AppManager.Instance.GetShadowsocksSecurities(profileItem).Contains(profileItem.GetProtocolExtra().SsMethod))
+        {
+            return -1;
+        }
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit a SOCKS server
+    /// Processes SOCKS-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">SOCKS profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddSocksServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.SOCKS;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit an HTTP server
+    /// Processes HTTP-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">HTTP profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddHttpServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.HTTP;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit a Trojan server
+    /// Validates and processes Trojan-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Trojan profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddTrojanServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.Trojan;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        if (profileItem.StreamSecurity.IsNullOrEmpty())
+        {
+            profileItem.StreamSecurity = Global.StreamSecurity;
+        }
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit a Hysteria2 server
+    /// Validates and processes Hysteria2-specific settings
+    /// Sets the core type to sing_box as required by Hysteria2
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Hysteria2 profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddHysteria2Server(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.Hysteria2;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.Fingerprint = string.Empty;
+        profileItem.Alpn = string.Empty;
+        //profileItem.Alpn = "h3";
+        profileItem.CipherSuites = string.Empty;
+        profileItem.CurvePreferences = string.Empty;
+        profileItem.EnableSessionResumption = false;
+        profileItem.Network = string.Empty;
+
+        if (profileItem.StreamSecurity.IsNullOrEmpty())
+        {
+            profileItem.StreamSecurity = Global.StreamSecurity;
+        }
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+        var protocolExtra = profileItem.GetProtocolExtra();
+        profileItem.SetProtocolExtra(protocolExtra with
+        {
+            SalamanderPass = protocolExtra.SalamanderPass?.TrimEx(),
+            HopInterval = protocolExtra.HopInterval?.TrimEx(),
+        });
+
+        if (!protocolExtra.Hy2RealmUrl.IsNullOrEmpty())
+        {
+            var realmResult = HyRealm.TryParse(protocolExtra.Hy2RealmUrl, out var realm);
+            if (!realmResult || realm is null)
+            {
+                return -1;
+            }
+            if (realm.StunList.Count == 0)
+            {
+                realm = realm with
+                {
+                    StunList = Global.DefaultRealmStunList,
+                };
+            }
+            profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+            {
+                Hy2RealmUrl = realm.ToUri(),
+            });
+        }
+        var isGecko = !protocolExtra.GeckoMinPacketSize.IsNullOrEmpty() || !protocolExtra.GeckoMaxPacketSize.IsNullOrEmpty();
+        if (isGecko)
+        {
+            var minPacketSize = protocolExtra.GeckoMinPacketSize.ToInt();
+            var maxPacketSize = protocolExtra.GeckoMaxPacketSize.ToInt();
+            if (minPacketSize <= 0
+                || minPacketSize > maxPacketSize
+                || maxPacketSize > 2048)
+            {
+                minPacketSize = 512;
+                maxPacketSize = 1200;
+            }
+            profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+            {
+                GeckoMinPacketSize = minPacketSize.ToString(),
+                GeckoMaxPacketSize = maxPacketSize.ToString(),
+            });
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit a TUIC server
+    /// Validates and processes TUIC-specific settings
+    /// Sets the core type to sing_box as required by TUIC
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">TUIC profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddTuicServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.TUIC;
+        profileItem.CoreType = ECoreType.sing_box;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Username = profileItem.Username.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.Network = string.Empty;
+        profileItem.Fingerprint = string.Empty;
+
+        var congestionControl = profileItem.GetProtocolExtra().CongestionControl;
+        if (!Global.TuicCongestionControls.Contains(congestionControl))
+        {
+            congestionControl = Global.TuicCongestionControls.FirstOrDefault()!;
+        }
+        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with { CongestionControl = congestionControl });
+
+        if (profileItem.StreamSecurity.IsNullOrEmpty())
+        {
+            profileItem.StreamSecurity = Global.StreamSecurity;
+        }
+        if (profileItem.Alpn.IsNullOrEmpty())
+        {
+            profileItem.Alpn = "h3";
+        }
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit a WireGuard server
+    /// Validates and processes WireGuard-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">WireGuard profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddWireguardServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.WireGuard;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        var wgReserved = profileItem.GetProtocolExtra().WgReserved?.TrimEx();
+        if (!wgReserved.IsNullOrEmpty()
+            && !wgReserved.Contains(','))
+        {
+            // Base64 format, convert to standard format
+            try
+            {
+                var bytes = Convert.FromBase64String(wgReserved);
+                var reserved = new byte[3];
+                Array.Copy(bytes, reserved, Math.Min(bytes.Length, 3));
+
+                wgReserved = string.Join(", ", reserved);
+            }
+            catch
+            {
+                // If conversion fails, keep the original value
+            }
+        }
+        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+        {
+            WgPublicKey = profileItem.GetProtocolExtra().WgPublicKey?.TrimEx(),
+            WgPresharedKey = profileItem.GetProtocolExtra().WgPresharedKey?.TrimEx(),
+            WgInterfaceAddress = profileItem.GetProtocolExtra().WgInterfaceAddress?.TrimEx(),
+            WgReserved = wgReserved,
+            WgMtu = profileItem.GetProtocolExtra().WgMtu is null or <= 0 ? Global.TunMtus.First() : profileItem.GetProtocolExtra().WgMtu,
+            WgDns = profileItem.GetProtocolExtra().WgDns?.TrimEx(),
+        });
+
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit an Anytls server
+    /// Validates and processes Anytls-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Anytls profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddAnytlsServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.Anytls;
+        profileItem.CoreType = ECoreType.sing_box;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.Network = string.Empty;
+        if (profileItem.StreamSecurity.IsNullOrEmpty())
+        {
+            profileItem.StreamSecurity = Global.StreamSecurity;
+        }
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+        await AddServerCommon(profileItem, toFile);
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit a Naive server
+    /// Validates and processes Naive-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Naive profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddNaiveServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.Naive;
+        profileItem.CoreType = ECoreType.sing_box;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Username = profileItem.Username.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.Fingerprint = string.Empty;
+        profileItem.Alpn = string.Empty;
+        profileItem.CipherSuites = string.Empty;
+        profileItem.CurvePreferences = string.Empty;
+        profileItem.EnableSessionResumption = false;
+        profileItem.Network = string.Empty;
+        profileItem.AllowInsecure = string.Empty;
+        if (profileItem.StreamSecurity.IsNullOrEmpty())
+        {
+            profileItem.StreamSecurity = Global.StreamSecurity;
+        }
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+        await AddServerCommon(profileItem, toFile);
+        return 0;
+    }
+
+    public static async Task<int> AddMasqueServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.MASQUE;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Username = profileItem.Username.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        if (profileItem.StreamSecurity.IsNullOrEmpty())
+        {
+            profileItem.StreamSecurity = Global.StreamSecurity;
+        }
+        await AddServerCommon(profileItem, toFile);
+        return 0;
+    }
+
+    /// <summary>
+    /// PattN: add or edit an Aether profile. Xray alone runs it. Its settings are the Aether fields of its protocol
+    /// extra; besides them it keeps only its pinned endpoint (Address/Port; none for a profile that scans) and the
+    /// finalMask, dialMode, tcpUserTimeout and targetStrategy of its outbounds. Every other column is cleared, so that an imported
+    /// profile and an edited one with the same settings are the same profile to the duplicate check. As in PattNG, a
+    /// profile is stored as it comes and never refused: the Aether editor refuses a profile with a problem on its next
+    /// save, and normalizes it before it calls this.
+    /// </summary>
+    /// <param name="profileItem">Aether profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0</returns>
+    public static async Task<int> AddAetherServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.Aether;
+        profileItem.CoreType = ECoreType.Xray;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = string.Empty;
+        profileItem.Username = string.Empty;
+        profileItem.Network = Global.DefaultNetwork;
+        profileItem.StreamSecurity = string.Empty;
+        profileItem.Sni = string.Empty;
+        profileItem.Alpn = string.Empty;
+        profileItem.Fingerprint = string.Empty;
+        profileItem.CipherSuites = string.Empty;
+        profileItem.CurvePreferences = string.Empty;
+        profileItem.EnableSessionResumption = false;
+        profileItem.AllowInsecure = string.Empty;
+        profileItem.PublicKey = string.Empty;
+        profileItem.ShortId = string.Empty;
+        profileItem.SpiderX = string.Empty;
+        profileItem.Mldsa65Verify = string.Empty;
+        profileItem.Cert = string.Empty;
+        profileItem.CertSha = string.Empty;
+        profileItem.EchConfigList = string.Empty;
+        profileItem.EchOutbound = string.Empty;
+        profileItem.VerifyPeerCertByName = string.Empty;
+        profileItem.MuxEnabled = null;
+        profileItem.SetTransportExtra(new TransportExtraItem());
+
+        await AddServerCommon(profileItem, toFile);
+        return 0;
+    }
+
+    /// <summary>
+    /// Sort the server list by the specified column
+    /// Updates the sort order in the profile extension data
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="subId">Subscription ID to filter servers</param>
+    /// <param name="colName">Column name to sort by</param>
+    /// <param name="asc">Sort in ascending order if true, descending if false</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> SortServers(string subId, string colName, bool asc)
+    {
+        var lstModel = await ConfigDbQuery.ProfileModels(subId, "");
+        if (lstModel.Count <= 0)
+        {
+            return -1;
+        }
+        var lstServerStat = (CurrentConfig.GuiItem.EnableStatistics ? StatisticsManager.Instance.ServerStat : null) ?? [];
+        var lstProfileExs = await ProfileExManager.Instance.GetProfileExs();
+        var lstProfile = (from t in lstModel
+                          join t2 in lstServerStat on t.IndexId equals t2.IndexId into t2b
+                          from t22 in t2b.DefaultIfEmpty()
+                          join t3 in lstProfileExs on t.IndexId equals t3.IndexId into t3b
+                          from t33 in t3b.DefaultIfEmpty()
+                          select new ProfileItemModel
+                          {
+                              IndexId = t.IndexId,
+                              ConfigType = t.ConfigType,
+                              Remarks = t.Remarks,
+                              Address = t.Address,
+                              Port = t.Port,
+                              //Security = t.Security,
+                              Network = t.Network,
+                              StreamSecurity = t.StreamSecurity,
+                              Delay = t33?.Delay ?? 0,
+                              Speed = t33?.Speed ?? 0,
+                              Sort = t33?.Sort ?? 0,
+                              IpInfo = t33?.IpInfo ?? string.Empty,
+                              TodayDown = (t22?.TodayDown ?? 0).ToString("D16"),
+                              TodayUp = (t22?.TodayUp ?? 0).ToString("D16"),
+                              TotalDown = (t22?.TotalDown ?? 0).ToString("D16"),
+                              TotalUp = (t22?.TotalUp ?? 0).ToString("D16"),
+                          }).ToList();
+
+        Enum.TryParse(colName, true, out EServerColName name);
+
+        if (asc)
+        {
+            lstProfile = name switch
+            {
+                EServerColName.ConfigType => lstProfile.OrderBy(t => t.ConfigType).ToList(),
+                EServerColName.Remarks => lstProfile.OrderBy(t => t.Remarks).ToList(),
+                EServerColName.Address => lstProfile.OrderBy(t => t.Address).ToList(),
+                EServerColName.Port => lstProfile.OrderBy(t => t.Port).ToList(),
+                EServerColName.Network => lstProfile.OrderBy(t => t.Network).ToList(),
+                EServerColName.StreamSecurity => lstProfile.OrderBy(t => t.StreamSecurity).ToList(),
+                EServerColName.DelayVal => lstProfile.OrderBy(t => t.Delay).ToList(),
+                EServerColName.SpeedVal => lstProfile.OrderBy(t => t.Speed).ToList(),
+                EServerColName.IpInfo => lstProfile.OrderBy(t => t.IpInfo).ToList(),
+                EServerColName.SubRemarks => lstProfile.OrderBy(t => t.Subid).ToList(),
+                EServerColName.TodayDown => lstProfile.OrderBy(t => t.TodayDown).ToList(),
+                EServerColName.TodayUp => lstProfile.OrderBy(t => t.TodayUp).ToList(),
+                EServerColName.TotalDown => lstProfile.OrderBy(t => t.TotalDown).ToList(),
+                EServerColName.TotalUp => lstProfile.OrderBy(t => t.TotalUp).ToList(),
+                _ => lstProfile
+            };
+        }
+        else
+        {
+            lstProfile = name switch
+            {
+                EServerColName.ConfigType => lstProfile.OrderByDescending(t => t.ConfigType).ToList(),
+                EServerColName.Remarks => lstProfile.OrderByDescending(t => t.Remarks).ToList(),
+                EServerColName.Address => lstProfile.OrderByDescending(t => t.Address).ToList(),
+                EServerColName.Port => lstProfile.OrderByDescending(t => t.Port).ToList(),
+                EServerColName.Network => lstProfile.OrderByDescending(t => t.Network).ToList(),
+                EServerColName.StreamSecurity => lstProfile.OrderByDescending(t => t.StreamSecurity).ToList(),
+                EServerColName.DelayVal => lstProfile.OrderByDescending(t => t.Delay).ToList(),
+                EServerColName.SpeedVal => lstProfile.OrderByDescending(t => t.Speed).ToList(),
+                EServerColName.IpInfo => lstProfile.OrderByDescending(t => t.IpInfo).ToList(),
+                EServerColName.SubRemarks => lstProfile.OrderByDescending(t => t.Subid).ToList(),
+                EServerColName.TodayDown => lstProfile.OrderByDescending(t => t.TodayDown).ToList(),
+                EServerColName.TodayUp => lstProfile.OrderByDescending(t => t.TodayUp).ToList(),
+                EServerColName.TotalDown => lstProfile.OrderByDescending(t => t.TotalDown).ToList(),
+                EServerColName.TotalUp => lstProfile.OrderByDescending(t => t.TotalUp).ToList(),
+                _ => lstProfile
+            };
+        }
+
+        for (var i = 0; i < lstProfile.Count; i++)
+        {
+            ProfileExManager.Instance.SetSort(lstProfile[i].IndexId, (i + 1) * 10);
+        }
+        switch (name)
+        {
+            case EServerColName.DelayVal:
+                {
+                    var maxSort = lstProfile.Max(t => t.Sort) + 10;
+                    foreach (var item in lstProfile.Where(item => item.Delay <= 0))
+                    {
+                        ProfileExManager.Instance.SetSort(item.IndexId, maxSort);
+                    }
+
+                    break;
+                }
+            case EServerColName.SpeedVal:
+                {
+                    var maxSort = lstProfile.Max(t => t.Sort) + 10;
+                    foreach (var item in lstProfile.Where(item => item.Speed <= 0))
+                    {
+                        ProfileExManager.Instance.SetSort(item.IndexId, maxSort);
+                    }
+
+                    break;
+                }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Add or edit a VLESS server
+    /// Validates and processes VLESS-specific settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">VLESS profile to add</param>
+    /// <param name="toFile">Whether to save to file</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddVlessServer(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigType = EConfigType.VLESS;
+
+        profileItem.Address = profileItem.Address.TrimEx();
+        profileItem.Password = profileItem.Password.TrimEx();
+        profileItem.Network = profileItem.Network.TrimEx();
+        profileItem.StreamSecurity = profileItem.StreamSecurity.TrimEx();
+
+        var vlessEncryption = profileItem.GetProtocolExtra().VlessEncryption?.TrimEx();
+        var flow = profileItem.GetProtocolExtra().Flow?.TrimEx() ?? string.Empty;
+        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+        {
+            VlessEncryption = vlessEncryption.IsNullOrEmpty() ? Global.None : vlessEncryption,
+            Flow = Global.Flows.Contains(flow) ? flow : Global.Flows.First(),
+        });
+
+        if (profileItem.Password.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        await AddServerCommon(profileItem, toFile);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Remove duplicate servers from a subscription
+    /// Compares servers based on their properties rather than just names
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="subId">Subscription ID to deduplicate</param>
+    /// <returns>Tuple with total count and remaining count after deduplication</returns>
+    public static async Task<Tuple<int, int>> DedupServerList(string subId)
+    {
+        var lstProfile = await ConfigDbQuery.ProfileItems(subId);
+        if (lstProfile == null)
+        {
+            return new Tuple<int, int>(0, 0);
+        }
+
+        List<ProfileItem> lstKeep = [];
+        List<ProfileItem> lstRemove = [];
+        if (!CurrentConfig.GuiItem.KeepOlderDedupl)
+        {
+            lstProfile.Reverse();
+        }
+
+        foreach (var item in lstProfile)
+        {
+            if (item.IsComplex())
+            {
+                lstKeep.Add(item);
+                continue;
+            }
+
+            if (lstKeep.Exists(i => CompareProfileItem(i, item, false)))
+            {
+                lstRemove.Add(item);
+            }
+            else
+            {
+                lstKeep.Add(item);
+            }
+        }
+        await RemoveServers(lstRemove);
+
+        return new Tuple<int, int>(lstProfile.Count, lstKeep.Count);
+    }
+
+    /// <summary>
+    /// Common server addition logic used by all server types
+    /// Sets common properties and handles sorting and persistence
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="profileItem">Profile item to add</param>
+    /// <param name="toFile">Whether to save to database</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> AddServerCommon(ProfileItem profileItem, bool toFile = true)
+    {
+        profileItem.ConfigVersion = 4;
+
+        if (profileItem.StreamSecurity.IsNotEmpty())
+        {
+            if (profileItem.StreamSecurity is not Global.StreamSecurity
+                 and not Global.StreamSecurityReality)
+            {
+                profileItem.StreamSecurity = string.Empty;
+            }
+            else
+            {
+                if (profileItem.Fingerprint.IsNullOrEmpty() && profileItem.StreamSecurity == Global.StreamSecurityReality)
+                {
+                    profileItem.Fingerprint = CurrentConfig.CoreBasicItem.DefFingerprint;
+                }
+            }
+        }
+
+        if (profileItem.Network.IsNotEmpty() && !Global.Networks.Contains(profileItem.Network))
+        {
+            profileItem.Network = Global.DefaultNetwork;
+        }
+
+        var maxSort = -1;
+        if (profileItem.IndexId.IsNullOrEmpty())
+        {
+            profileItem.IndexId = Utils.GetGuid(false);
+            maxSort = ProfileExManager.Instance.GetMaxSort();
+        }
+        if (!toFile && maxSort < 0)
+        {
+            maxSort = ProfileExManager.Instance.GetMaxSort();
+        }
+        if (maxSort > 0)
+        {
+            ProfileExManager.Instance.SetSort(profileItem.IndexId, maxSort + 1);
+        }
+
+        if (toFile)
+        {
+            //profileItem.SetProtocolExtra();
+            profileItem.SetProtocolExtra(profileItem.GetProtocolExtra());
+            await SQLiteHelper.Instance.ReplaceAsync(profileItem);
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// Compare two profile items to determine if they represent the same server
+    /// Used for deduplication and server matching
+    /// </summary>
+    /// <param name="o">First profile item</param>
+    /// <param name="n">Second profile item</param>
+    /// <param name="remarks">Whether to compare remarks</param>
+    /// <returns>True if the profiles match, false otherwise</returns>
+    private static bool CompareProfileItem(ProfileItem? o, ProfileItem? n, bool remarks)
+    {
+        if (o == null || n == null)
+        {
+            return false;
+        }
+
+        var oProtocolExtra = o.GetProtocolExtra();
+        var nProtocolExtra = n.GetProtocolExtra();
+        var oTransport = o.GetTransportExtra();
+        var nTransport = n.GetTransportExtra();
+
+        return o.ConfigType == n.ConfigType
+               && AreEqual(o.Address, n.Address)
+               && o.Port == n.Port
+               && AreEqual(o.Password, n.Password)
+               && AreEqual(o.Username, n.Username)
+               && AreEqual(oProtocolExtra.VlessEncryption, nProtocolExtra.VlessEncryption)
+               && AreEqual(oProtocolExtra.SsMethod, nProtocolExtra.SsMethod)
+               && AreEqual(oProtocolExtra.VmessSecurity, nProtocolExtra.VmessSecurity)
+               && AreEqual(o.Network, n.Network)
+               && AreEqual(oTransport.RawHeaderType, nTransport.RawHeaderType)
+               && AreEqual(oTransport.Host, nTransport.Host)
+               && AreEqual(oTransport.Path, nTransport.Path)
+               && AreEqual(oTransport.XhttpMode, nTransport.XhttpMode)
+               && AreEqual(oTransport.XhttpExtra, nTransport.XhttpExtra)
+               && AreEqual(oTransport.GrpcAuthority, nTransport.GrpcAuthority)
+               && AreEqual(oTransport.GrpcServiceName, nTransport.GrpcServiceName)
+               && AreEqual(oTransport.GrpcMode, nTransport.GrpcMode)
+               && AreEqual(oTransport.KcpHeaderType, nTransport.KcpHeaderType)
+               && AreEqual(oTransport.KcpSeed, nTransport.KcpSeed)
+               && (o.ConfigType == EConfigType.Trojan || o.StreamSecurity == n.StreamSecurity)
+               && AreEqual(oProtocolExtra.Flow, nProtocolExtra.Flow)
+               && AreEqual(oProtocolExtra.SalamanderPass, nProtocolExtra.SalamanderPass)
+               && AreEqual(o.Sni, n.Sni)
+               && AreEqual(o.Alpn, n.Alpn)
+               && AreEqual(o.Fingerprint, n.Fingerprint)
+               && AreEqual(o.PublicKey, n.PublicKey)
+               && AreEqual(o.ShortId, n.ShortId)
+               && AreEqual(o.Finalmask, n.Finalmask)
+               && AreEqual(o.EchOutbound, n.EchOutbound)
+               // PattN: two Aether profiles are the same only with every setting alike (PattNG duplicateIdentity): the
+               // whole protocol extra, which holds their Aether settings and is a record compared field by field, and
+               // the dialMode, tcpUserTimeout and targetStrategy of their outbounds
+               && (o.ConfigType != EConfigType.Aether
+                   || (oProtocolExtra == nProtocolExtra
+                       && AreEqual(o.DialMode, n.DialMode)
+                       && (o.TcpUserTimeout is > 0 ? o.TcpUserTimeout : null) == (n.TcpUserTimeout is > 0 ? n.TcpUserTimeout : null)
+                       && AreEqual(o.TargetStrategy, n.TargetStrategy)))
+               && (!remarks || o.Remarks == n.Remarks);
+
+        static bool AreEqual(string? a, string? b)
+        {
+            return string.Equals(a, b) || (string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b));
+        }
+    }
+
+    /// <summary>
+    /// Searches the specified collection for a profile item that matches the target profile item based on a series of
+    /// criteria.
+    /// </summary>
+    /// <remarks>The method attempts to find a match by comparing the target's remarks, address, port, and
+    /// password in various combinations. The search is performed in order of specificity, starting with the most
+    /// detailed comparison. If no match is found at any stage, the method returns null.</remarks>
+    /// <param name="source">An enumerable collection of profile items to search. This parameter can be null.</param>
+    /// <param name="target">The profile item to match against items in the source collection. This parameter can be null.</param>
+    /// <returns>A profile item from the source collection that matches the target item according to defined criteria; otherwise,
+    /// null if no match is found or if either parameter is null.</returns>
+    private static ProfileItem? FindMatchedProfileItem(IEnumerable<ProfileItem>? source, ProfileItem? target)
+    {
+        if (source == null || target == null)
+        {
+            return null;
+        }
+
+        var matchedItem = source.FirstOrDefault(t => CompareProfileItem(t, target, true));
+        if (matchedItem != null)
+        {
+            return matchedItem;
+        }
+
+        if (target.Remarks.IsNotEmpty())
+        {
+            matchedItem = source.FirstOrDefault(t => t.Remarks == target.Remarks);
+            if (matchedItem != null)
+            {
+                return matchedItem;
+            }
+        }
+
+        if (target.Address.IsNotEmpty() && target.Port > 0 && target.Password.IsNotEmpty())
+        {
+            matchedItem = source.FirstOrDefault(t =>
+                IsSameText(t.Address, target.Address) &&
+                t.Port == target.Port &&
+                IsSameText(t.Password, target.Password));
+            if (matchedItem != null)
+            {
+                return matchedItem;
+            }
+        }
+
+        if (target.Address.IsNotEmpty() && target.Port > 0)
+        {
+            matchedItem = source.FirstOrDefault(t =>
+                IsSameText(t.Address, target.Address) &&
+                t.Port == target.Port);
+            if (matchedItem != null)
+            {
+                return matchedItem;
+            }
+        }
+
+        if (target.Address.IsNotEmpty())
+        {
+            matchedItem = source.FirstOrDefault(t => IsSameText(t.Address, target.Address));
+            if (matchedItem != null)
+            {
+                return matchedItem;
+            }
+        }
+
+        return null;
+
+        static bool IsSameText(string? left, string? right)
+        {
+            if (left.IsNullOrEmpty() || right.IsNullOrEmpty())
+            {
+                return false;
+            }
+
+            return string.Equals(left.TrimEx(), right.TrimEx(), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Remove a single server profile by its index ID
+    /// Deletes the configuration file if it's a custom config
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="indexId">Index ID of the profile to remove</param>
+    /// <returns>0 if successful</returns>
+    private static async Task<int> RemoveProfileItem(string indexId)
+    {
+        try
+        {
+            var item = await ConfigDbQuery.GetProfileItem(indexId);
+            if (item == null)
+            {
+                return 0;
+            }
+            if (item.ConfigType == EConfigType.Custom)
+            {
+                File.Delete(Utils.GetConfigPath(item.Address));
+            }
+
+            await SQLiteHelper.Instance.DeleteAsync(item);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Create a group server that combines multiple servers for load balancing
+    /// Generates a PolicyGroup profile with references to the sub-items
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="subItem">Sub-item for grouping</param>
+    /// <returns>Result object with success state and data</returns>
+    public static async Task<RetResult> AddGroupAllServer(SubItem? subItem)
+    {
+        var result = new RetResult();
+
+        var subId = subItem?.Id;
+        if (subId.IsNullOrEmpty())
+        {
+            result.Success = false;
+            return result;
+        }
+
+        var indexId = Utils.GetGuid(false);
+        var remark = $"{subItem.Remarks} - {ResUI.TbConfigTypePolicyGroup}";
+        var profile = new ProfileItem
+        {
+            IndexId = indexId,
+            CoreType = ECoreType.Xray,
+            ConfigType = EConfigType.PolicyGroup,
+            Remarks = remark,
+            IsSub = false
+        };
+        if (!subId.IsNullOrEmpty())
+        {
+            profile.Subid = subId;
+        }
+        var extraItem = new ProtocolExtraItem
+        {
+            MultipleLoad = EMultipleLoad.LeastPing,
+            GroupType = profile.ConfigType.ToString(),
+            SubChildItems = subId,
+            Filter = Global.PolicyGroupDefaultAllFilter,
+        };
+        profile.SetProtocolExtra(extraItem);
+        var ret = await AddServerCommon(profile, true);
+        result.Success = ret == 0;
+        result.Data = indexId;
+        return result;
+    }
+
+    private static string CombineWithDefaultAllFilter(string regionPattern)
+    {
+        return $"^(?!.*(?:{Global.PolicyGroupExcludeKeywords})).*(?:{regionPattern}).*$";
+    }
+
+    private static readonly Dictionary<string, string> PolicyGroupRegionFilters = new()
+    {
+        { "JP", "日本|\\b[Jj][Pp]\\b|🇯🇵|[Jj]apan" },
+        { "US", "美国|\\b[Uu][Ss]\\b|🇺🇸|[Uu]nited [Ss]tates|\\b[Uu][Ss][Aa]\\b" },
+        { "HK", "香港|\\b[Hh][Kk]\\b|🇭🇰|[Hh]ong ?[Kk]ong" },
+        { "TW", "台湾|台灣|\\b[Tt][Ww]\\b|🇹🇼|[Tt]aiwan" },
+        { "KR", "韩国|\\b[Kk][Rr]\\b|🇰🇷|[Kk]orea" },
+        { "SG", "新加坡|\\b[Ss][Gg]\\b|🇸🇬|[Ss]ingapore" },
+        { "DE", "德国|\\b[Dd][Ee]\\b|🇩🇪|[Gg]ermany" },
+        { "FR", "法国|\\b[Ff][Rr]\\b|🇫🇷|[Ff]rance" },
+        { "GB", "英国|\\b[Gg][Bb]\\b|🇬🇧|[Uu]nited [Kk]ingdom|[Bb]ritain" },
+        { "CA", "加拿大|🇨🇦|[Cc]anada" },
+        { "AU", "澳大利亚|\\b[Aa][Uu]\\b|🇦🇺|[Aa]ustralia" },
+        { "RU", "俄罗斯|\\b[Rr][Uu]\\b|🇷🇺|[Rr]ussia" },
+        { "BR", "巴西|\\b[Bb][Rr]\\b|🇧🇷|[Bb]razil" },
+        { "IN", "印度|🇮🇳|[Ii]ndia" },
+        { "VN", "越南|\\b[Vv][Nn]\\b|🇻🇳|[Vv]ietnam" },
+        { "ID", "印度尼西亚|\\b[Ii][Dd]\\b|🇮🇩|[Ii]ndonesia" },
+        { "MX", "墨西哥|\\b[Mm][Xx]\\b|🇲🇽|[Mm]exico" }
+    };
+
+    public static async Task<RetResult> AddGroupRegionServer(SubItem? subItem)
+    {
+        var result = new RetResult();
+        var subId = subItem?.Id;
+        if (subId.IsNullOrEmpty())
+        {
+            result.Success = false;
+            return result;
+        }
+        var childProfiles = await ConfigDbQuery.ProfileItems(subId);
+        List<string> indexIdList = [];
+
+        foreach (var regionFilter in PolicyGroupRegionFilters)
+        {
+            var indexId = Utils.GetGuid(false);
+            var remark = $"{subItem.Remarks} - {ResUI.TbConfigTypePolicyGroup} - {regionFilter.Key}";
+            var profile = new ProfileItem
+            {
+                IndexId = indexId,
+                CoreType = ECoreType.Xray,
+                ConfigType = EConfigType.PolicyGroup,
+                Remarks = remark,
+                IsSub = false
+            };
+            if (!subId.IsNullOrEmpty())
+            {
+                profile.Subid = subId;
+            }
+            var extraItem = new ProtocolExtraItem
+            {
+                MultipleLoad = EMultipleLoad.LeastPing,
+                GroupType = profile.ConfigType.ToString(),
+                SubChildItems = subId,
+                Filter = CombineWithDefaultAllFilter(regionFilter.Value),
+            };
+            profile.SetProtocolExtra(extraItem);
+
+            var matchedChildProfiles = childProfiles?.Where(p =>
+                    p != null &&
+                    p.IsValid() &&
+                    (!p.ConfigType.IsComplexType() || p.ConfigType == EConfigType.Outbound) &&
+                    Utils.IsRegexMatch(p.Remarks, extraItem.Filter)
+                )
+                .ToList() ?? [];
+            if (matchedChildProfiles.Count == 0)
+            {
+                continue;
+            }
+
+            var ret = await AddServerCommon(profile, true);
+            if (ret == 0)
+            {
+                indexIdList.Add(indexId);
+            }
+        }
+        result.Success = indexIdList.Count > 0;
+        result.Data = indexIdList;
+        return result;
+    }
+
+    /// <summary>
+    /// Remove servers with invalid test results (timeout)
+    /// Useful for cleaning up subscription lists
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="subid">Subscription ID to filter servers</param>
+    /// <returns>Number of removed servers or -1 if failed</returns>
+    public static async Task<int> RemoveInvalidServerResult(string subid)
+    {
+        var lstModel = await ConfigDbQuery.ProfileModels(subid, "");
+        lstModel.RemoveAll(t => t.ConfigType.IsComplexType());
+        if (lstModel is { Count: <= 0 })
+        {
+            return -1;
+        }
+        var lstProfileExs = await ProfileExManager.Instance.GetProfileExs();
+        var lstProfile = (from t in lstModel
+                          join t2 in lstProfileExs on t.IndexId equals t2.IndexId
+                          where t2.Delay == -1
+                          select t).ToList();
+
+        await RemoveServers(JsonUtils.Deserialize<List<ProfileItem>>(JsonUtils.Serialize(lstProfile)));
+
+        return lstProfile.Count;
+    }
+
+    #endregion Server
+
+    #region Batch add servers
+
+    /// <summary>
+    /// Add multiple servers from string data (common protocols)
+    /// Parses the string data into server profiles
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="strData">String data containing server information</param>
+    /// <param name="subid">Subscription ID to associate with the servers</param>
+    /// <param name="isSub">Whether this is from a subscription</param>
+    /// <returns>Number of successfully imported servers or -1 if failed</returns>
+    private static async Task<int> AddBatchServersCommon(string strData, string subid, bool isSub)
+    {
+        if (strData.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        var subItem = await GetSubItemForImport(subid, isSub);
+        var subFilter = subItem?.Filter ?? "";
+        var preResolver = subItem?.PreResolver ?? "";
+
+        var dnsClient = preResolver.IsNullOrEmpty() ? null : EndpointResolveManager.BuildDnsClient(preResolver);
+        var dnsCache = new ConcurrentDictionary<string, Lazy<Task<string>>>();
+
+        var countServers = 0;
+        List<ProfileItem> lstAdd = [];
+        var arrData = strData.Split(Environment.NewLine.ToCharArray()).Where(t => !t.IsNullOrEmpty()).ToList();
+        if (isSub)
+        {
+            arrData = arrData.Distinct().ToList();
+        }
+
+        // Subscriptions are added sequentially because they write to the database.
+        if (!isSub)
+        {
+            foreach (var str in arrData.Where(t => t.StartsWith(Global.HttpsProtocol) || t.StartsWith(Global.HttpProtocol)))
+            {
+                if (await AddSubItem(str) == 0)
+                {
+                    countServers++;
+                }
+            }
+        }
+
+        var profileItems = new ProfileItem?[arrData.Count];
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, arrData.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = 8 },
+            async (index, cancellationToken) =>
+            {
+                var str = arrData[index];
+                //maybe sub
+                if (!isSub && (str.StartsWith(Global.HttpsProtocol) || str.StartsWith(Global.HttpProtocol)))
+                {
+                    return;
+                }
+
+                var profileItem = FmtHandler.ResolveConfig(str, out _);
+                if (profileItem is null)
+                {
+                    return;
+                }
+
+                //exist sub items //filter
+                if (isSub && subid.IsNotEmpty() && subFilter.IsNotEmpty())
+                {
+                    if (!Utils.IsRegexMatch(profileItem.Remarks, subFilter))
+                    {
+                        return;
+                    }
+                }
+                profileItem.Subid = subid;
+                profileItem.IsSub = isSub;
+                ApplySubOverrides(profileItem, subItem);
+                // PattN: WebSocket and HTTPUpgrade connect only with alpn http/1.1 or none, which shared links often lack (PattNG)
+                TlsSettingsCheck.FixImportedAlpn(profileItem);
+
+                if (dnsClient is not null && profileItem.Address.IsNotEmpty() && !Utils.IsIpAddress(profileItem.Address))
+                {
+                    var address = profileItem.Address;
+                    var resolvedAddress = await dnsCache.GetOrAdd(
+                        address,
+                        key => new Lazy<Task<string>>(async () =>
+                        {
+                            var ipList = await dnsClient.TryResolveIpv46Async(key, cancellationToken);
+                            return ipList.FirstOrDefault()?.ToString() ?? key;
+                        })).Value;
+                    if (!string.IsNullOrEmpty(resolvedAddress))
+                    {
+                        profileItem.Address = resolvedAddress;
+                    }
+                    // host -> serverName -> address
+                    if (!profileItem.StreamSecurity.IsNullOrEmpty()
+                        && profileItem.Sni.IsNullOrEmpty())
+                    {
+                        profileItem.Sni = profileItem.Address;
+                    }
+                    var requestHostTransport = new HashSet<string>
+                    {
+                        nameof(ETransport.ws),
+                        nameof(ETransport.httpupgrade),
+                        nameof(ETransport.xhttp),
+                        //nameof(ETransport.grpc),
+                    };
+                    if (requestHostTransport.Contains(profileItem.GetNetwork())
+                        && profileItem.GetTransportExtra().Host.IsNullOrEmpty())
+                    {
+                        profileItem.SetTransportExtra(profileItem.GetTransportExtra() with
+                        {
+                            Host = profileItem.Sni,
+                        });
+                    }
+                }
+
+                profileItems[index] = profileItem;
+            });
+
+        // Profile validation and sorting mutate shared state, so they stay sequential.
+        foreach (var profileItem in profileItems)
+        {
+            if (profileItem is null)
+            {
+                continue;
+            }
+
+            var addStatus = profileItem.ConfigType switch
+            {
+                EConfigType.VMess => await AddVMessServer(profileItem, false),
+                EConfigType.Shadowsocks => await AddShadowsocksServer(profileItem, false),
+                EConfigType.SOCKS => await AddSocksServer(profileItem, false),
+                EConfigType.Trojan => await AddTrojanServer(profileItem, false),
+                EConfigType.VLESS => await AddVlessServer(profileItem, false),
+                EConfigType.Hysteria2 => await AddHysteria2Server(profileItem, false),
+                EConfigType.TUIC => await AddTuicServer(profileItem, false),
+                EConfigType.WireGuard => await AddWireguardServer(profileItem, false),
+                EConfigType.Anytls => await AddAnytlsServer(profileItem, false),
+                EConfigType.Naive => await AddNaiveServer(profileItem, false),
+                EConfigType.MASQUE => await AddMasqueServer(profileItem, false),
+                // PattN: aether:// links, a subscription's overrides applied as they are, as PattNG applies them
+                EConfigType.Aether => await AddAetherServer(profileItem, false),
+                _ => -1,
+            };
+
+            if (addStatus == 0)
+            {
+                countServers++;
+                lstAdd.Add(profileItem);
+            }
+        }
+
+        if (lstAdd.Count > 0)
+        {
+            await SQLiteHelper.Instance.InsertAllAsync(lstAdd);
+        }
+
+        await SaveConfig();
+        return countServers;
+    }
+
+    /// <summary>
+    /// Add servers from custom configuration formats (sing-box, v2ray, etc.)
+    /// Handles various configuration formats and imports them as custom configs
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="strData">String data containing server information</param>
+    /// <param name="subid">Subscription ID to associate with the servers</param>
+    /// <param name="isSub">Whether this is from a subscription</param>
+    /// <returns>Number of successfully imported servers or -1 if failed</returns>
+    private static async Task<int> AddBatchServers4Custom(string strData, string subid, bool isSub)
+    {
+        if (strData.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        var subItem = await ConfigDbQuery.GetSubItem(subid);
+
+        if (subItem?.CustomCoreType is null)
+        {
+            return await AddBatchServersDefaultCustom(strData, subid, isSub, subItem);
+        }
+
+        return await AddBatchServersSpecificCustom(strData, subid, isSub, subItem);
+    }
+
+    private static async Task<int> AddBatchServersDefaultCustom(
+        string strData,
+        string subid,
+        bool isSub,
+        SubItem? subItem)
+    {
+        var subRemarks = subItem?.Remarks;
+        // Prioritize using complete custom parsing, followed by custom outbound parsing.
+        var lstProfiles = V2rayFmt.ResolveToCustom(strData, subRemarks);
+        if (lstProfiles.Count == 0)
+        {
+            lstProfiles = SingboxFmt.ResolveToCustom(strData, subRemarks);
+        }
+        if (lstProfiles.Count == 0)
+        {
+            lstProfiles = V2rayFmt.ResolveToCustomOutbound(strData, subRemarks);
+        }
+        if (lstProfiles.Count == 0)
+        {
+            lstProfiles = SingboxFmt.ResolveToCustomOutbound(strData, subRemarks);
+        }
+        if (lstProfiles.Count > 0)
+        {
+            var count = await AddBatchCustomServers(lstProfiles, subid, isSub, subItem);
+            if (count > 0)
+            {
+                return count;
+            }
+        }
+
+        if (HtmlPageFmt.IsHtmlPage(strData))
+        {
+            return -1;
+        }
+
+        var profileItem = ClashFmt.ResolveFull(strData, subRemarks)
+            ?? Hysteria2Fmt.ResolveFull2(strData, subRemarks);
+
+        if (profileItem == null)
+        {
+            return -1;
+        }
+
+        profileItem.Subid = subid;
+        profileItem.IsSub = isSub;
+        profileItem.PreSocksPort = subItem?.PreSocksPort;
+
+        return await AddCustomServer(profileItem, true) == 0 ? 1 : -1;
+    }
+
+    private static async Task<int> AddBatchServersSpecificCustom(
+        string strData,
+        string subid,
+        bool isSub,
+        SubItem subItem)
+    {
+        var subRemarks = subItem.Remarks;
+        var customCoreType = subItem.CustomCoreType!.Value;
+
+        var lstProfiles = customCoreType switch
+        {
+            ECoreType.Xray => V2rayFmt.ResolveToCustom(strData, subRemarks),
+            ECoreType.sing_box => SingboxFmt.ResolveToCustom(strData, subRemarks),
+            _ => null,
+        };
+
+        if (lstProfiles?.Count > 0)
+        {
+            var count = await AddBatchCustomServers(lstProfiles, subid, isSub, subItem);
+            if (count > 0)
+            {
+                return count;
+            }
+        }
+
+        return await SaveCustomRawFileServer(strData, subid, isSub, subItem, customCoreType);
+    }
+
+    private static async Task<int> AddBatchCustomServers(
+        List<ProfileItem> lstProfiles,
+        string subid,
+        bool isSub,
+        SubItem? subItem)
+    {
+        var count = 0;
+        foreach (var it in lstProfiles)
+        {
+            it.Subid = subid;
+            it.IsSub = isSub;
+
+            if (it.ConfigType == EConfigType.Custom)
+            {
+                it.PreSocksPort = subItem?.PreSocksPort;
+                if (await AddCustomServer(it, true) == 0)
+                {
+                    count++;
+                }
+            }
+            else
+            {
+                if (await AddCustomOutboundServer(it, true) == 0)
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private static async Task<int> SaveCustomRawFileServer(
+        string strData,
+        string subid,
+        bool isSub,
+        SubItem subItem,
+        ECoreType customCoreType)
+    {
+        var ext = DetectFileExtension(strData);
+        var fileName = Utils.GetTempPath($"{Utils.GetGuid(false)}{ext}");
+        await File.WriteAllTextAsync(fileName, strData);
+
+        var profileItem = new ProfileItem
+        {
+            CoreType = customCoreType,
+            ConfigType = EConfigType.Custom,
+            Address = fileName,
+            Remarks = subItem.Remarks ?? customCoreType.ToString(),
+            Subid = subid,
+            IsSub = isSub,
+            PreSocksPort = subItem.PreSocksPort,
+        };
+
+        return await AddCustomServer(profileItem, true) == 0 ? 1 : -1;
+
+        static string DetectFileExtension(string data)
+        {
+            var trimmed = data.AsSpan().TrimStart();
+            if (trimmed.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            if (trimmed[0] is '{' or '[')
+            {
+                return ".json";
+            }
+
+            if (trimmed.StartsWith("---"))
+            {
+                return ".yaml";
+            }
+
+            foreach (var line in trimmed.EnumerateLines())
+            {
+                var lineTrimmed = line.TrimStart();
+                if (lineTrimmed.IsEmpty || lineTrimmed.StartsWith("#"))
+                {
+                    continue;
+                }
+
+                var colonIndex = lineTrimmed.IndexOf(':');
+                if (colonIndex > 0)
+                {
+                    var keySpan = lineTrimmed[..colonIndex];
+                    if (!keySpan.Contains(' ') && !keySpan.Contains('\t'))
+                    {
+                        if (colonIndex == lineTrimmed.Length - 1 || lineTrimmed[colonIndex + 1] is ' ' or '\t' or '\r' or '\n')
+                        {
+                            return ".yaml";
+                        }
+                    }
+                }
+            }
+
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Add Shadowsocks servers from SIP008 format
+    /// SIP008 is a JSON-based format for Shadowsocks servers
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="strData">String data in SIP008 format</param>
+    /// <param name="subid">Subscription ID to associate with the servers</param>
+    /// <param name="isSub">Whether this is from a subscription</param>
+    /// <returns>Number of successfully imported servers or -1 if failed</returns>
+    private static async Task<int> AddBatchServers4SsSIP008(string strData, string subid, bool isSub)
+    {
+        if (strData.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        var lstSsServer = ShadowsocksFmt.ResolveSip008(strData);
+        if (lstSsServer?.Count > 0)
+        {
+            var subItem = await GetSubItemForImport(subid, isSub);
+            var counter = 0;
+            foreach (var ssItem in lstSsServer)
+            {
+                ssItem.Subid = subid;
+                ssItem.IsSub = isSub;
+                ApplySubOverrides(ssItem, subItem);
+                if (await AddShadowsocksServer(ssItem) == 0)
+                {
+                    counter++;
+                }
+            }
+            await SaveConfig();
+            return counter;
+        }
+
+        return -1;
+    }
+
+    private static async Task<int> AddBatchServers4Wireguard(string strData, string subid, bool isSub)
+    {
+        if (strData.IsNullOrEmpty())
+        {
+            return -1;
+        }
+        if (!(strData.Contains("[Interface]", StringComparison.OrdinalIgnoreCase)
+              && strData.Contains("[Peer]", StringComparison.OrdinalIgnoreCase)))
+        {
+            return -1;
+        }
+        var lstServer = WireguardFmt.ResolveConfig(strData);
+        if (lstServer?.Count > 0)
+        {
+            var subItem = await GetSubItemForImport(subid, isSub);
+            var counter = 0;
+            foreach (var item in lstServer)
+            {
+                item.Subid = subid;
+                item.IsSub = isSub;
+                ApplySubOverrides(item, subItem);
+                if (await AddWireguardServer(item) == 0)
+                {
+                    counter++;
+                }
+            }
+            await SaveConfig();
+            return counter;
+        }
+        return -1;
+    }
+
+    private static async Task<int> AddBatchServers4InnerUri(string strData, string subid, bool isSub)
+    {
+        if (strData.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        var lstServer = InnerFmt.Resolve(strData, subid);
+        if (lstServer?.Count > 0)
+        {
+            var subItem = await GetSubItemForImport(subid, isSub);
+            var counter = 0;
+            List<ProfileItem> lstAdd = [];
+            foreach (var profileItem in lstServer)
+            {
+                profileItem.Subid = subid;
+                profileItem.IsSub = isSub;
+                if (!profileItem.ConfigType.IsComplexType())
+                {
+                    ApplySubOverrides(profileItem, subItem);
+                }
+                // PattN: WebSocket and HTTPUpgrade connect only with alpn http/1.1 or none, which shared links often lack (PattNG)
+                TlsSettingsCheck.FixImportedAlpn(profileItem);
+
+                var addStatus = profileItem.ConfigType switch
+                {
+                    EConfigType.VMess => await AddVMessServer(profileItem, false),
+                    EConfigType.Shadowsocks => await AddShadowsocksServer(profileItem, false),
+                    EConfigType.HTTP => await AddHttpServer(profileItem, false),
+                    EConfigType.SOCKS => await AddSocksServer(profileItem, false),
+                    EConfigType.Trojan => await AddTrojanServer(profileItem, false),
+                    EConfigType.VLESS => await AddVlessServer(profileItem, false),
+                    EConfigType.Hysteria2 => await AddHysteria2Server(profileItem, false),
+                    EConfigType.TUIC => await AddTuicServer(profileItem, false),
+                    EConfigType.WireGuard => await AddWireguardServer(profileItem, false),
+                    EConfigType.Anytls => await AddAnytlsServer(profileItem, false),
+                    EConfigType.Naive => await AddNaiveServer(profileItem, false),
+                    EConfigType.MASQUE => await AddMasqueServer(profileItem, false),
+                    EConfigType.PolicyGroup or EConfigType.ProxyChain => await AddServerCommon(profileItem, false),
+                    EConfigType.Outbound => await AddCustomOutboundServer(profileItem, true, false),
+                    _ => -1,
+                };
+                if (addStatus == 0)
+                {
+                    counter++;
+                    lstAdd.Add(profileItem);
+                }
+            }
+            if (lstAdd.Count > 0)
+            {
+                await SQLiteHelper.Instance.InsertAllAsync(lstAdd);
+            }
+            await SaveConfig();
+            return counter;
+        }
+
+        return -1;
+    }
+
+    /// <summary>
+    /// Get the subscription an import belongs to, or null when the import is not a subscription update
+    /// </summary>
+    private static async Task<SubItem?> GetSubItemForImport(string subid, bool isSub)
+    {
+        if (!isSub || subid.IsNullOrEmpty())
+        {
+            return null;
+        }
+        return await ConfigDbQuery.GetSubItem(subid);
+    }
+
+    /// <summary>
+    /// Replace the address and/or port of a profile imported from a subscription with the
+    /// override values configured on that subscription. Empty override values leave the profile unchanged.
+    /// </summary>
+    /// <param name="profileItem">Profile imported from the subscription</param>
+    /// <param name="subItem">Subscription the profile belongs to, or null</param>
+    public static void ApplySubOverrides(ProfileItem profileItem, SubItem? subItem)
+    {
+        if (subItem is null)
+        {
+            return;
+        }
+        if (subItem.OverrideAddress.IsNotEmpty())
+        {
+            profileItem.Address = subItem.OverrideAddress!.Trim();
+        }
+        if (subItem.OverridePort is > 0 and <= 65535)
+        {
+            profileItem.Port = subItem.OverridePort.Value;
+        }
+    }
+
+    /// <summary>
+    /// Main entry point for adding batch servers from various formats
+    /// Tries different parsing methods to import as many servers as possible
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="strData">String data containing server information</param>
+    /// <param name="subid">Subscription ID to associate with the servers</param>
+    /// <param name="isSub">Whether this is from a subscription</param>
+    /// <returns>Number of successfully imported servers or -1 if failed</returns>
+    public static async Task<int> AddBatchServers(string strData, string subid, bool isSub)
+    {
+        if (strData.IsNullOrEmpty())
+        {
+            return -1;
+        }
+        List<ProfileItem>? lstOriSub = null;
+        ProfileItem? activeProfile = null;
+        if (isSub && subid.IsNotEmpty())
+        {
+            lstOriSub = await ConfigDbQuery.ProfileItems(subid);
+            activeProfile = lstOriSub?.FirstOrDefault(t => t.IndexId == CurrentConfig.IndexId);
+        }
+
+        var counter = 0;
+        if (Utils.IsBase64String(strData))
+        {
+            counter = await AddBatchServersCommon(Utils.Base64Decode(strData), subid, isSub);
+        }
+        if (counter < 1)
+        {
+            counter = await AddBatchServersCommon(strData, subid, isSub);
+        }
+        if (counter < 1)
+        {
+            counter = await AddBatchServersCommon(Utils.Base64Decode(strData), subid, isSub);
+        }
+
+        if (counter < 1)
+        {
+            counter = await AddBatchServers4SsSIP008(strData, subid, isSub);
+        }
+
+        //maybe wireguard config
+        if (counter < 1)
+        {
+            counter = await AddBatchServers4Wireguard(strData, subid, isSub);
+        }
+
+        //May be standard uri mixed with internal uri
+        var innerUriCount = 0;
+        if (Utils.IsBase64String(strData))
+        {
+            innerUriCount = await AddBatchServers4InnerUri(Utils.Base64Decode(strData), subid, isSub);
+        }
+        if (innerUriCount < 1)
+        {
+            innerUriCount = await AddBatchServers4InnerUri(strData, subid, isSub);
+        }
+        if (innerUriCount < 1)
+        {
+            innerUriCount = await AddBatchServers4InnerUri(Utils.Base64Decode(strData), subid, isSub);
+        }
+        if (innerUriCount > 0)
+        {
+            if (counter > 0)
+            {
+                counter += innerUriCount;
+            }
+            else
+            {
+                counter = innerUriCount;
+            }
+        }
+
+        //maybe other sub
+        if (counter < 1)
+        {
+            counter = await AddBatchServers4Custom(strData, subid, isSub);
+        }
+
+        if (counter > 0 && lstOriSub is { Count: > 0 })
+        {
+            await RemoveServers(lstOriSub.Where(item => item.IsSub).ToList());
+        }
+
+        //Select active node
+        if (activeProfile != null)
+        {
+            var lstSub = await ConfigDbQuery.ProfileItems(subid);
+            var existItem = FindMatchedProfileItem(lstSub, activeProfile);
+            if (existItem != null)
+            {
+                await ConfigTextHandler.SetDefaultServerIndex(existItem.IndexId);
+            }
+        }
+
+        //Keep the last traffic statistics
+        if (lstOriSub != null)
+        {
+            var lstSub = await ConfigDbQuery.ProfileItems(subid);
+            foreach (var item in lstSub)
+            {
+                var existItem = FindMatchedProfileItem(lstOriSub, item);
+                if (existItem != null)
+                {
+                    await StatisticsManager.Instance.CloneServerStatItem(existItem.IndexId, item.IndexId);
+                }
+            }
+        }
+
+        return counter;
+    }
+
+    #endregion Batch add servers
+
+    #region Sub & Group
+
+    /// <summary>
+    /// Add a subscription item from URL
+    /// Creates a new subscription with default settings
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="url">Subscription URL</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddSubItem(string url)
+    {
+        //already exists
+        var count = await SQLiteHelper.Instance.TableAsync<SubItem>().CountAsync(e => e.Url == url);
+        if (count > 0)
+        {
+            return 0;
+        }
+        SubItem subItem = new()
+        {
+            Id = string.Empty,
+            Url = url
+        };
+
+        var uri = Utils.TryUri(url);
+        if (uri == null)
+        {
+            return -1;
+        }
+        //Do not allow http protocol
+        if (url.StartsWith(Global.HttpProtocol) && !Utils.IsPrivateNetwork(uri.IdnHost))
+        {
+            //TODO Temporary reminder to be removed later
+            NoticeManager.Instance.Enqueue(ResUI.InsecureUrlProtocol);
+            //return -1;
+        }
+
+        var queryVars = Utils.ParseQueryString(uri.Query);
+        subItem.Remarks = queryVars["remarks"] ?? "import_sub";
+
+        return await AddSubItem(subItem);
+    }
+
+    /// <summary>
+    /// Add or update a subscription item
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="subItem">Subscription item to add or update</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddSubItem(SubItem subItem)
+    {
+        var item = await ConfigDbQuery.GetSubItem(subItem.Id);
+        if (item is null)
+        {
+            item = subItem;
+        }
+        else
+        {
+            item.Remarks = subItem.Remarks;
+            item.Url = subItem.Url;
+            item.MoreUrl = subItem.MoreUrl;
+            item.Enabled = subItem.Enabled;
+            item.AutoUpdateInterval = subItem.AutoUpdateInterval;
+            item.UserAgent = subItem.UserAgent;
+            item.RequestHeaders = subItem.RequestHeaders;
+            item.Sort = subItem.Sort;
+            item.Filter = subItem.Filter;
+            item.UpdateTime = subItem.UpdateTime;
+            item.ConvertTarget = subItem.ConvertTarget;
+            item.PrevProfile = subItem.PrevProfile;
+            item.NextProfile = subItem.NextProfile;
+            item.PreSocksPort = subItem.PreSocksPort;
+            item.Memo = subItem.Memo;
+            item.CustomCoreType = subItem.CustomCoreType;
+            item.OverrideAddress = subItem.OverrideAddress;
+            item.OverridePort = subItem.OverridePort;
+            item.PreResolver = subItem.PreResolver;
+        }
+
+        if (item.Id.IsNullOrEmpty())
+        {
+            item.Id = Utils.GetGuid(false);
+
+            if (item.Sort <= 0)
+            {
+                var maxSort = 0;
+                if (await SQLiteHelper.Instance.TableAsync<SubItem>().CountAsync() > 0)
+                {
+                    var lstSubs = await ConfigDbQuery.SubItems();
+                    maxSort = lstSubs.LastOrDefault()?.Sort ?? 0;
+                }
+                item.Sort = maxSort + 1;
+            }
+        }
+        if (await SQLiteHelper.Instance.ReplaceAsync(item) > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    /// <summary>
+    /// Remove servers associated with a subscription ID
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="subid">Subscription ID</param>
+    /// <param name="isSub">Whether to only remove servers marked as subscription items</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> RemoveServersViaSubid(string subid, bool isSub)
+    {
+        if (subid.IsNullOrEmpty())
+        {
+            return -1;
+        }
+        var customProfile = await SQLiteHelper.Instance.TableAsync<ProfileItem>().Where(t => t.Subid == subid && (t.ConfigType == EConfigType.Custom || t.ConfigType == EConfigType.Outbound)).ToListAsync();
+        if (isSub)
+        {
+            await SQLiteHelper.Instance.ExecuteAsync($"delete from ProfileItem where isSub = 1 and subid = '{subid}'");
+        }
+        else
+        {
+            await SQLiteHelper.Instance.ExecuteAsync($"delete from ProfileItem where subid = '{subid}'");
+        }
+        foreach (var item in customProfile)
+        {
+            File.Delete(Utils.GetConfigPath(item.Address));
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Delete a subscription item and all its associated servers
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="id">Subscription ID to delete</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> DeleteSubItem(string id)
+    {
+        var item = await ConfigDbQuery.GetSubItem(id);
+        if (item is null)
+        {
+            return 0;
+        }
+        await SQLiteHelper.Instance.DeleteAsync(item);
+        await RemoveServersViaSubid(id, false);
+
+        if (item.Id == CurrentConfig.SubIndexId)
+        {
+            var subs = await ConfigDbQuery.SubItems();
+            CurrentConfig.SubIndexId = subs.LastOrDefault()?.Id;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Move servers to a different group (subscription)
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="lstProfile">List of profiles to move</param>
+    /// <param name="subid">Target subscription ID</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> MoveToGroup(List<ProfileItem> lstProfile, string subid)
+    {
+        foreach (var item in lstProfile)
+        {
+            item.Subid = subid;
+        }
+        await SQLiteHelper.Instance.UpdateAllAsync(lstProfile);
+
+        return 0;
+    }
+
+    #endregion Sub & Group
+
+    #region Routing
+
+    /// <summary>
+    /// Save a routing item to the database
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="item">Routing item to save</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> SaveRoutingItem(RoutingItem item)
+    {
+        if (item.Id.IsNullOrEmpty())
+        {
+            item.Id = Utils.GetGuid(false);
+        }
+
+        if (await SQLiteHelper.Instance.ReplaceAsync(item) > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    /// <summary>
+    /// Add multiple routing rules to a routing item
+    /// </summary>
+    /// <param name="routingItem">Routing item to add rules to</param>
+    /// <param name="strData">JSON string containing rules data</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> AddBatchRoutingRules(RoutingItem routingItem, string strData)
+    {
+        if (strData.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        var lstRules = JsonUtils.Deserialize<List<RulesItem>>(strData);
+        if (lstRules == null)
+        {
+            return -1;
+        }
+
+        foreach (var item in lstRules)
+        {
+            item.Id = Utils.GetGuid(false);
+        }
+        routingItem.RuleNum = lstRules.Count;
+        routingItem.RuleSet = JsonUtils.Serialize(lstRules, false);
+
+        if (routingItem.Id.IsNullOrEmpty())
+        {
+            routingItem.Id = Utils.GetGuid(false);
+        }
+
+        if (await SQLiteHelper.Instance.ReplaceAsync(routingItem) > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    /// <summary>
+    /// Move a routing rule within a rules list
+    /// Supports moving to top, up, down, bottom or specific position
+    /// </summary>
+    /// <param name="rules">List of routing rules</param>
+    /// <param name="index">Index of the rule to move</param>
+    /// <param name="eMove">Direction to move the rule</param>
+    /// <param name="pos">Target position when using EMove.Position</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> MoveRoutingRule(List<RulesItem> rules, int index, EMove eMove, int pos = -1)
+    {
+        var count = rules.Count;
+        if (index < 0 || index > rules.Count - 1)
+        {
+            return -1;
+        }
+        switch (eMove)
+        {
+            case EMove.Top:
+                {
+                    if (index == 0)
+                    {
+                        return 0;
+                    }
+                    var item = JsonUtils.DeepCopy(rules[index]);
+                    rules.RemoveAt(index);
+                    rules.Insert(0, item);
+
+                    break;
+                }
+            case EMove.Up:
+                {
+                    if (index == 0)
+                    {
+                        return 0;
+                    }
+                    var item = JsonUtils.DeepCopy(rules[index]);
+                    rules.RemoveAt(index);
+                    rules.Insert(index - 1, item);
+
+                    break;
+                }
+
+            case EMove.Down:
+                {
+                    if (index == count - 1)
+                    {
+                        return 0;
+                    }
+                    var item = JsonUtils.DeepCopy(rules[index]);
+                    rules.RemoveAt(index);
+                    rules.Insert(index + 1, item);
+
+                    break;
+                }
+            case EMove.Bottom:
+                {
+                    if (index == count - 1)
+                    {
+                        return 0;
+                    }
+                    var item = JsonUtils.DeepCopy(rules[index]);
+                    rules.RemoveAt(index);
+                    rules.Add(item);
+
+                    break;
+                }
+            case EMove.Position:
+                {
+                    var removeItem = rules[index];
+                    var item = JsonUtils.DeepCopy(rules[index]);
+                    rules.Insert(pos, item);
+                    rules.Remove(removeItem);
+                    break;
+                }
+        }
+        return await Task.FromResult(0);
+    }
+
+    /// <summary>
+    /// Set the default routing configuration
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="routingItem">Routing item to set as default</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> SetDefaultRouting(RoutingItem routingItem)
+    {
+        var items = await ConfigDbQuery.RoutingItems();
+        if (items.Any(t => t.Id == routingItem.Id && t.IsActive == true))
+        {
+            return -1;
+        }
+
+        foreach (var item in items)
+        {
+            if (item.Id == routingItem.Id)
+            {
+                item.IsActive = true;
+            }
+            else
+            {
+                item.IsActive = false;
+            }
+        }
+
+        await SQLiteHelper.Instance.UpdateAllAsync(items);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Get the current default routing configuration
+    /// If no default is set, selects the first available routing item
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <returns>The default routing item</returns>
+    public static async Task<RoutingItem> GetDefaultRouting()
+    {
+        var item = await SQLiteHelper.Instance.TableAsync<RoutingItem>().FirstOrDefaultAsync(it => it.IsActive == true);
+        if (item is null)
+        {
+            var item2 = await SQLiteHelper.Instance.TableAsync<RoutingItem>().FirstOrDefaultAsync();
+            await SetDefaultRouting(item2);
+            return item2;
+        }
+
+        return item;
+    }
+
+    /// <summary>
+    /// Initialize routing rules from built-in or external templates
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="blImportAdvancedRules">Whether to import advanced rules</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> InitRouting(bool blImportAdvancedRules = false)
+    {
+        if (CurrentConfig.ConstItem.RouteRulesTemplateSourceUrl.IsNullOrEmpty())
+        {
+            await InitBuiltinRouting(blImportAdvancedRules);
+        }
+        else
+        {
+            await InitExternalRouting(blImportAdvancedRules);
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Initialize routing rules from external templates
+    /// Downloads and processes routing templates from a URL
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="blImportAdvancedRules">Whether to import advanced rules</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> InitExternalRouting(bool blImportAdvancedRules = false)
+    {
+        using var downloadHandle = await DownloadService.CreateDownloadServiceWithCheck();
+        var templateContent = await downloadHandle.TryDownloadString(CurrentConfig.ConstItem.RouteRulesTemplateSourceUrl);
+        if (templateContent.IsNullOrEmpty())
+        {
+            return await InitBuiltinRouting(blImportAdvancedRules); // fallback
+        }
+
+        var template = JsonUtils.Deserialize<RoutingTemplate>(templateContent);
+        if (template == null)
+        {
+            return await InitBuiltinRouting(blImportAdvancedRules); // fallback
+        }
+
+        var items = await ConfigDbQuery.RoutingItems();
+        var maxSort = items.Count;
+        if (!blImportAdvancedRules && items.Where(t => t.Remarks.StartsWith(template.Version)).ToList().Count > 0)
+        {
+            return 0;
+        }
+        for (var i = 0; i < template.RoutingItems.Length; i++)
+        {
+            var item = template.RoutingItems[i];
+
+            if (item.Url.IsNullOrEmpty() && item.RuleSet.IsNullOrEmpty())
+            {
+                continue;
+            }
+
+            var ruleSetsString = !item.RuleSet.IsNullOrEmpty()
+                ? item.RuleSet
+                : await downloadHandle.TryDownloadString(item.Url);
+
+            if (ruleSetsString.IsNullOrEmpty())
+            {
+                continue;
+            }
+
+            item.Remarks = $"{template.Version}-{item.Remarks}";
+            item.Enabled = true;
+            item.Sort = ++maxSort;
+            item.Url = string.Empty;
+
+            //PattN: the Iran template still ships what PattN removed from its Iran direct rule-set; clean it before storing
+            if (item.Remarks == IranDirectRoutingRemarks)
+            {
+                item.RuleSet = ruleSetsString;
+                CleanIranDirectRouting(item);
+                ruleSetsString = item.RuleSet;
+            }
+
+            await AddBatchRoutingRules(item, ruleSetsString);
+
+            //first rule as default at first startup
+            if (!blImportAdvancedRules && i == 0)
+            {
+                await SetDefaultRouting(item);
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// PattN: rewrite the Iran direct-domain rule from "geosite:ir" (Chocolate4U only) to
+    /// "domain:ir" + "geosite:category-ir" (present in every geosite source), as custom_routing_white_iran has now
+    /// </summary>
+    /// <param name="rules">Rules of the stored Iran routing</param>
+    /// <returns>true when a rule was changed</returns>
+    public static bool MigrateIranDirectDomains(List<RulesItem> rules)
+    {
+        var changed = false;
+        foreach (var rule in rules)
+        {
+            if (rule.Domain is null || rule.OutboundTag != Global.DirectTag)
+            {
+                continue;
+            }
+            var index = rule.Domain.FindIndex(t => string.Equals(t, "geosite:ir", StringComparison.OrdinalIgnoreCase));
+            if (index < 0)
+            {
+                continue;
+            }
+            rule.Domain.RemoveAt(index);
+            if (!rule.Domain.Contains("geosite:category-ir", StringComparer.OrdinalIgnoreCase))
+            {
+                rule.Domain.Insert(index, "geosite:category-ir");
+            }
+            if (!rule.Domain.Contains("domain:ir", StringComparer.OrdinalIgnoreCase))
+            {
+                rule.Domain.Insert(index, "domain:ir");
+            }
+            changed = true;
+        }
+        return changed;
+    }
+
+    /// <summary>
+    /// PattN: remove the "port 0-65535 -> proxy" rule that custom_routing_white_iran used to end with. It matched every
+    /// connection by its port before an IPIfNonMatch domain strategy could resolve the domain, so the Iran IP rule never
+    /// applied to domains. What no rule matches still goes to the proxy without it: the first outbound, or the final
+    /// balancer rule. A rule that was edited since is left alone.
+    /// </summary>
+    /// <param name="rules">Rules of the stored Iran routing</param>
+    /// <returns>The number of rules removed</returns>
+    public static int RemoveIranProxyCatchAll(List<RulesItem> rules)
+    {
+        return rules.RemoveAll(t => t.Remarks == "سایر موارد - پراکسی"
+            && t.OutboundTag == Global.ProxyTag
+            && t.Port == "0-65535"
+            && string.IsNullOrEmpty(t.Network)
+            && t.InboundTag is null or []
+            && t.Ip is null or []
+            && t.Domain is null or []
+            && t.Protocol is null or []
+            && t.Process is null or []);
+    }
+
+    /// <summary>
+    /// PattN: name of the Iran direct rule-set, which the Iran template (Chocolate4U) imports under the same name
+    /// </summary>
+    public const string IranDirectRoutingRemarks = "IR-ایران مستقیم، بقیه پراکسی";
+
+    /// <summary>
+    /// PattN: name of the Iran global proxy rule-set
+    /// </summary>
+    public const string IranGlobalProxyRoutingRemarks = "IR-پراکسی سراسری";
+
+    /// <summary>
+    /// PattN: clean an Iran direct rule-set of what custom_routing_white_iran no longer has and the Iran template
+    /// (Chocolate4U) still ships:
+    /// the IPOnDemand domain strategy, which 7.24.8-P5 stored too, so that the default (AsIs) applies;
+    /// the "8.8.8.8 -> direct" rule for domestic DNS, which the direct-dns routing rule covers now;
+    /// "geosite:ir" (Chocolate4U only), which releases up to 7.25.1-P24 shipped too (see MigrateIranDirectDomains);
+    /// and the "port 0-65535 -> proxy" rule, which releases up to 7.25.2-P28 ended with too (see RemoveIranProxyCatchAll)
+    /// </summary>
+    /// <param name="item">An Iran direct rule-set, stored or being imported</param>
+    /// <returns>true when the rule-set changed</returns>
+    public static bool CleanIranDirectRouting(RoutingItem item)
+    {
+        var changed = false;
+        if (item.DomainStrategy == Global.IPOnDemand)
+        {
+            item.DomainStrategy = string.Empty;
+            changed = true;
+        }
+
+        var rules = JsonUtils.Deserialize<List<RulesItem>>(item.RuleSet) ?? [];
+        var removedCount = rules.RemoveAll(t => t.Remarks == "تبدیل نام دامنه های ایران - مستقیم"
+            && t.OutboundTag == Global.DirectTag
+            && t.Ip is ["8.8.8.8"]);
+        removedCount += RemoveIranProxyCatchAll(rules);
+        var domainsMigrated = MigrateIranDirectDomains(rules);
+        if (removedCount > 0 || domainsMigrated)
+        {
+            item.RuleNum = rules.Count;
+            item.RuleSet = JsonUtils.Serialize(rules, false);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /// <summary>
+    /// PattN: clean every Iran direct rule-set of items (see CleanIranDirectRouting), not only the first one: "Import Rules"
+    /// adds the one of the Iran template under the same name next to PattN's own
+    /// </summary>
+    /// <param name="items">Stored routing rule-sets</param>
+    /// <returns>The rule-sets that changed, to be saved</returns>
+    public static List<RoutingItem> CleanIranDirectRoutings(IEnumerable<RoutingItem> items)
+    {
+        var changed = new List<RoutingItem>();
+        foreach (var item in items.Where(t => t.Remarks == IranDirectRoutingRemarks))
+        {
+            if (CleanIranDirectRouting(item))
+            {
+                changed.Add(item);
+            }
+        }
+        return changed;
+    }
+
+    /// <summary>
+    /// Initialize built-in routing rules
+    /// Creates default routing configurations (whitelist, blacklist, global)
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="blImportAdvancedRules">Whether to import advanced rules</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> InitBuiltinRouting(bool blImportAdvancedRules = false)
+    {
+        var ver = "V4-";
+        var items = await ConfigDbQuery.RoutingItems();
+
+        //TODO Temporary code to be removed later
+        var lockItem = items?.FirstOrDefault(t => t.Locked == true);
+        if (lockItem != null)
+        {
+            await ConfigDbHandler.RemoveRoutingItem(lockItem);
+            items = await ConfigDbQuery.RoutingItems();
+        }
+
+        //PattN TODO Temporary code to be removed later: clean every Iran direct rule-set that an older release stored,
+        //or that "Import Rules" took from the Iran template before it was cleaned on import (see CleanIranDirectRouting)
+        foreach (var iranDirectItem in CleanIranDirectRoutings(items ?? []))
+        {
+            await SQLiteHelper.Instance.UpdateAsync(iranDirectItem);
+        }
+
+        if (!blImportAdvancedRules && items.Count() > 0) // items.Count(u => u.Remarks.StartsWith(ver)) > 0)
+        {
+            //migrate
+            //TODO Temporary code to be removed later
+            if (CurrentConfig.RoutingBasicItem.RoutingIndexId.IsNotEmpty())
+            {
+                var item = items.FirstOrDefault(t => t.Id == CurrentConfig.RoutingBasicItem.RoutingIndexId);
+                if (item != null)
+                {
+                    await SetDefaultRouting(item);
+                }
+                CurrentConfig.RoutingBasicItem.RoutingIndexId = string.Empty;
+            }
+
+            return 0;
+        }
+
+        var maxSort = items.Count;
+        //Bypass the mainland
+        var item2 = new RoutingItem()
+        {
+            Remarks = $"{ver}绕过大陆(Whitelist)",
+            Url = string.Empty,
+            Sort = maxSort + 1,
+        };
+        await AddBatchRoutingRules(item2, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "white"));
+
+        //Blacklist
+        var item3 = new RoutingItem()
+        {
+            Remarks = $"{ver}黑名单(Blacklist)",
+            Url = string.Empty,
+            Sort = maxSort + 2,
+        };
+        await AddBatchRoutingRules(item3, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "black"));
+
+        //Global
+        var item1 = new RoutingItem()
+        {
+            Remarks = $"{ver}全局(Global)",
+            Url = string.Empty,
+            Sort = maxSort + 3,
+        };
+        await AddBatchRoutingRules(item1, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "global"));
+
+        //PattN: Iran direct (Chocolate4U), see https://github.com/Chocolate4U/Iran-v2ray-rules
+        var item4 = new RoutingItem()
+        {
+            Remarks = IranDirectRoutingRemarks,
+            Url = string.Empty,
+            Sort = maxSort + 4,
+        };
+        await AddBatchRoutingRules(item4, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "white_iran"));
+
+        //PattN: Iran global proxy
+        var item5 = new RoutingItem()
+        {
+            Remarks = IranGlobalProxyRoutingRemarks,
+            Url = string.Empty,
+            Sort = maxSort + 5,
+        };
+        await AddBatchRoutingRules(item5, EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "global_iran"));
+
+        if (!blImportAdvancedRules)
+        {
+            await SetDefaultRouting(item4);
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// Remove a routing item from the database
+    /// </summary>
+    /// <param name="routingItem">Routing item to remove</param>
+    public static async Task RemoveRoutingItem(RoutingItem routingItem)
+    {
+        await SQLiteHelper.Instance.DeleteAsync(routingItem);
+    }
+
+    #endregion Routing
+
+    #region DNS
+
+    /// <summary>
+    /// Initialize built-in DNS configurations
+    /// Creates default DNS items for V2Ray and sing-box
+    /// Also checks existing DNS items and disables those with empty NormalDNS
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <returns>0 if successful</returns>
+    public static async Task<int> InitBuiltinDNS()
+    {
+        var items = await ConfigDbQuery.DNSItems();
+
+        // Check existing DNS items and disable those with empty NormalDNS
+        var needsUpdate = false;
+        foreach (var existingItem in items)
+        {
+            if (existingItem.NormalDNS.IsNullOrEmpty() && existingItem.Enabled)
+            {
+                existingItem.Enabled = false;
+                needsUpdate = true;
+            }
+        }
+
+        // Update items if any changes were made
+        if (needsUpdate)
+        {
+            await SQLiteHelper.Instance.UpdateAllAsync(items);
+        }
+
+        if (items.Count <= 0)
+        {
+            var item = new DNSItem()
+            {
+                Remarks = "V2ray",
+                CoreType = ECoreType.Xray,
+                Enabled = false,
+            };
+            await SaveDNSItems(item);
+
+            var item2 = new DNSItem()
+            {
+                Remarks = "sing-box",
+                CoreType = ECoreType.sing_box,
+                Enabled = false,
+            };
+            await SaveDNSItems(item2);
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Save a DNS item to the database
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="item">DNS item to save</param>
+    /// <returns>0 if successful, -1 if failed</returns>
+    public static async Task<int> SaveDNSItems(DNSItem item)
+    {
+        if (item == null)
+        {
+            return -1;
+        }
+
+        if (item.Id.IsNullOrEmpty())
+        {
+            item.Id = Utils.GetGuid(false);
+        }
+
+        if (await SQLiteHelper.Instance.ReplaceAsync(item) > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    /// <summary>
+    /// Get an external DNS configuration from URL
+    /// Downloads and processes DNS templates
+    /// </summary>
+    /// <param name="type">Core type (Xray or sing-box)</param>
+    /// <param name="url">URL of the DNS template</param>
+    /// <returns>DNS item with configuration from the URL</returns>
+    public static async Task<DNSItem> GetExternalDNSItem(ECoreType type, string url)
+    {
+        var currentItem = await ConfigDbQuery.GetDNSItem(type);
+
+        using var downloadHandle = await DownloadService.CreateDownloadServiceWithCheck();
+        var templateContent = await downloadHandle.TryDownloadString(url);
+        if (templateContent.IsNullOrEmpty())
+        {
+            return currentItem;
+        }
+
+        var template = JsonUtils.Deserialize<DNSItem>(templateContent);
+        if (template == null)
+        {
+            return currentItem;
+        }
+
+        if (!template.NormalDNS.IsNullOrEmpty())
+        {
+            template.NormalDNS = await downloadHandle.TryDownloadString(template.NormalDNS);
+        }
+
+        if (!template.TunDNS.IsNullOrEmpty())
+        {
+            template.TunDNS = await downloadHandle.TryDownloadString(template.TunDNS);
+        }
+
+        template.Id = currentItem.Id;
+        template.Enabled = currentItem.Enabled;
+        template.Remarks = currentItem.Remarks;
+        template.CoreType = type;
+
+        return template;
+    }
+
+    #endregion DNS
+
+    #region Simple DNS
+
+    public static SimpleDNSItem InitBuiltinSimpleDNS()
+    {
+        return new SimpleDNSItem()
+        {
+            UseSystemHosts = false,
+            AddCommonHosts = true,
+            // PattN: FakeIP is on by default
+            FakeIP = true,
+            GlobalFakeIp = true,
+            BlockBindingQuery = true,
+            DirectDNS = Global.DomainDirectDNSAddress.FirstOrDefault(),
+            RemoteDNS = Global.DomainRemoteDNSAddress.FirstOrDefault(),
+            BootstrapDNS = Global.DomainPureIPDNSAddress.FirstOrDefault(),
+        };
+    }
+
+    public static async Task<SimpleDNSItem?> GetExternalSimpleDNSItem(string url)
+    {
+        using var downloadHandle = await DownloadService.CreateDownloadServiceWithCheck();
+        var templateContent = await downloadHandle.TryDownloadString(url);
+        if (templateContent.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        var template = JsonUtils.Deserialize<SimpleDNSItem>(templateContent);
+
+        return template;
+    }
+
+    #endregion Simple DNS
+
+    #region Custom Config
+
+    public static async Task<int> InitBuiltinFullConfigTemplate()
+    {
+        var items = await ConfigDbQuery.FullConfigTemplateItem();
+        if (items.Count <= 0)
+        {
+            var item = new FullConfigTemplateItem()
+            {
+                Remarks = "V2ray",
+                CoreType = ECoreType.Xray,
+            };
+            await SaveFullConfigTemplate(item);
+
+            var item2 = new FullConfigTemplateItem()
+            {
+                Remarks = "sing-box",
+                CoreType = ECoreType.sing_box,
+            };
+            await SaveFullConfigTemplate(item2);
+        }
+
+        return 0;
+    }
+
+    public static async Task<int> SaveFullConfigTemplate(FullConfigTemplateItem item)
+    {
+        if (item == null)
+        {
+            return -1;
+        }
+
+        if (item.Id.IsNullOrEmpty())
+        {
+            item.Id = Utils.GetGuid(false);
+        }
+
+        if (await SQLiteHelper.Instance.ReplaceAsync(item) > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    #endregion Custom Config
+
+    #region Regional Presets
+
+    /// <summary>
+    /// Apply regional presets for geo-specific configurations
+    /// Sets up geo files and routing rules for specific regions
+    /// </summary>
+    /// <param name="config">Current configuration</param>
+    /// <param name="type">Type of preset (Default, China, Russia, Iran)</param>
+    /// <returns>True if successful</returns>
+    public static async Task<bool> ApplyRegionalPreset(EPresetType type)
+    {
+        //PattN: a preset leaves the DNS settings as they are. Default and China used to reset them to the built-in ones,
+        //and Russia and Iran to replace them with the region's DNS templates, or, when the simple DNS template could not
+        //be downloaded, to enable custom DNS in both the Xray and the sing-box settings
+        switch (type)
+        {
+            case EPresetType.Default:
+                CurrentConfig.ConstItem.GeoSourceUrl = "";
+                CurrentConfig.ConstItem.SrsSourceUrl = "";
+                CurrentConfig.ConstItem.RouteRulesTemplateSourceUrl = "";
+                break;
+
+            case EPresetType.China:
+                CurrentConfig.ConstItem.GeoSourceUrl = Global.GeoFilesSources[3];
+                CurrentConfig.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[3];
+                CurrentConfig.ConstItem.RouteRulesTemplateSourceUrl = "";
+                break;
+
+            case EPresetType.Russia:
+                CurrentConfig.ConstItem.GeoSourceUrl = Global.GeoFilesSources[1];
+                CurrentConfig.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[1];
+                CurrentConfig.ConstItem.RouteRulesTemplateSourceUrl = Global.RoutingRulesSources[1];
+                break;
+
+            case EPresetType.Iran:
+                CurrentConfig.ConstItem.GeoSourceUrl = Global.GeoFilesSources[2];
+                CurrentConfig.ConstItem.SrsSourceUrl = Global.SingboxRulesetSources[2];
+                CurrentConfig.ConstItem.RouteRulesTemplateSourceUrl = Global.RoutingRulesSources[2];
+                break;
+        }
+
+        await ActivateRegionalPresetRouting();
+
+        return true;
+    }
+
+    /// <summary>
+    /// PattN: activate a routing that matches the geo data of the preset just applied, as ApplyRegionalPreset does after
+    /// setting the sources; the WebAPI sets the sources of its staged presets itself and then calls this
+    /// </summary>
+    public static async Task ActivateRegionalPresetRouting()
+    {
+        // Activate a routing that matches the preset's geo data.
+        // The IR rule-sets need geosite "category-ir" and geoip "ir", and geosite:gfw only exists on Loyalsoldier/runetfreedom;
+        // an active routing with categories missing from the new dats would stop the core from starting.
+        // Derived from the effective geo source so the mapping follows whatever the built-in default is.
+        var effectiveGeoUrl = CurrentConfig.ConstItem.GeoSourceUrl.IsNullOrEmpty() ? Global.GeoUrl : CurrentConfig.ConstItem.GeoSourceUrl;
+        var routingPrefix = effectiveGeoUrl.Contains("Chocolate4U", StringComparison.OrdinalIgnoreCase) ? "IR-"
+            : effectiveGeoUrl.Contains("russia", StringComparison.OrdinalIgnoreCase) ? "RU"
+            : "V4-";
+        var presetRouting = (await ConfigDbQuery.RoutingItems())?.FirstOrDefault(t => t.Remarks.StartsWith(routingPrefix));
+        if (presetRouting != null)
+        {
+            await SetDefaultRouting(presetRouting);
+        }
+    }
+
+    #endregion Regional Presets
+
+    #region SqliteHelper
+
+#pragma warning disable CS0618
+
+    public static async Task MigrateProfileExtra()
+    {
+        await MigrateProfileExtraGroupV2ToV3();
+
+        await MigrateProfileExtraV2ToV3();
+
+        await MigrateProfileTransportV3ToV4();
+    }
+
+    private static async Task MigrateProfileExtraV2ToV3()
+    {
+        const int pageSize = 100;
+        var offset = 0;
+
+        while (true)
+        {
+            var sql = $"SELECT * FROM ProfileItem " +
+                $"WHERE ConfigVersion < 3 " +
+                $"AND ConfigType NOT IN ({(int)EConfigType.PolicyGroup}, {(int)EConfigType.ProxyChain}) " +
+                $"LIMIT {pageSize} OFFSET {offset}";
+            var batch = await SQLiteHelper.Instance.QueryAsync<ProfileItem>(sql);
+            if (batch is null || batch.Count == 0)
+            {
+                break;
+            }
+
+            var batchSuccessCount = await MigrateProfileExtraV2ToV3Sub(batch);
+
+            // Only increment offset by the number of failed items that remain in the result set
+            // Successfully updated items are automatically excluded from future queries due to ConfigVersion = 3
+            offset += batch.Count - batchSuccessCount;
+        }
+
+        //await ProfileGroupItemManager.Instance.ClearAll();
+    }
+
+    private static async Task MigrateProfileTransportV3ToV4()
+    {
+        const int pageSize = 100;
+        var offset = 0;
+
+        while (true)
+        {
+            var sql = $"SELECT * FROM ProfileItem WHERE ConfigVersion = 3 LIMIT {pageSize} OFFSET {offset}";
+            var batch = await SQLiteHelper.Instance.QueryAsync<ProfileItem>(sql);
+            if (batch is null || batch.Count == 0)
+            {
+                break;
+            }
+
+            var updateProfileItems = new List<ProfileItem>();
+            foreach (var item in batch)
+            {
+                try
+                {
+                    if (item.Network == Global.RawNetworkAlias)
+                    {
+                        item.Network = nameof(ETransport.raw);
+                    }
+                    var transport = item.GetTransportExtra();
+                    var network = item.GetNetwork();
+
+                    switch (network)
+                    {
+                        case nameof(ETransport.raw):
+                            transport = transport with
+                            {
+                                RawHeaderType = item.HeaderType.NullIfEmpty(),
+                                Host = item.RequestHost.NullIfEmpty(),
+                                Path = item.Path.NullIfEmpty(),
+                            };
+                            break;
+
+                        case nameof(ETransport.ws):
+                        case nameof(ETransport.httpupgrade):
+                            transport = transport with
+                            {
+                                Host = item.RequestHost.NullIfEmpty(),
+                                Path = item.Path.NullIfEmpty(),
+                            };
+                            break;
+
+                        case nameof(ETransport.xhttp):
+                            transport = transport with
+                            {
+                                Host = item.RequestHost.NullIfEmpty(),
+                                Path = item.Path.NullIfEmpty(),
+                                XhttpMode = item.HeaderType.NullIfEmpty(),
+                                XhttpExtra = item.Extra.NullIfEmpty(),
+                            };
+                            break;
+
+                        case nameof(ETransport.grpc):
+                            transport = transport with
+                            {
+                                GrpcAuthority = item.RequestHost.NullIfEmpty(),
+                                GrpcServiceName = item.Path.NullIfEmpty(),
+                                GrpcMode = item.HeaderType.NullIfEmpty(),
+                            };
+                            break;
+
+                        case nameof(ETransport.kcp):
+                            transport = transport with
+                            {
+                                KcpHeaderType = item.HeaderType.NullIfEmpty(),
+                                KcpSeed = item.Path.NullIfEmpty(),
+                            };
+                            break;
+
+                        default:
+                            item.Network = Global.DefaultNetwork;
+                            transport = transport with
+                            {
+                                RawHeaderType = item.HeaderType.NullIfEmpty(),
+                                Host = item.RequestHost.NullIfEmpty(),
+                            };
+                            break;
+                    }
+
+                    item.SetTransportExtra(transport);
+                    item.ConfigVersion = 4;
+                    updateProfileItems.Add(item);
+                }
+                catch (Exception ex)
+                {
+                    Logging.SaveLog($"MigrateProfileTransportV3ToV4 Error: {ex}");
+                }
+            }
+
+            if (updateProfileItems.Count > 0)
+            {
+                try
+                {
+                    var count = await SQLiteHelper.Instance.UpdateAllAsync(updateProfileItems);
+                    offset += batch.Count - count;
+                }
+                catch (Exception ex)
+                {
+                    Logging.SaveLog($"MigrateProfileTransportV3ToV4 update error: {ex}");
+                    offset += batch.Count;
+                }
+            }
+            else
+            {
+                offset += batch.Count;
+            }
+        }
+    }
+
+    private static async Task<int> MigrateProfileExtraV2ToV3Sub(List<ProfileItem> batch)
+    {
+        var updateProfileItems = new List<ProfileItem>();
+
+        foreach (var item in batch)
+        {
+            try
+            {
+                var extra = item.GetProtocolExtra();
+                switch (item.ConfigType)
+                {
+                    case EConfigType.Shadowsocks:
+                        extra = extra with { SsMethod = item.Security.NullIfEmpty() };
+                        break;
+
+                    case EConfigType.VMess:
+                        extra = extra with
+                        {
+                            AlterId = item.AlterId.ToString(),
+                            VmessSecurity = item.Security.NullIfEmpty(),
+                        };
+                        break;
+
+                    case EConfigType.VLESS:
+                        extra = extra with
+                        {
+                            Flow = item.Flow.NullIfEmpty(),
+                            VlessEncryption = item.Security,
+                        };
+                        break;
+
+                    case EConfigType.Hysteria2:
+                        extra = extra with
+                        {
+                            SalamanderPass = item.Path.NullIfEmpty(),
+                            Ports = item.Ports.NullIfEmpty(),
+                            UpMbps = CurrentConfig.HysteriaItem.UpMbps,
+                            DownMbps = CurrentConfig.HysteriaItem.DownMbps,
+                            HopInterval = CurrentConfig.HysteriaItem.HopInterval.ToString(),
+                        };
+                        break;
+
+                    case EConfigType.TUIC:
+                        extra = extra with { CongestionControl = item.HeaderType.NullIfEmpty(), };
+                        item.Username = item.Id;
+                        item.Id = item.Security;
+                        item.Password = item.Security;
+                        break;
+
+                    case EConfigType.HTTP:
+                    case EConfigType.SOCKS:
+                        item.Username = item.Security;
+                        break;
+
+                    case EConfigType.WireGuard:
+                        extra = extra with
+                        {
+                            WgPublicKey = item.PublicKey.NullIfEmpty(),
+                            WgInterfaceAddress = item.RequestHost.NullIfEmpty(),
+                            WgReserved = item.Path.NullIfEmpty(),
+                            WgMtu = int.TryParse(item.ShortId, out var mtu) ? mtu : 1280
+                        };
+                        break;
+                }
+
+                item.SetProtocolExtra(extra);
+
+                item.Password = item.Id;
+
+                item.ConfigVersion = 3;
+
+                updateProfileItems.Add(item);
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"MigrateProfileExtra Error: {ex}");
+            }
+        }
+
+        if (updateProfileItems.Count > 0)
+        {
+            try
+            {
+                var count = await SQLiteHelper.Instance.UpdateAllAsync(updateProfileItems);
+                return count;
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"MigrateProfileExtraGroup update error: {ex}");
+                return 0;
+            }
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    private static async Task<bool> MigrateProfileExtraGroupV2ToV3()
+    {
+        var list = await SQLiteHelper.Instance.TableAsync<ProfileGroupItem>().ToListAsync();
+        var groupItems = new ConcurrentDictionary<string, ProfileGroupItem>(list.Where(t => !string.IsNullOrEmpty(t.IndexId)).ToDictionary(t => t.IndexId!));
+
+        var sql = $"SELECT * FROM ProfileItem WHERE ConfigVersion < 3 AND ConfigType IN ({(int)EConfigType.PolicyGroup}, {(int)EConfigType.ProxyChain})";
+        var items = await SQLiteHelper.Instance.QueryAsync<ProfileItem>(sql);
+
+        if (items is null || items.Count == 0)
+        {
+            Logging.SaveLog("MigrateProfileExtraGroup: No items to migrate.");
+            return true;
+        }
+
+        Logging.SaveLog($"MigrateProfileExtraGroup: Found {items.Count} group items to migrate.");
+
+        var updateProfileItems = new List<ProfileItem>();
+
+        foreach (var item in items)
+        {
+            try
+            {
+                var extra = item.GetProtocolExtra();
+
+                extra = extra with { GroupType = nameof(item.ConfigType) };
+                groupItems.TryGetValue(item.IndexId, out var groupItem);
+                if (groupItem != null && !groupItem.NotHasChild())
+                {
+                    extra = extra with
+                    {
+                        ChildItems = groupItem.ChildItems,
+                        SubChildItems = groupItem.SubChildItems,
+                        Filter = groupItem.Filter,
+                        MultipleLoad = groupItem.MultipleLoad,
+                    };
+                }
+
+                item.SetProtocolExtra(extra);
+
+                item.ConfigVersion = 3;
+                updateProfileItems.Add(item);
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"MigrateProfileExtraGroup item error [{item.IndexId}]: {ex}");
+            }
+        }
+
+        if (updateProfileItems.Count > 0)
+        {
+            try
+            {
+                var count = await SQLiteHelper.Instance.UpdateAllAsync(updateProfileItems);
+                Logging.SaveLog($"MigrateProfileExtraGroup: Successfully updated {updateProfileItems.Count} items.");
+                return updateProfileItems.Count == count;
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"MigrateProfileExtraGroup update error: {ex}");
+                return false;
+            }
+        }
+
+        return true;
+
+        //await ProfileGroupItemManager.Instance.ClearAll();
+    }
+
+#pragma warning restore CS0618
+
+    #endregion SqliteHelper
+}

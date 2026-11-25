@@ -19,7 +19,7 @@ public class AetherPortsTests
     }
 
     // PattN (E1): the default Aether listen port is 10819, so the core takes 10819..10822 unless the setting names another
-    // port: in a new settings file (ConfigHandler.LoadConfig stores the default where the value is missing) and wherever a
+    // port: in a new settings file (ConfigTextHandler.LoadConfig stores the default where the value is missing) and wherever a
     // stored value is no such port.
     [Test]
     public async Task TheDefaultAetherListenPortIs10819()

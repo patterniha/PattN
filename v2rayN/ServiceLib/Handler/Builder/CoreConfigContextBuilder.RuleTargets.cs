@@ -45,7 +45,7 @@ public partial class CoreConfigContextBuilder
     /// </summary>
     private static async Task<ByName<ProfileItem>> FindRuleTargetAsync(string? name)
     {
-        var named = await AppManager.Instance.GetProfileItemsViaRemarksAsync(name);
+        var named = await ConfigDbQuery.GetProfileItemsViaRemarksAsync(name);
         return ByName.Find(name, named.Where(TakesAsRuleTarget), profile => profile.Remarks);
     }
 
@@ -122,7 +122,7 @@ public partial class CoreConfigContextBuilder
             var (named, _) = await BuildSubscriptionChainNodeAsync(target);
             if ((Utils.String2List(named?.GetProtocolExtra().ChildItems) ?? []).FirstOrDefault(id => !built.Contains(id)) is { } lostId)
             {
-                lost = (await AppManager.Instance.GetProfileItem(lostId))?.Remarks ?? lostId;
+                lost = (await ConfigDbQuery.GetProfileItem(lostId))?.Remarks ?? lostId;
             }
         }
         if (lost == null)

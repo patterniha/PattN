@@ -43,7 +43,8 @@ public class WebReleaseChannelTests
         await WebReleaseChannel.DefaultRepository.Should().BeEqualTo("patterniha/PattN");
 
         var rejected = false;
-        try { _ = WebReleaseChannel.BuildReleaseIndexUrl("patterniha/PattN/../../evil"); }
+        try
+        { _ = WebReleaseChannel.BuildReleaseIndexUrl("patterniha/PattN/../../evil"); }
         catch (ArgumentException) { rejected = true; }
         await rejected.Should().BeTrue();
         await WebReleaseChannel.IsValidRepository("community-fork/v2rayN").Should().BeTrue();

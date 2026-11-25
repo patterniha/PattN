@@ -7,7 +7,10 @@ public class WebRestartCoordinatorTests
     [Test]
     public async Task NativeSelfContainedRestartUsesDetachedBackgroundChildCommand()
     {
-        if (!OperatingSystem.IsLinux()) return;
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
 
         var command = WebReplacementCommand.Create(
             "/usr/bin/setsid",
@@ -29,7 +32,10 @@ public class WebRestartCoordinatorTests
     [Test]
     public async Task FrameworkDependentRestartPreservesDotnetDllAndHostArguments()
     {
-        if (!OperatingSystem.IsLinux()) return;
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
 
         var processPath = "/usr/bin/dotnet";
         var entryPoint = WebReplacementCommand.GetManagedEntryPoint(processPath, ["/opt/v2rayN/v2rayN.WebAPI.dll", "--urls"]);
@@ -386,7 +392,9 @@ public class WebRestartCoordinatorTests
         public bool HasExited { get; } = hasExited;
         public bool Killed { get; private set; }
         public bool Disposed { get; private set; }
+
         public void KillTree() => Killed = true;
+
         public void Dispose() => Disposed = true;
     }
 
@@ -430,7 +438,11 @@ public class WebRestartCoordinatorTests
 
         public void Advance(TimeSpan duration)
         {
-            if (duration < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(duration));
+            if (duration < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(duration));
+            }
+
             _timestamp += duration.Ticks;
         }
 

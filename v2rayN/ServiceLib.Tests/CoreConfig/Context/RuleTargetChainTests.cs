@@ -168,7 +168,7 @@ public class RuleTargetChainTests
         SQLiteHelper.Instance.CreateTable<FullConfigTemplateItem>();
         SQLiteHelper.Instance.CreateTable<DNSItem>();
         SQLiteHelper.Instance.CreateTable<RoutingItem>();
-        var wasActive = (await AppManager.Instance.RoutingItems() ?? []).Where(routing => routing.IsActive).ToList();
+        var wasActive = (await ConfigDbQuery.RoutingItems() ?? []).Where(routing => routing.IsActive).ToList();
         var routing = new RoutingItem
         {
             Id = NewName("routing"),
@@ -888,7 +888,7 @@ public class RuleTargetChainTests
         SQLiteHelper.Instance.CreateTable<DNSItem>();
         SQLiteHelper.Instance.CreateTable<RoutingItem>();
         // Read afresh for each use: the builder rewrites the members of a group it builds.
-        async Task<ProfileItem> Group() => (await AppManager.Instance.GetProfileItem(group.IndexId))!;
+        async Task<ProfileItem> Group() => (await ConfigDbQuery.GetProfileItem(group.IndexId))!;
         async Task<List<ServerTestItem>> Taken()
         {
             var item = new ServerTestItem { IndexId = group.IndexId, ConfigType = EConfigType.PolicyGroup, CoreType = ECoreType.sing_box, Profile = await Group() };

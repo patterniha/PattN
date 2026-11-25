@@ -1,11 +1,4 @@
 using System.Net;
-using ServiceLib;
-using ServiceLib.Common;
-using ServiceLib.Enums;
-using ServiceLib.Handler;
-using ServiceLib.Models.Configs;
-using ServiceLib.Models.Dto;
-using ServiceLib.Models.Entities;
 
 namespace v2rayN.WebAPI.Services;
 
@@ -18,7 +11,7 @@ internal sealed record RegionalRoutingPlan(
     bool ClearLegacyRoutingIndex = false,
     bool IsBuiltinFallback = false);
 
-// PattN: a preset leaves the DNS settings as they are (see ConfigHandler.ApplyRegionalPreset), so no DNS is staged
+// PattN: a preset leaves the DNS settings as they are (see ConfigDbHandler.ApplyRegionalPreset), so no DNS is staged
 internal sealed record RegionalPresetStage(
     EPresetType Preset,
     string GeoSourceUrl,
@@ -148,10 +141,10 @@ internal sealed class RegionalPresetStager(
         item.RuleNum = rules.Count;
         item.RuleSet = JsonUtils.Serialize(rules, false);
         // PattN: the Iran template still ships what PattN removed from its Iran direct rule-set; clean it before
-        // storing, as ConfigHandler.InitExternalRouting does
-        if (item.Remarks == ConfigHandler.IranDirectRoutingRemarks)
+        // storing, as ConfigDbHandler.InitExternalRouting does
+        if (item.Remarks == ConfigDbHandler.IranDirectRoutingRemarks)
         {
-            ConfigHandler.CleanIranDirectRouting(item);
+            ConfigDbHandler.CleanIranDirectRouting(item);
         }
         return item;
     }
@@ -190,9 +183,9 @@ internal sealed class RegionalPresetStager(
             (Name: "V4-绕过大陆(Whitelist)", Resource: "white"),
             (Name: "V4-黑名单(Blacklist)", Resource: "black"),
             (Name: "V4-全局(Global)", Resource: "global"),
-            // PattN: the Iran rule-sets that ConfigHandler.InitBuiltinRouting adds too
-            (Name: ConfigHandler.IranDirectRoutingRemarks, Resource: "white_iran"),
-            (Name: ConfigHandler.IranGlobalProxyRoutingRemarks, Resource: "global_iran"),
+            // PattN: the Iran rule-sets that ConfigDbHandler.InitBuiltinRouting adds too
+            (Name: ConfigDbHandler.IranDirectRoutingRemarks, Resource: "white_iran"),
+            (Name: ConfigDbHandler.IranGlobalProxyRoutingRemarks, Resource: "global_iran"),
         };
         var builtins = defaults.Select((entry, index) =>
         {
@@ -214,7 +207,7 @@ internal sealed class RegionalPresetStager(
             null,
             builtins,
             // PattN: InitBuiltinRouting makes the Iran direct rule-set the default
-            ConfigHandler.IranDirectRoutingRemarks,
+            ConfigDbHandler.IranDirectRoutingRemarks,
             removeIds,
             ClearLegacyRoutingIndex: clearLegacyIndex,
             IsBuiltinFallback: true);
@@ -283,7 +276,8 @@ internal static class RegionalPresetWorkflow
 }
 
 internal sealed class RegionalPresetStagingException(Exception innerException)
-    : Exception("Regional preset staging failed.", innerException) { }
+    : Exception("Regional preset staging failed.", innerException)
+{ }
 
 internal static class RegionalPresetApplyWorkflow
 {
@@ -331,11 +325,13 @@ internal static class RegionalPresetApplyWorkflow
     }
 }
 
-internal sealed class RegionalPresetCoreApplyFailedException : Exception { }
+internal sealed class RegionalPresetCoreApplyFailedException : Exception
+{ }
 
 internal sealed class RegionalPresetApplyRollbackException(Exception applyException, Exception rollbackException)
     : Exception("The regional preset failed and its configuration/runtime rollback also failed.",
-        new AggregateException(applyException, rollbackException)) { }
+        new AggregateException(applyException, rollbackException))
+{ }
 
 internal sealed record RegionalPresetApplyResult(bool Success, bool RollbackSucceeded, Exception? Error);
 

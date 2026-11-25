@@ -29,7 +29,7 @@ public class ConfigHandlerAetherTests
 
     private static async Task<List<ProfileItem>> Profiles(string subId)
     {
-        return await AppManager.Instance.ProfileItems(subId) ?? [];
+        return await ConfigDbQuery.ProfileItems(subId) ?? [];
     }
 
     private static async Task AssertStoredAsAether(ProfileItem profile)
@@ -46,7 +46,7 @@ public class ConfigHandlerAetherTests
         var config = Setup();
         var subId = NewSubId();
 
-        var count = await ConfigHandler.AddBatchServers(config, string.Join("\n", MasqueLink, ScanLink, HopsLink), subId, false);
+        var count = await ConfigDbHandler.AddBatchServers(string.Join("\n", MasqueLink, ScanLink, HopsLink), subId, false);
         var profiles = await Profiles(subId);
 
         await count.Should().BeEqualTo(3);
@@ -91,7 +91,7 @@ public class ConfigHandlerAetherTests
             OverridePort = 2408,
         });
 
-        var count = await ConfigHandler.AddBatchServers(config, Utils.Base64Encode(string.Join("\n", MasqueLink, ScanLink)), subId, true);
+        var count = await ConfigDbHandler.AddBatchServers(Utils.Base64Encode(string.Join("\n", MasqueLink, ScanLink)), subId, true);
         var profiles = await Profiles(subId);
 
         await count.Should().BeEqualTo(2);
@@ -145,8 +145,8 @@ public class ConfigHandlerAetherTests
         profile.TargetStrategy = "UseIPv4";
         var extra = profile.GetProtocolExtra();
 
-        await (await ConfigHandler.AddServer(config, profile)).Should().BeEqualTo(0);
-        var stored = (await AppManager.Instance.GetProfileItem(profile.IndexId))!;
+        await (await ConfigDbHandler.AddServer(profile)).Should().BeEqualTo(0);
+        var stored = (await ConfigDbQuery.GetProfileItem(profile.IndexId))!;
 
         await stored.Should().NotBeNull();
         await AssertStoredAsAether(stored);
@@ -193,8 +193,8 @@ public class ConfigHandlerAetherTests
         edited.DialMode = string.Empty;
         edited.TcpUserTimeout = null;
 
-        await (await ConfigHandler.AddServer(config, edited)).Should().BeEqualTo(0);
-        var stored2 = (await AppManager.Instance.GetProfileItem(profile.IndexId))!;
+        await (await ConfigDbHandler.AddServer(edited)).Should().BeEqualTo(0);
+        var stored2 = (await ConfigDbQuery.GetProfileItem(profile.IndexId))!;
 
         await AssertStoredAsAether(stored2);
         await stored2.Address.Should().BeEqualTo("162.159.192.1");
@@ -230,8 +230,8 @@ public class ConfigHandlerAetherTests
         });
         var extra = profile.GetProtocolExtra();
 
-        await (await ConfigHandler.AddAetherServer(config, profile)).Should().BeEqualTo(0);
-        var stored = (await AppManager.Instance.GetProfileItem(profile.IndexId))!;
+        await (await ConfigDbHandler.AddAetherServer(profile)).Should().BeEqualTo(0);
+        var stored = (await ConfigDbQuery.GetProfileItem(profile.IndexId))!;
 
         await stored.Should().NotBeNull();
         await stored.Address.Should().BeEqualTo("not an address");
@@ -257,7 +257,7 @@ public class ConfigHandlerAetherTests
             "aether://162.159.198.1:443?protocol=masque&scan=verified&ip=both&tor=chain#Tor",
             "aether://162.159.198.2:443?protocol=masque&scan=verified&ip=both#Endpoint",
         ];
-        await ConfigHandler.AddBatchServers(config, string.Join("\n", links), subId, false);
+        await ConfigDbHandler.AddBatchServers(string.Join("\n", links), subId, false);
 
         // The same profile again, edited by hand: the columns an Aether profile does not use are cleared on the way in,
         // so it is a duplicate too.
@@ -267,16 +267,16 @@ public class ConfigHandlerAetherTests
         edited.Password = "secret";
         edited.StreamSecurity = Global.StreamSecurity;
         edited.Sni = "sni.example";
-        await (await ConfigHandler.AddAetherServer(config, edited)).Should().BeEqualTo(0);
+        await (await ConfigDbHandler.AddAetherServer(edited)).Should().BeEqualTo(0);
 
         // And with its outbound's targetStrategy chosen: another profile.
         var strategy = AetherFmt.Resolve(MasqueLink, out _)!;
         strategy.Remarks = "Target strategy";
         strategy.Subid = subId;
         strategy.TargetStrategy = "UseIPv4";
-        await (await ConfigHandler.AddAetherServer(config, strategy)).Should().BeEqualTo(0);
+        await (await ConfigDbHandler.AddAetherServer(strategy)).Should().BeEqualTo(0);
 
-        var (total, kept) = await ConfigHandler.DedupServerList(config, subId);
+        var (total, kept) = await ConfigDbHandler.DedupServerList(subId);
         var remarks = (await Profiles(subId)).Select(profile => profile.Remarks).ToList();
 
         await total.Should().BeEqualTo(10);
@@ -299,7 +299,7 @@ public class ConfigHandlerAetherTests
             new() { IndexId = $"scan-{Guid.NewGuid():N}", ConfigType = EConfigType.Aether, Port = 0 },
         ];
 
-        await (await ConfigHandler.SetDefaultServer(config, models)).Should().BeEqualTo(0);
+        await (await ConfigTextHandler.SetDefaultServer(models)).Should().BeEqualTo(0);
 
         await config.IndexId.Should().BeEqualTo(models[1].IndexId);
     }
@@ -312,11 +312,11 @@ public class ConfigHandlerAetherTests
         var config = Setup();
         var scan = AetherFmt.Resolve(ScanLink, out _)!;
         scan.Subid = NewSubId();
-        await (await ConfigHandler.AddAetherServer(config, scan)).Should().BeEqualTo(0);
+        await (await ConfigDbHandler.AddAetherServer(scan)).Should().BeEqualTo(0);
         config.IndexId = $"gone-{Guid.NewGuid():N}";
 
-        await (await ConfigHandler.SetDefaultServer(config, [])).Should().BeEqualTo(0);
-        var picked = await AppManager.Instance.GetProfileItem(config.IndexId);
+        await (await ConfigTextHandler.SetDefaultServer([])).Should().BeEqualTo(0);
+        var picked = await ConfigDbQuery.GetProfileItem(config.IndexId);
 
         await picked.Should().NotBeNull();
         await (picked!.Port > 0 || picked.ConfigType == EConfigType.Aether).Should().BeTrue().Because(picked.ConfigType.ToString());

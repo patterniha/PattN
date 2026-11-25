@@ -10,7 +10,7 @@ namespace ServiceLib.Tests.ViewModels;
 /// PattN (design 3.3, stage 10): the server editor's finalMask, cipherSuites and dialMode as preset fields (PattNG
 /// PresetField in BaseServerActivity), and the save checks of PattNG's TlsSettingsCheck. The editor is made where no UI
 /// thread is. No test writes the database: a refused save stops before it, and a save that passes the checks is a new
-/// VMess profile with a security the handler does not know, which ConfigHandler.AddVMessServer refuses before it stores
+/// VMess profile with a security the handler does not know, which ConfigDbHandler.AddVMessServer refuses before it stores
 /// anything.
 /// </summary>
 [NotInParallel("AppManager config")]
@@ -75,7 +75,7 @@ public class AddServerViewModelPresetTests
         await vm.CipherSuitesPreset.Matched;
         if (type == EConfigType.VMess)
         {
-            // A security ConfigHandler.AddVMessServer does not know: the save that passes the checks stops there.
+            // A security ConfigDbHandler.AddVMessServer does not know: the save that passes the checks stops there.
             vm.VmessSecurity = "not-a-security";
         }
         return vm;

@@ -120,7 +120,7 @@ public class RoutingRuleTargetTests
             var refusal = await runtime.SaveRoutingRulesAsync(routing.Id, [Rule(null, missing)]);
 
             await (await DetailOf(refusal)).Should().BeEqualTo(string.Format(ResUI.MsgRoutingRuleTargetNotFound, missing));
-            await (await AppManager.Instance.GetRoutingItem(routing.Id))!.RuleSet.Should().BeEqualTo(routing.RuleSet);
+            await (await ConfigDbQuery.GetRoutingItem(routing.Id))!.RuleSet.Should().BeEqualTo(routing.RuleSet);
         }
         finally
         {
@@ -142,7 +142,7 @@ public class RoutingRuleTargetTests
         await refusal.Success.Should().BeFalse();
         await refusal.Code.Should().BeEqualTo("routing_profile_not_found");
         await refusal.MessageKey.Should().BeEqualTo(ApiMessageKeys.RoutingProfileNotFound);
-        await (await AppManager.Instance.GetRoutingItem(routingId)).Should().BeNull();
+        await (await ConfigDbQuery.GetRoutingItem(routingId)).Should().BeNull();
     }
 
     [Test]
@@ -165,7 +165,7 @@ public class RoutingRuleTargetTests
 
             await (await V2rayRuntime.SaveRoutingRulesLockedAsync(routing.Id, rules)).Should().BeEqualTo(0);
 
-            var stored = await AppManager.Instance.GetRoutingItem(routing.Id);
+            var stored = await ConfigDbQuery.GetRoutingItem(routing.Id);
             await stored!.RuleNum.Should().BeEqualTo(2);
             var storedRules = JsonUtils.Deserialize<List<RulesItem>>(stored.RuleSet)!;
             await storedRules.Select(rule => rule.OutboundTag).SequenceEqual([Global.ProxyTag, Global.BlockTag]).Should().BeTrue();

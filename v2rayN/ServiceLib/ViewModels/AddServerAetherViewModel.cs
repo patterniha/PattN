@@ -79,7 +79,7 @@ public partial class AddServerAetherViewModel : MyReactiveObject, ICloseable
 
     public AddServerAetherViewModel(ProfileItem profileItem, IAetherEditorSource? source)
     {
-        _config = AppManager.Instance.Config;
+        _config = ConfigTextHandler.Config;
         _source = source ?? new AetherEditorSource(_config);
         _item = profileItem;
         _initial = JsonUtils.DeepCopy(profileItem) ?? new ProfileItem();

@@ -101,16 +101,16 @@ public class AetherInboundPortTests
 
     private static async Task WithConfig(Config config, Func<Task> run)
     {
-        var field = typeof(AppManager).GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var previous = field.GetValue(AppManager.Instance);
-        field.SetValue(AppManager.Instance, config);
+        var field = typeof(ConfigState).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var previous = field.GetValue(ConfigState.Instance);
+        field.SetValue(ConfigState.Instance, config);
         try
         {
             await run();
         }
         finally
         {
-            field.SetValue(AppManager.Instance, previous);
+            field.SetValue(ConfigState.Instance, previous);
         }
     }
 }

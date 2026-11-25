@@ -57,7 +57,7 @@ public static class AetherMembers
     public static async Task<string?> SaveProblemAsync(ProfileItem group, ProtocolExtraItem protocolExtra)
     {
         var childIds = (Utils.String2List(protocolExtra.ChildItems) ?? []).Where(id => !id.IsNullOrEmpty()).ToList();
-        var found = (await AppManager.Instance.GetProfileItemsByIndexIds(childIds))
+        var found = (await ConfigDbQuery.GetProfileItemsByIndexIds(childIds))
             .DistinctBy(profile => profile.IndexId)
             .ToDictionary(profile => profile.IndexId);
         var picked = childIds.Select(found.GetValueOrDefault).OfType<ProfileItem>();

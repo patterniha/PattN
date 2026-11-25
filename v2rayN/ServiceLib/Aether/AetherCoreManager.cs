@@ -140,8 +140,8 @@ public sealed class AetherCoreHost
         {
             Folders = AetherFolders.Default(),
             Spawn = AetherProcess.Start,
-            ListenPort = () => AetherPorts.ListenPortOf(AppManager.Instance.Config?.CoreBasicItem?.AetherListenPort),
-            AppLogLevel = () => AppManager.Instance.Config?.CoreBasicItem?.Loglevel,
+            ListenPort = () => AetherPorts.ListenPortOf(ConfigTextHandler.Config?.CoreBasicItem?.AetherListenPort),
+            AppLogLevel = () => ConfigTextHandler.Config?.CoreBasicItem?.Loglevel,
             OpenExit = (exit, role, ct) => AetherExitService.Default.OpenAsync(exit, AetherCoreManager.SourceOf(role), ct),
             Adopt = process =>
             {
@@ -157,7 +157,7 @@ public sealed class AetherCoreHost
 
     private static void RememberInConfig(IReadOnlyList<string> regions)
     {
-        var config = AppManager.Instance.Config;
+        var config = ConfigTextHandler.Config;
         if (config == null)
         {
             return;
@@ -165,7 +165,7 @@ public sealed class AetherCoreHost
         config.AetherItem ??= new();
         if (PsiphonServerList.Remember(config.AetherItem, regions))
         {
-            _ = ConfigHandler.SaveConfig(config);
+            _ = ConfigTextHandler.SaveConfig();
         }
     }
 }

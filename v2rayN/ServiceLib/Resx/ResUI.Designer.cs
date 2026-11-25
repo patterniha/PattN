@@ -1049,7 +1049,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("menuClose", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Close Connection 的本地化字符串。
         /// </summary>
@@ -1094,7 +1094,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("menuCurrentlyFrozenColumns", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Latency Test 的本地化字符串。
         /// </summary>
@@ -1256,7 +1256,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("menuFreezeToThisColumn", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Full Config Template Setting 的本地化字符串。
         /// </summary>
@@ -1310,7 +1310,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("menuHideThisColumn", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Import Rules From Clipboard 的本地化字符串。
         /// </summary>
@@ -1904,7 +1904,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("menuShowColumns", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Show or hide the main window 的本地化字符串。
         /// </summary>
@@ -2102,7 +2102,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("menuUnfreezeAllColumns", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0} Website 的本地化字符串。
         /// </summary>
@@ -2865,6 +2865,51 @@ namespace ServiceLib.Resx {
         public static string MsgCheckUpdateHasNewVersion {
             get {
                 return ResourceManager.GetString("MsgCheckUpdateHasNewVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Checking {0} updates via GitHub API... 的本地化字符串。
+        /// </summary>
+        public static string MsgCheckUpdateViaApi {
+            get {
+                return ResourceManager.GetString("MsgCheckUpdateViaApi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 GitHub API for {0} is unavailable 的本地化字符串。
+        /// </summary>
+        public static string MsgCheckUpdateViaApiFailed {
+            get {
+                return ResourceManager.GetString("MsgCheckUpdateViaApiFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Checking {0} updates via git references... 的本地化字符串。
+        /// </summary>
+        public static string MsgCheckUpdateViaGitRefs {
+            get {
+                return ResourceManager.GetString("MsgCheckUpdateViaGitRefs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Git references for {0} are unavailable 的本地化字符串。
+        /// </summary>
+        public static string MsgCheckUpdateViaGitRefsFailed {
+            get {
+                return ResourceManager.GetString("MsgCheckUpdateViaGitRefsFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Checking {0} updates via release redirect... 的本地化字符串。
+        /// </summary>
+        public static string MsgCheckUpdateViaLatest {
+            get {
+                return ResourceManager.GetString("MsgCheckUpdateViaLatest", resourceCulture);
             }
         }
         
@@ -6994,15 +7039,6 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
-        ///   查找类似 Tray right-click menu display limit 的本地化字符串。
-        /// </summary>
-        public static string TbSettingsTrayMenuServersLimit {
-            get {
-                return ResourceManager.GetString("TbSettingsTrayMenuServersLimit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Auto Route 的本地化字符串。
         /// </summary>
         public static string TbSettingsTunAutoRoute {
@@ -7010,7 +7046,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("TbSettingsTunAutoRoute", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 DNS mode 的本地化字符串。
         /// </summary>
@@ -7233,6 +7269,15 @@ namespace ServiceLib.Resx {
         public static string TbSortingUpTraffic {
             get {
                 return ResourceManager.GetString("TbSortingUpTraffic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Speedtest Settings 的本地化字符串。
+        /// </summary>
+        public static string TbSpeedtestSettings {
+            get {
+                return ResourceManager.GetString("TbSpeedtestSettings", resourceCulture);
             }
         }
         
@@ -7525,6 +7570,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 XDRIVE service 的本地化字符串。
+        /// </summary>
+        public static string TransportHeaderType6 {
+            get {
+                return ResourceManager.GetString("TransportHeaderType6", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 *ws/http upgrade/xhttp path 的本地化字符串。
         /// </summary>
         public static string TransportPathTip1 {
@@ -7566,6 +7620,15 @@ namespace ServiceLib.Resx {
         public static string TransportPathTip5 {
             get {
                 return ResourceManager.GetString("TransportPathTip5", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 XDRIVE remote folder 的本地化字符串。
+        /// </summary>
+        public static string TransportPathTip6 {
+            get {
+                return ResourceManager.GetString("TransportPathTip6", resourceCulture);
             }
         }
         
@@ -7622,79 +7685,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("UpgradeAppNotExistTip", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 Preset Provider 的本地化字符串。
-        /// </summary>
-        public static string XdriveProvider {
-            get {
-                return ResourceManager.GetString("XdriveProvider", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 XDRIVE service 的本地化字符串。
-        /// </summary>
-        public static string XdriveService {
-            get {
-                return ResourceManager.GetString("XdriveService", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Remote folder 的本地化字符串。
-        /// </summary>
-        public static string XdriveRemoteFolder {
-            get {
-                return ResourceManager.GetString("XdriveRemoteFolder", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 Secrets (comma separated) 的本地化字符串。
-        /// </summary>
-        public static string XdriveSecrets {
-            get {
-                return ResourceManager.GetString("XdriveSecrets", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 S3 Endpoint 的本地化字符串。
-        /// </summary>
-        public static string XdriveS3Endpoint {
-            get {
-                return ResourceManager.GetString("XdriveS3Endpoint", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 S3 Region 的本地化字符串。
-        /// </summary>
-        public static string XdriveS3Region {
-            get {
-                return ResourceManager.GetString("XdriveS3Region", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 S3 Bucket 的本地化字符串。
-        /// </summary>
-        public static string XdriveS3Bucket {
-            get {
-                return ResourceManager.GetString("XdriveS3Bucket", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 S3 Force Path Style 的本地化字符串。
-        /// </summary>
-        public static string XdriveS3PathStyle {
-            get {
-                return ResourceManager.GetString("XdriveS3PathStyle", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 XDRIVE Extra 的本地化字符串。
         /// </summary>
@@ -7703,7 +7694,7 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("XdriveExtra", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Raw JSON, format: { XdriveObject } 的本地化字符串。
         /// </summary>
@@ -7712,22 +7703,76 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("XdriveExtraTip", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 XDRIVE service 的本地化字符串。
+        ///   查找类似 Preset Provider 的本地化字符串。
         /// </summary>
-        public static string TransportHeaderType6 {
+        public static string XdriveProvider {
             get {
-                return ResourceManager.GetString("TransportHeaderType6", resourceCulture);
+                return ResourceManager.GetString("XdriveProvider", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   查找类似 XDRIVE remote folder 的本地化字符串。
+        ///   查找类似 Remote folder (remoteFolder) 的本地化字符串。
         /// </summary>
-        public static string TransportPathTip6 {
+        public static string XdriveRemoteFolder {
             get {
-                return ResourceManager.GetString("TransportPathTip6", resourceCulture);
+                return ResourceManager.GetString("XdriveRemoteFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 S3 Bucket 的本地化字符串。
+        /// </summary>
+        public static string XdriveS3Bucket {
+            get {
+                return ResourceManager.GetString("XdriveS3Bucket", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 S3 Endpoint 的本地化字符串。
+        /// </summary>
+        public static string XdriveS3Endpoint {
+            get {
+                return ResourceManager.GetString("XdriveS3Endpoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 S3 Force Path Style 的本地化字符串。
+        /// </summary>
+        public static string XdriveS3PathStyle {
+            get {
+                return ResourceManager.GetString("XdriveS3PathStyle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 S3 Region 的本地化字符串。
+        /// </summary>
+        public static string XdriveS3Region {
+            get {
+                return ResourceManager.GetString("XdriveS3Region", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Secrets (AK,SK / OAuth) 的本地化字符串。
+        /// </summary>
+        public static string XdriveSecrets {
+            get {
+                return ResourceManager.GetString("XdriveSecrets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Storage service (service) 的本地化字符串。
+        /// </summary>
+        public static string XdriveService {
+            get {
+                return ResourceManager.GetString("XdriveService", resourceCulture);
             }
         }
     }

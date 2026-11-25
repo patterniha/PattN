@@ -25,16 +25,16 @@ internal static class ViewModelConfig
     public static T With<T>(Config config, Func<T> create)
     {
         _ = _reactiveUi.Value;
-        var field = typeof(AppManager).GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var previous = field.GetValue(AppManager.Instance);
-        field.SetValue(AppManager.Instance, config);
+        var field = typeof(ConfigState).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var previous = field.GetValue(ConfigState.Instance);
+        field.SetValue(ConfigState.Instance, config);
         try
         {
             return create();
         }
         finally
         {
-            field.SetValue(AppManager.Instance, previous);
+            field.SetValue(ConfigState.Instance, previous);
         }
     }
 }

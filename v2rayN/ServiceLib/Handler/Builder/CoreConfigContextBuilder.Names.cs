@@ -28,7 +28,7 @@ public partial class CoreConfigContextBuilder
     /// </summary>
     public static async Task<ByName<ProfileItem>> FindSubscriptionNeighbourAsync(string? name)
     {
-        var named = await AppManager.Instance.GetProfileItemsViaRemarksAsync(name);
+        var named = await ConfigDbQuery.GetProfileItemsViaRemarksAsync(name);
         return ByName.Find(name, named.Where(TakesAsSubscriptionNeighbour), profile => profile.Remarks);
     }
 

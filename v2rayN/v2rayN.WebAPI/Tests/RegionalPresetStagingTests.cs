@@ -1,12 +1,4 @@
 using System.Collections.Concurrent;
-using System.Net;
-using ServiceLib;
-using ServiceLib.Common;
-using ServiceLib.Enums;
-using ServiceLib.Handler;
-using ServiceLib.Models.Configs;
-using ServiceLib.Models.Dto;
-using ServiceLib.Models.Entities;
 using v2rayN.WebAPI.Services;
 
 namespace v2rayN.WebAPI.Tests;
@@ -177,7 +169,11 @@ public class RegionalPresetStagingTests
                 return Task.FromResult(true);
             });
 
-        if (result.Success) restartCalled = true;
+        if (result.Success)
+        {
+            restartCalled = true;
+        }
+
         await result.Success.Should().BeFalse();
         await result.RollbackSucceeded.Should().BeTrue();
         await restartCalled.Should().BeFalse();
@@ -505,7 +501,7 @@ public class RegionalPresetStagingTests
     [Test]
     public async Task InvalidRoutingTemplateStagesBuiltinFallbackAndMakesIranDirectDefaultWhenNoRoutesExist()
     {
-        // PattN: the same rule-sets and default as ConfigHandler.InitBuiltinRouting
+        // PattN: the same rule-sets and default as ConfigDbHandler.InitBuiltinRouting
         var responses = CreateRegionalResponses();
         responses[Global.RoutingRulesSources[1]] = "not-json";
         var stager = new RegionalPresetStager((url, _, _) => Task.FromResult(responses.GetValueOrDefault(url)));
@@ -515,9 +511,9 @@ public class RegionalPresetStagingTests
         await staged.Routing.IsBuiltinFallback.Should().BeTrue();
         await staged.Routing.Items.Count.Should().BeEqualTo(5);
         await staged.Routing.Items[0].Remarks.Should().BeEqualTo("V4-绕过大陆(Whitelist)");
-        await staged.Routing.Items[3].Remarks.Should().BeEqualTo(ConfigHandler.IranDirectRoutingRemarks);
-        await staged.Routing.Items[4].Remarks.Should().BeEqualTo(ConfigHandler.IranGlobalProxyRoutingRemarks);
-        await staged.Routing.DefaultRemarks.Should().BeEqualTo(ConfigHandler.IranDirectRoutingRemarks);
+        await staged.Routing.Items[3].Remarks.Should().BeEqualTo(ConfigDbHandler.IranDirectRoutingRemarks);
+        await staged.Routing.Items[4].Remarks.Should().BeEqualTo(ConfigDbHandler.IranGlobalProxyRoutingRemarks);
+        await staged.Routing.DefaultRemarks.Should().BeEqualTo(ConfigDbHandler.IranDirectRoutingRemarks);
         await staged.Routing.Items.All(item => item.RuleNum > 0).Should().BeTrue();
         await staged.Routing.ExistingDefaultItemId.Should().BeNull();
     }
@@ -610,7 +606,7 @@ public class RegionalPresetStagingTests
     [Test]
     public async Task IranTemplateDirectRuleSetIsCleanedLikeTheDesktopImport()
     {
-        // PattN: ConfigHandler.InitExternalRouting cleans the Iran direct rule-set of the Iran template before storing it
+        // PattN: ConfigDbHandler.InitExternalRouting cleans the Iran direct rule-set of the Iran template before storing it
         var rules = new List<RulesItem>
         {
             new() { Remarks = "تبدیل نام دامنه های ایران - مستقیم", OutboundTag = Global.DirectTag, Ip = ["8.8.8.8"] },
@@ -624,7 +620,7 @@ public class RegionalPresetStagingTests
             [
                 new RoutingItem
                 {
-                    Remarks = ConfigHandler.IranDirectRoutingRemarks["IR-".Length..],
+                    Remarks = ConfigDbHandler.IranDirectRoutingRemarks["IR-".Length..],
                     DomainStrategy = Global.IPOnDemand,
                     RuleSet = JsonUtils.Serialize(rules, false),
                 },
@@ -640,11 +636,11 @@ public class RegionalPresetStagingTests
 
         var item = staged.Routing.Items.Single();
         var stagedRules = JsonUtils.Deserialize<List<RulesItem>>(item.RuleSet)!;
-        await item.Remarks.Should().BeEqualTo(ConfigHandler.IranDirectRoutingRemarks);
+        await item.Remarks.Should().BeEqualTo(ConfigDbHandler.IranDirectRoutingRemarks);
         await item.DomainStrategy.Should().BeEqualTo(string.Empty);
         await item.RuleNum.Should().BeEqualTo(1);
         await stagedRules.Count.Should().BeEqualTo(1);
         await stagedRules[0].Domain!.SequenceEqual(new[] { "domain:ir", "geosite:category-ir" }).Should().BeTrue();
-        await staged.Routing.DefaultRemarks.Should().BeEqualTo(ConfigHandler.IranDirectRoutingRemarks);
+        await staged.Routing.DefaultRemarks.Should().BeEqualTo(ConfigDbHandler.IranDirectRoutingRemarks);
     }
 }

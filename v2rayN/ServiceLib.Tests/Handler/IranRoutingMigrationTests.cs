@@ -17,7 +17,7 @@ public class IranRoutingMigrationTests
     {
         var rules = new List<RulesItem> { DirectRule("geosite:private"), DirectRule("geosite:ir") };
 
-        var changed = ConfigHandler.MigrateIranDirectDomains(rules);
+        var changed = ConfigDbHandler.MigrateIranDirectDomains(rules);
 
         await changed.Should().BeTrue();
         await Domains(rules[0]).Should().BeEqualTo("geosite:private");
@@ -29,7 +29,7 @@ public class IranRoutingMigrationTests
     {
         var rules = new List<RulesItem> { DirectRule("domain:ir", "geosite:category-ir") };
 
-        var changed = ConfigHandler.MigrateIranDirectDomains(rules);
+        var changed = ConfigDbHandler.MigrateIranDirectDomains(rules);
 
         await changed.Should().BeFalse();
         await Domains(rules[0]).Should().BeEqualTo("domain:ir,geosite:category-ir");
@@ -40,7 +40,7 @@ public class IranRoutingMigrationTests
     {
         var rules = new List<RulesItem> { DirectRule("domain:ir", "geosite:ir", "geosite:category-ir") };
 
-        var changed = ConfigHandler.MigrateIranDirectDomains(rules);
+        var changed = ConfigDbHandler.MigrateIranDirectDomains(rules);
 
         await changed.Should().BeTrue();
         await Domains(rules[0]).Should().BeEqualTo("domain:ir,geosite:category-ir");
@@ -52,7 +52,7 @@ public class IranRoutingMigrationTests
         var proxyRule = new RulesItem { OutboundTag = Global.ProxyTag, Domain = ["geosite:ir"] };
         var rules = new List<RulesItem> { proxyRule };
 
-        var changed = ConfigHandler.MigrateIranDirectDomains(rules);
+        var changed = ConfigDbHandler.MigrateIranDirectDomains(rules);
 
         await changed.Should().BeFalse();
         await Domains(proxyRule).Should().BeEqualTo("geosite:ir");
@@ -70,12 +70,12 @@ public class IranRoutingMigrationTests
     {
         var rules = new List<RulesItem> { DirectRule("domain:ir", "geosite:category-ir"), ShippedProxyCatchAllRule() };
 
-        var removed = ConfigHandler.RemoveIranProxyCatchAll(rules);
+        var removed = ConfigDbHandler.RemoveIranProxyCatchAll(rules);
 
         await removed.Should().BeEqualTo(1);
         await rules.Count.Should().BeEqualTo(1);
         await Domains(rules[0]).Should().BeEqualTo("domain:ir,geosite:category-ir");
-        await ConfigHandler.RemoveIranProxyCatchAll(rules).Should().BeEqualTo(0);
+        await ConfigDbHandler.RemoveIranProxyCatchAll(rules).Should().BeEqualTo(0);
     }
 
     [Test]
@@ -97,7 +97,7 @@ public class IranRoutingMigrationTests
             rules.Add(rule);
         }
 
-        var removed = ConfigHandler.RemoveIranProxyCatchAll(rules);
+        var removed = ConfigDbHandler.RemoveIranProxyCatchAll(rules);
 
         await removed.Should().BeEqualTo(0);
         await rules.Count.Should().BeEqualTo(6);
@@ -110,7 +110,7 @@ public class IranRoutingMigrationTests
         var rules = JsonUtils.Deserialize<List<RulesItem>>(EmbedUtils.GetEmbedText(Global.CustomRoutingFileName + "white_iran")) ?? [];
 
         await (rules.Count > 0).Should().BeTrue();
-        await ConfigHandler.RemoveIranProxyCatchAll(rules).Should().BeEqualTo(0);
+        await ConfigDbHandler.RemoveIranProxyCatchAll(rules).Should().BeEqualTo(0);
         await rules.Any(t => t.OutboundTag == Global.ProxyTag).Should().BeFalse();
     }
 
@@ -122,7 +122,7 @@ public class IranRoutingMigrationTests
 
     private static RoutingItem IranTemplateRuleSet() => new()
     {
-        Remarks = ConfigHandler.IranDirectRoutingRemarks,
+        Remarks = ConfigDbHandler.IranDirectRoutingRemarks,
         DomainStrategy = Global.IPOnDemand,
         RuleSet = IranTemplateRules,
     };
@@ -138,13 +138,13 @@ public class IranRoutingMigrationTests
     {
         var item = IranTemplateRuleSet();
 
-        var changed = ConfigHandler.CleanIranDirectRouting(item);
+        var changed = ConfigDbHandler.CleanIranDirectRouting(item);
 
         await changed.Should().BeTrue();
         await item.DomainStrategy.Should().BeEqualTo(string.Empty);
         await item.RuleNum.Should().BeEqualTo(PattNIranRules().Count);
         await Describe(JsonUtils.Deserialize<List<RulesItem>>(item.RuleSet) ?? []).Should().BeEqualTo(Describe(PattNIranRules()));
-        await ConfigHandler.CleanIranDirectRouting(item).Should().BeFalse();
+        await ConfigDbHandler.CleanIranDirectRouting(item).Should().BeFalse();
     }
 
     [Test]
@@ -154,7 +154,7 @@ public class IranRoutingMigrationTests
         // Iran global rule-set, whose own catch-all stays
         var pattn = new RoutingItem
         {
-            Remarks = ConfigHandler.IranDirectRoutingRemarks,
+            Remarks = ConfigDbHandler.IranDirectRoutingRemarks,
             RuleSet = JsonUtils.Serialize(PattNIranRules(), false),
         };
         var imported = IranTemplateRuleSet();
@@ -165,7 +165,7 @@ public class IranRoutingMigrationTests
             RuleSet = IranTemplateRules,
         };
 
-        var changed = ConfigHandler.CleanIranDirectRoutings([pattn, imported, global]);
+        var changed = ConfigDbHandler.CleanIranDirectRoutings([pattn, imported, global]);
 
         await changed.Count.Should().BeEqualTo(1);
         await ReferenceEquals(changed[0], imported).Should().BeTrue();

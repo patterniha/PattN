@@ -51,7 +51,7 @@ public partial class AetherKeysViewModel : MyReactiveObject
 
     public AetherKeysViewModel(IAetherKeysSource? source)
     {
-        _config = AppManager.Instance.Config;
+        _config = ConfigTextHandler.Config;
         _source = source ?? new AetherKeysSource(_config);
         Settings = _source.LoadSettings();
         KindOptions = AetherKeyKind.All.Select(kind => new AetherKeyKindOption(kind, KindLabel(kind), kind == Settings.Kind)).ToList();

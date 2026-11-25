@@ -267,7 +267,7 @@ public class AetherContextBuilderTests
         var (_, result) = await CoreConfigContextBuilder.ResolveNodeAsync(context, group, false);
 
         await result.Success.Should().BeTrue();
-        var members = await AppManager.Instance.ProfileItems(subId) ?? [];
+        var members = await ConfigDbQuery.ProfileItems(subId) ?? [];
         var kept = members.First(member => member.ConfigType == EConfigType.Aether);
         var leftOut = members.Single(member => member.ConfigType == EConfigType.Aether && member.IndexId != kept.IndexId);
         await result.Warnings.Should().Contain(string.Format(ResUI.MsgAetherGroupLeavesOut, "filtered", leftOut.Remarks));

@@ -102,7 +102,7 @@ public sealed class AetherTestHost
         {
             Cores = AetherCoreManager.Instance,
             // A test measures the profile alone and drops the routing rules: a rule's target never refuses it (E2).
-            Build = profile => CoreConfigContextBuilder.Build(AppManager.Instance.Config, profile, refuseRuleTargets: false),
+            Build = profile => CoreConfigContextBuilder.Build(ConfigTextHandler.Config, profile, refuseRuleTargets: false),
             Generate = (context, port) => new CoreConfigV2rayService(context).GenerateClientSpeedtestConfig(port),
             StartXray = StartTestXrayAsync,
             Uplink = AetherUplinkBinding.Default,

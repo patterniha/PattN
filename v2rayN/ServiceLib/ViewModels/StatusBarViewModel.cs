@@ -11,7 +11,6 @@ public partial class StatusBarViewModel : MyReactiveObject
     private static readonly Lazy<StatusBarViewModel> _instance = new(() => new());
     public static StatusBarViewModel Instance => _instance.Value;
 
-    public EventChannel<string> SetDefaultServerRequested { get; } = new();
     public EventChannel<RxVoid> ReloadRequested { get; } = new();
     public EventChannel<RxVoid> AddServerViaScanRequested { get; } = new();
     public EventChannel<RxVoid> AddServerViaClipboardRequested { get; } = new();
@@ -20,16 +19,8 @@ public partial class StatusBarViewModel : MyReactiveObject
 
     public BulkObservableCollection<RoutingItem> RoutingItems { get; } = [];
 
-    public BulkObservableCollection<ComboItem> Servers { get; } = [];
-
     [Reactive]
     public partial RoutingItem SelectedRouting { get; set; }
-
-    [Reactive]
-    public partial ComboItem SelectedServer { get; set; }
-
-    [Reactive]
-    public partial bool BlServers { get; set; }
 
     #endregion ObservableCollection
 
@@ -60,9 +51,6 @@ public partial class StatusBarViewModel : MyReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> SystemProxySetCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> SystemProxyNothingCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> SystemProxyPacCmd { get; }
-
-    [Reactive]
-    public partial bool BlRouting { get; set; }
 
     [Reactive]
     public partial int SystemProxySelected { get; set; }
@@ -105,9 +93,8 @@ public partial class StatusBarViewModel : MyReactiveObject
 
     public StatusBarViewModel()
     {
-        _config = AppManager.Instance.Config;
+        _config = ConfigTextHandler.Config;
         SelectedRouting = new();
-        SelectedServer = new();
         RunningServerToolTipText = GetRunningServerToolTipText("-");
         BlSystemProxyPacVisible = Utils.IsWindows();
         BlIsNonWindows = Utils.IsNonWindows();
@@ -126,10 +113,6 @@ public partial class StatusBarViewModel : MyReactiveObject
         this.WhenAnyValue(x => x.SelectedRouting)
             .Where(y => y != null && !y.Remarks.IsNullOrEmpty())
             .SubscribeAsync(async _ => await RoutingSelectedChangedAsync());
-
-        this.WhenAnyValue(x => x.SelectedServer)
-            .Where(y => y != null && !y.Text.IsNullOrEmpty())
-            .Subscribe(_ => ServerSelectedChanged());
 
         SystemProxySelected = (int)_config.SystemProxyItem.SysProxyType;
         this.WhenAnyValue(x => x.SystemProxySelected)
@@ -216,13 +199,11 @@ public partial class StatusBarViewModel : MyReactiveObject
 
     private async Task Init()
     {
-        await ConfigHandler.InitBuiltinRouting(_config);
+        await ConfigDbHandler.InitBuiltinRouting();
         await RefreshRoutingsMenu();
         await InboundDisplayStatus();
         // The view refreshes its icon on initialization; interaction handlers are not registered yet.
         await ChangeSystemProxyAsync(_config.SystemProxyItem.SysProxyType, false);
-
-        BlRouting = true;
     }
 
     private async Task CopyProxyCmdToClipboard()
@@ -262,10 +243,8 @@ public partial class StatusBarViewModel : MyReactiveObject
 
     public async Task RefreshServersBiz()
     {
-        await RefreshServersMenu();
-
         //display running server
-        var running = await ConfigHandler.GetDefaultServer(_config);
+        var running = await ConfigTextHandler.GetDefaultServer();
         if (running != null)
         {
             RunningServerDisplay = running.GetSummary();
@@ -283,41 +262,9 @@ public partial class StatusBarViewModel : MyReactiveObject
         return Utils.IsLinux() ? Global.AppName : serverInfo;
     }
 
-    private async Task RefreshServersMenu()
-    {
-        var lstModel = await AppManager.Instance.ProfileModels(_config.SubIndexId, "");
-
-        if (lstModel?.Count > _config.GuiItem.TrayMenuServersLimit)
-        {
-            BlServers = false;
-            return;
-        }
-
-        var models = lstModel.Select(it => new ComboItem { ID = it.IndexId, Text = it.GetSummary() }).ToList();
-
-        BlServers = true;
-        Servers.ReplaceRange(models);
-
-        // Update the ItemsSource before SelectedItem so a collection reset does not clear the tray selection.
-        SelectedServer = models.FirstOrDefault(it => it.ID == _config.IndexId) ?? new();
-    }
-
-    private void ServerSelectedChanged()
-    {
-        if (SelectedServer == null)
-        {
-            return;
-        }
-        if (SelectedServer.ID.IsNullOrEmpty())
-        {
-            return;
-        }
-        SetDefaultServerRequested.Publish(SelectedServer.ID);
-    }
-
     public async Task<AvailabilityCheckResult?> TestServerAvailability()
     {
-        var item = await ConfigHandler.GetDefaultServer(_config);
+        var item = await ConfigTextHandler.GetDefaultServer();
         if (item == null)
         {
             return null;
@@ -380,7 +327,7 @@ public partial class StatusBarViewModel : MyReactiveObject
         NoticeManager.Instance.SendMessageEx($"{ResUI.TipChangeSystemProxy} - {_config.SystemProxyItem.SysProxyType}");
 
         SystemProxySelected = (int)_config.SystemProxyItem.SysProxyType;
-        await ConfigHandler.SaveConfig(_config);
+        await ConfigTextHandler.SaveConfig();
     }
 
     public async Task ChangeSystemProxyAsync(ESysProxyType type, bool blChange)
@@ -400,7 +347,7 @@ public partial class StatusBarViewModel : MyReactiveObject
 
     public async Task RefreshRoutingsMenu()
     {
-        var routings = await AppManager.Instance.RoutingItems();
+        var routings = await ConfigDbQuery.RoutingItems();
 
         RoutingItems.ReplaceRange(routings);
 
@@ -414,13 +361,13 @@ public partial class StatusBarViewModel : MyReactiveObject
             return;
         }
 
-        var item = await AppManager.Instance.GetRoutingItem(SelectedRouting?.Id);
+        var item = await ConfigDbQuery.GetRoutingItem(SelectedRouting?.Id);
         if (item is null)
         {
             return;
         }
 
-        if (await ConfigHandler.SetDefaultRouting(_config, item) == 0)
+        if (await ConfigDbHandler.SetDefaultRouting(item) == 0)
         {
             NoticeManager.Instance.SendMessageEx(ResUI.TipChangeRouting);
             ReloadRequested.Publish();
@@ -466,7 +413,7 @@ public partial class StatusBarViewModel : MyReactiveObject
             }
         }
 
-        await ConfigHandler.SaveConfig(_config);
+        await ConfigTextHandler.SaveConfig();
         ReloadRequested.Publish();
     }
 

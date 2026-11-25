@@ -43,12 +43,12 @@ public interface IAetherKeysSource
 /// The WARP keys window's source in PattN (PattNG AetherKeysRepository): its settings, kept in
 /// <see cref="Config.AetherItem" /> apart from every profile, and the keys, which every Aether profile shares. Whether the
 /// core is there, whether a session runs and the exit-nodes are told as the Aether editor tells them.
-/// <paramref name="save" /> writes the settings file, ConfigHandler.SaveConfig unless a test gives one that writes none.
+/// <paramref name="save" /> writes the settings file, ConfigTextHandler.SaveConfig unless a test gives one that writes none.
 /// </summary>
 public sealed class AetherKeysSource(Config config, Func<Config, Task<int>>? save = null) : IAetherKeysSource
 {
     private readonly AetherEditorSource _editor = new(config);
-    private readonly Func<Config, Task<int>> _save = save ?? ConfigHandler.SaveConfig;
+    private readonly Func<Config, Task<int>> _save = save ?? (_ => ConfigTextHandler.SaveConfig());
 
     public AetherProtocol? SessionProtocol => _editor.SessionProtocol;
 

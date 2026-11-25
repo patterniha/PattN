@@ -690,8 +690,11 @@ public partial class CoreConfigV2rayService
 
                 case "masque":
                     var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    var authValue = $"Basic {Utils.Base64Encode($"{_node.Username}:{_node.Password}")}";
-                    headers.Add("Authorization", authValue);
+                    if (!string.IsNullOrEmpty(_node.Username) || !string.IsNullOrEmpty(_node.Password))
+                    {
+                        var authValue = $"Basic {Utils.Base64Encode($"{_node.Username}:{_node.Password}")}";
+                        headers.Add("Authorization", authValue);
+                    }
                     if (!string.IsNullOrEmpty(protocolExtra?.MasqueHeaders))
                     {
                         var userHeaders = Utils.ParseHeaders(protocolExtra.MasqueHeaders)
@@ -751,7 +754,7 @@ public partial class CoreConfigV2rayService
                             pathHttp = string.Join(",".AppendQuotes(), arrPath);
                         }
                         request = request.Replace("$requestPath$", $"{pathHttp.AppendQuotes()}");
-                        rawSettings.header.request = JsonUtils.SerializeToNode(request) as JsonObject;
+                        rawSettings.header.request = JsonUtils.ParseJson(request) as JsonObject;
 
                         streamSettings.rawSettings = rawSettings;
                     }

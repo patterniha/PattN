@@ -219,15 +219,15 @@ public class AetherRuntimeTests
     [NotInParallel]
     public async Task TheApiRefusesTheGroupsChainsAndSubscriptionsTheEditorsRefuse()
     {
-        var manager = AppManager.Instance;
-        var configField = typeof(AppManager).GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new MissingFieldException(typeof(AppManager).FullName, "_config");
-        var previousConfig = configField.GetValue(manager);
+        var state = ConfigState.Instance;
+        var configField = typeof(ConfigState).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new MissingFieldException(typeof(ConfigState).FullName, "_current");
+        var previousConfig = configField.GetValue(state);
         var suffix = Guid.NewGuid().ToString("N");
         var stored = new List<ProfileItem>();
         try
         {
-            configField.SetValue(manager, new Config { SubIndexId = string.Empty });
+            configField.SetValue(state, new Config { SubIndexId = string.Empty });
             SQLiteHelper.Instance.CreateTable<ProfileItem>();
             SQLiteHelper.Instance.CreateTable<SubItem>();
             ProfileItem Stored(string name, EConfigType type)
@@ -266,7 +266,7 @@ public class AetherRuntimeTests
             await System.Text.Json.JsonSerializer.Serialize(twoAether.Data).Should().Contain("detail");
             var singBox = await runtime.SaveProfileAsync(Chain(ECoreType.sing_box, vless, warp));
             await singBox.Code.Should().BeEqualTo("profile_group_aether_invalid");
-            await (await manager.GetProfileItemViaRemarks($"chain-{suffix}")).Should().BeNull();
+            await (await ConfigDbQuery.GetProfileItemViaRemarks($"chain-{suffix}")).Should().BeNull();
 
             var subscription = await runtime.AddSubscriptionAsync(new SubscriptionInput(
                 $"sub-{suffix}", string.Empty, MoreUrl: string.Empty, Enabled: false, AutoUpdateInterval: 0,
@@ -280,7 +280,7 @@ public class AetherRuntimeTests
             {
                 await SQLiteHelper.Instance.DeleteAsync(profile);
             }
-            configField.SetValue(manager, previousConfig);
+            configField.SetValue(state, previousConfig);
         }
     }
 

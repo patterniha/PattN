@@ -18,7 +18,7 @@ public partial class CoreConfigContextBuilder
     /// </summary>
     public static async Task<ExitNodeLookup> LookUpAetherExitNodeAsync(CoreConfigContext context, string name)
     {
-        var found = AetherExit.NodeProfile(name, await AppManager.Instance.GetProfileItemsViaRemarksAsync(name));
+        var found = AetherExit.NodeProfile(name, await ConfigDbQuery.GetProfileItemsViaRemarksAsync(name));
         if (found is not ByName<ProfileItem>.One one)
         {
             return ExitNodeLookup.Of(found);

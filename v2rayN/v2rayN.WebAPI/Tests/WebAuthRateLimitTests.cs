@@ -3,10 +3,8 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using v2rayN.WebAPI.Api;
 using v2rayN.WebAPI.Security;
@@ -148,6 +146,7 @@ public class WebAuthRateLimitTests
             await proxy.StopAsync();
         }
     }
+
     private static WebApplication CreatePartitionTestApp()
     {
         var builder = WebApplication.CreateBuilder();
@@ -200,9 +199,12 @@ public class WebAuthRateLimitTests
     private sealed class FixedProxy(Uri address) : IWebProxy
     {
         public ICredentials? Credentials { get; set; }
+
         public Uri GetProxy(Uri destination) => address;
+
         public bool IsBypassed(Uri host) => false;
     }
+
     private sealed class TemporaryDirectory : IDisposable
     {
         public TemporaryDirectory()

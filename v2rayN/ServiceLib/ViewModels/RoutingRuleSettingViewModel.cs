@@ -36,7 +36,7 @@ public partial class RoutingRuleSettingViewModel : MyReactiveObject, ICloseable
 
     public RoutingRuleSettingViewModel(RoutingItem routingItem)
     {
-        _config = AppManager.Instance.Config;
+        _config = ConfigTextHandler.Config;
 
         var canEditRemove = this.WhenAnyValue(
             x => x.SelectedSource,
@@ -209,7 +209,7 @@ public partial class RoutingRuleSettingViewModel : MyReactiveObject, ICloseable
             return;
         }
         var index = _rules.IndexOf(item);
-        if (await ConfigHandler.MoveRoutingRule(_rules, index, eMove) == 0)
+        if (await ConfigDbHandler.MoveRoutingRule(_rules, index, eMove) == 0)
         {
             RefreshRulesItems();
         }
@@ -231,7 +231,7 @@ public partial class RoutingRuleSettingViewModel : MyReactiveObject, ICloseable
         item.RuleNum = _rules.Count;
         item.RuleSet = JsonUtils.Serialize(_rules, false);
 
-        if (await ConfigHandler.SaveRoutingItem(_config, item) == 0)
+        if (await ConfigDbHandler.SaveRoutingItem(item) == 0)
         {
             NoticeManager.Instance.Enqueue(ResUI.OperationSuccess);
             RequestClose?.Invoke(this, EventArgs.Empty);

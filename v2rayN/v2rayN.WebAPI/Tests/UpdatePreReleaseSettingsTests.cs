@@ -1,9 +1,5 @@
 using System.Reflection;
 using System.Text.Json;
-using ServiceLib;
-using ServiceLib.Common;
-using ServiceLib.Manager;
-using ServiceLib.Models.Configs;
 using v2rayN.WebAPI.Contracts;
 using v2rayN.WebAPI.Services;
 
@@ -156,9 +152,10 @@ public class UpdatePreReleaseSettingsTests
 
     private sealed class RuntimeFixture : IDisposable
     {
-        private readonly FieldInfo _configField = typeof(AppManager)
-            .GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new MissingFieldException(typeof(AppManager).FullName, "_config");
+        private readonly FieldInfo _configField = typeof(ConfigState)
+            .GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new MissingFieldException(typeof(ConfigState).FullName, "_current");
+
         private readonly object? _previousConfig;
         private readonly string? _previousLocalData;
         private readonly string _configPath;
@@ -170,17 +167,20 @@ public class UpdatePreReleaseSettingsTests
 
         public RuntimeFixture()
         {
-            _previousConfig = _configField.GetValue(AppManager.Instance);
+            _previousConfig = _configField.GetValue(ConfigState.Instance);
             _previousLocalData = Environment.GetEnvironmentVariable(Global.LocalAppData);
             // ConfigHandler writes only into the test build directory, never user data.
             _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "guiConfigs", Global.ConfigFileName);
             if (File.Exists(_configPath))
             {
                 _previousConfigFile = File.ReadAllBytes(_configPath);
-                if (!OperatingSystem.IsWindows()) _previousConfigMode = File.GetUnixFileMode(_configPath);
+                if (!OperatingSystem.IsWindows())
+                {
+                    _previousConfigMode = File.GetUnixFileMode(_configPath);
+                }
             }
             Environment.SetEnvironmentVariable(Global.LocalAppData, "0");
-            _configField.SetValue(AppManager.Instance, Config);
+            ConfigState.Instance.SetCurrent(Config);
         }
 
         public async Task<Config> ReadSavedConfigAsync() =>
@@ -193,18 +193,23 @@ public class UpdatePreReleaseSettingsTests
             {
                 if (_previousConfigFile is null)
                 {
-                    if (File.Exists(_configPath)) File.Delete(_configPath);
+                    if (File.Exists(_configPath))
+                    {
+                        File.Delete(_configPath);
+                    }
                 }
                 else
                 {
                     File.WriteAllBytes(_configPath, _previousConfigFile);
                     if (!OperatingSystem.IsWindows() && _previousConfigMode is { } mode)
+                    {
                         File.SetUnixFileMode(_configPath, mode);
+                    }
                 }
             }
             finally
             {
-                _configField.SetValue(AppManager.Instance, _previousConfig);
+                _configField.SetValue(ConfigState.Instance, _previousConfig);
                 Environment.SetEnvironmentVariable(Global.LocalAppData, _previousLocalData);
             }
         }

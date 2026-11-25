@@ -19,12 +19,12 @@ public class RegionalPresetTests
         var config = CoreConfigTestFactory.CreateConfig();
         var simpleDns = config.SimpleDNSItem;
         var simpleDnsBefore = JsonUtils.Serialize(simpleDns);
-        var dnsItemsBefore = JsonUtils.Serialize(await AppManager.Instance.DNSItems());
+        var dnsItemsBefore = JsonUtils.Serialize(await ConfigDbQuery.DNSItems());
 
-        await ConfigHandler.ApplyRegionalPreset(config, type);
+        await ConfigDbHandler.ApplyRegionalPreset(type);
 
         await ReferenceEquals(config.SimpleDNSItem, simpleDns).Should().BeTrue();
         await JsonUtils.Serialize(config.SimpleDNSItem).Should().BeEqualTo(simpleDnsBefore);
-        await JsonUtils.Serialize(await AppManager.Instance.DNSItems()).Should().BeEqualTo(dnsItemsBefore);
+        await JsonUtils.Serialize(await ConfigDbQuery.DNSItems()).Should().BeEqualTo(dnsItemsBefore);
     }
 }

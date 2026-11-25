@@ -1,40 +1,40 @@
 {
-  "assets": [
-    {
-      "rid": "linux-x64",
-      "arch": "64",
-      "full": "PattN-linux-64-WebAPI.zip",
-      "update": "PattN-linux-64-WebAPI-update.zip"
-    },
-    {
-      "rid": "linux-arm64",
-      "arch": "arm64",
-      "full": "PattN-linux-arm64-WebAPI.zip",
-      "update": "PattN-linux-arm64-WebAPI-update.zip"
-    },
-    {
-      "rid": "win-x64",
-      "arch": "64",
-      "full": "PattN-windows-64-WebAPI.zip",
-      "update": "PattN-windows-64-WebAPI-update.zip"
-    },
-    {
-      "rid": "win-arm64",
-      "arch": "arm64",
-      "full": "PattN-windows-arm64-WebAPI.zip",
-      "update": "PattN-windows-arm64-WebAPI-update.zip"
-    },
-    {
-      "rid": "linux-riscv64",
-      "arch": "riscv64",
-      "full": "PattN-linux-riscv64-WebAPI.zip",
-      "update": "PattN-linux-riscv64-WebAPI-update.zip"
-    },
-    {
-      "rid": "linux-loongarch64",
-      "arch": "loong64",
-      "full": "PattN-linux-loong64-WebAPI.zip",
-      "update": "PattN-linux-loong64-WebAPI-update.zip"
-    }
-  ]
+    "assets": [
+        {
+            "rid": "linux-x64",
+            "arch": "64",
+            "full": "PattN-linux-64-WebAPI.zip",
+            "update": "PattN-linux-64-WebAPI-update.zip"
+        },
+        {
+            "rid": "linux-arm64",
+            "arch": "arm64",
+            "full": "PattN-linux-arm64-WebAPI.zip",
+            "update": "PattN-linux-arm64-WebAPI-update.zip"
+        },
+        {
+            "rid": "win-x64",
+            "arch": "64",
+            "full": "PattN-windows-64-WebAPI.zip",
+            "update": "PattN-windows-64-WebAPI-update.zip"
+        },
+        {
+            "rid": "win-arm64",
+            "arch": "arm64",
+            "full": "PattN-windows-arm64-WebAPI.zip",
+            "update": "PattN-windows-arm64-WebAPI-update.zip"
+        },
+        {
+            "rid": "linux-riscv64",
+            "arch": "riscv64",
+            "full": "PattN-linux-riscv64-WebAPI.zip",
+            "update": "PattN-linux-riscv64-WebAPI-update.zip"
+        },
+        {
+            "rid": "linux-loongarch64",
+            "arch": "loong64",
+            "full": "PattN-linux-loong64-WebAPI.zip",
+            "update": "PattN-linux-loong64-WebAPI-update.zip"
+        }
+    ]
 }

@@ -79,7 +79,7 @@ public static class ConnectionHandler
 
     public static async Task<int> GetRealPingTime(HttpClient client, CancellationToken cancellationToken = default)
     {
-        var url = AppManager.Instance.Config.SpeedTestItem.SpeedPingTestUrl;
+        var url = ConfigTextHandler.Config.SpeedTestItem.SpeedPingTestUrl;
         var responseTime = -1;
         try
         {
@@ -167,7 +167,7 @@ public static class ConnectionHandler
     {
         try
         {
-            var url = AppManager.Instance.Config.SpeedTestItem.IPAPIUrl;
+            var url = ConfigTextHandler.Config.SpeedTestItem.IPAPIUrl;
             if (url.IsNullOrEmpty())
             {
                 return null;
@@ -186,7 +186,7 @@ public static class ConnectionHandler
             }
 
             var ip = ipInfo.ip ?? ipInfo.clientIp ?? ipInfo.ip_addr ?? ipInfo.query;
-            var country = ipInfo.country_code ?? ipInfo.country ?? ipInfo.countryCode ?? ipInfo.location?.country_code ?? "unknown";
+            var country = ipInfo.country_code ?? ipInfo.country ?? ipInfo.countryCode ?? ipInfo.location?.country_code ?? ipInfo.location?.country ?? "unknown";
 
             return new IpInfoResult(country, ip);
         }

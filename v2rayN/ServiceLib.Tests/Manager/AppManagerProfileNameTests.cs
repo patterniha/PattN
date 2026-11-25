@@ -12,7 +12,7 @@ public class AppManagerProfileNameTests
     {
         var profile = CoreConfigTestFactory.CreateSocksNode(ECoreType.Xray, string.Empty, remarks);
         profile.Subid = subId;
-        await ConfigHandler.AddServerCommon(config, profile);
+        await ConfigDbHandler.AddServerCommon(profile);
     }
 
     [Test]
@@ -29,13 +29,13 @@ public class AppManagerProfileNameTests
         await Add(config, name.ToUpperInvariant(), subId);
         await Add(config, $"x{name}", subId);
 
-        var found = await AppManager.Instance.GetProfileItemsViaRemarksAsync($"  {name} ");
+        var found = await ConfigDbQuery.GetProfileItemsViaRemarksAsync($"  {name} ");
 
         await found.Count.Should().BeEqualTo(2);
         await found.All(profile => profile.Remarks.Trim() == name).Should().BeTrue();
-        await (await AppManager.Instance.GetProfileItemsViaRemarksAsync($"{name}-2")).Count.Should().BeEqualTo(1);
-        await (await AppManager.Instance.GetProfileItemsViaRemarksAsync($"none-{name}")).Count.Should().BeEqualTo(0);
-        await (await AppManager.Instance.GetProfileItemsViaRemarksAsync("  ")).Count.Should().BeEqualTo(0);
-        await (await AppManager.Instance.GetProfileItemsViaRemarksAsync(null)).Count.Should().BeEqualTo(0);
+        await (await ConfigDbQuery.GetProfileItemsViaRemarksAsync($"{name}-2")).Count.Should().BeEqualTo(1);
+        await (await ConfigDbQuery.GetProfileItemsViaRemarksAsync($"none-{name}")).Count.Should().BeEqualTo(0);
+        await (await ConfigDbQuery.GetProfileItemsViaRemarksAsync("  ")).Count.Should().BeEqualTo(0);
+        await (await ConfigDbQuery.GetProfileItemsViaRemarksAsync(null)).Count.Should().BeEqualTo(0);
     }
 }

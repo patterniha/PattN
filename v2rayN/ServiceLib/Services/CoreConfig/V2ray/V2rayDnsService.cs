@@ -96,6 +96,7 @@ public partial class CoreConfigV2rayService
             FillDnsServers(dnsItem);
             FillDnsHosts(dnsItem);
 
+            dnsItem.disableFallbackIfMatch = true;
             dnsItem.serveStale = simpleDnsItem?.ServeStale is true ? true : null;
             dnsItem.enableParallelQuery = simpleDnsItem?.ParallelQuery is true ? true : null;
 
@@ -106,21 +107,14 @@ public partial class CoreConfigV2rayService
 
             // DNS routing, inserted at the top so user rules cannot hijack DNS module queries
             var dnsRouteRules = new List<RulesItem4Ray>();
-            var directDnsTags = dnsItem.servers
-                .Select(server =>
-                {
-                    var tagNode = (server as JsonObject)?["tag"];
-                    return tagNode is JsonValue value && value.TryGetValue<string>(out var tag) ? tag : null;
-                })
-                .Where(tag => tag is not null && tag.StartsWith(Global.DirectDnsTag, StringComparison.Ordinal))
-                .Select(tag => tag!)
-                .ToList();
-            if (directDnsTags.Count > 0)
+            // PattN: the direct DNS servers' rule only where there is one (upstream adds it always)
+            if (dnsItem.servers.Any(server => (server as JsonObject)?["tag"] is JsonValue value
+                    && value.TryGetValue<string>(out var tag) && tag == Global.DirectDnsTag))
             {
                 dnsRouteRules.Add(new()
                 {
                     type = "field",
-                    inboundTag = directDnsTags,
+                    inboundTag = [Global.DirectDnsTag],
                     outboundTag = Global.DirectTag,
                 });
             }
@@ -142,6 +136,30 @@ public partial class CoreConfigV2rayService
         {
             Logging.SaveLog(_tag, ex);
         }
+    }
+
+    private static bool IsCatchAllRule(RulesItem rule)
+    {
+        if (!rule.Enabled)
+        {
+            return false;
+        }
+
+        var hasNoFilters = rule.InboundTag is not { Count: > 0 }
+                            && rule.Domain is not { Count: > 0 }
+                            && rule.Protocol is not { Count: > 0 }
+                            && rule.Process is not { Count: > 0 };
+
+        var isWildcardIp = rule.Ip is null
+                            || rule.Ip.Count == 0
+                            || rule.Ip.Contains("0.0.0.0/0")
+                            || rule.Ip.Contains("::/0");
+
+        var isWildcardPort = string.IsNullOrEmpty(rule.Port) || rule.Port is "0-65535" or "1-65535";
+
+        var isWildcardNetwork = string.IsNullOrEmpty(rule.Network) || rule.Network is "tcp,udp" or "udp,tcp";
+
+        return hasNoFilters && isWildcardIp && isWildcardPort && isWildcardNetwork;
     }
 
     private void CheckFakeIPRanges()
@@ -250,8 +268,8 @@ public partial class CoreConfigV2rayService
         }
 
         var routing = context.RoutingItem;
-        List<RulesItem>? rules = null;
-        rules = JsonUtils.Deserialize<List<RulesItem>>(routing?.RuleSet) ?? [];
+        var rules = JsonUtils.Deserialize<List<RulesItem>>(routing?.RuleSet) ?? [];
+        var useDirectDns = rules.Where(IsCatchAllRule).Any(r => r.OutboundTag == Global.DirectTag);
         foreach (var item in rules)
         {
             if (!item.Enabled || item.Domain is null || item.Domain.Count == 0)
@@ -305,18 +323,16 @@ public partial class CoreConfigV2rayService
 
         dnsItem.servers ??= [];
 
-        var directDnsTagIndex = 1;
-
         if (dnsServerDomains.Count > 0)
         {
-            AddDnsServers(bootstrapDNSAddress, dnsServerDomains, finalQuery: true);
+            AddDnsServers(bootstrapDNSAddress, dnsServerDomains);
         }
         if (context.ProtectDomainList.Count > 0)
         {
             // finalQuery: the protected (proxy server) domains must be answered by the direct
             // servers alone, never falling through to resolvers that dial through the proxy itself
             // full: so only the proxy host itself matches, a plain entry is a substring match in Xray DNS
-            AddDnsServers(directDNSAddress, context.ProtectDomainList.Select(d => $"full:{d}").ToHashSet(), true, finalQuery: true);
+            AddDnsServers(directDNSAddress, context.ProtectDomainList.Select(d => $"full:{d}").ToHashSet(), true);
         }
 
         if (simpleDNSItem.FakeIP == true)
@@ -332,38 +348,29 @@ public partial class CoreConfigV2rayService
             if (fakeIPMatchDomain.Count > 0)
             {
                 GenFakeDns();
-                AddDnsServers(["fakedns"], fakeIPMatchDomain, skipFallback: false);
+                // PattN: never the final query: Xray skips FakeDNS for its own lookups, so a final FakeDNS would end them
+                // unanswered; the real servers after it, which list every domain it lists, answer them
+                AddDnsServers(["fakedns"], fakeIPMatchDomain, finalQuery: false, skipFallback: false);
             }
         }
 
         AddDnsServers(remoteDNSAddress, proxyDomainList);
-        AddDnsServers(directDNSAddress, directDomainList, true, finalQuery: true);
+        AddDnsServers(directDNSAddress, directDomainList, true);
         AddDnsServers(remoteDNSAddress, proxyGeositeList);
-        AddDnsServers(directDNSAddress, directGeositeList, true, finalQuery: true);
-        AddDnsServers(directDNSAddress, expectedDomainList, true, expectedIPs, finalQuery: true);
-
-        var useDirectDns = false;
-
-        if (rules?.LastOrDefault() is { OutboundTag: Global.DirectTag } lastRule)
-        {
-            var noDomain = lastRule.Domain == null || lastRule.Domain.Count == 0;
-            var noProcess = lastRule.Process == null || lastRule.Process.Count == 0;
-            var isAnyIp = lastRule.Ip == null || lastRule.Ip.Count == 0 || lastRule.Ip.Contains("0.0.0.0/0");
-            var isAnyPort = string.IsNullOrEmpty(lastRule.Port) || lastRule.Port == "0-65535";
-            var isAnyNetwork = string.IsNullOrEmpty(lastRule.Network) || lastRule.Network == "tcp,udp";
-            useDirectDns = noDomain && noProcess && isAnyIp && isAnyPort && isAnyNetwork;
-        }
+        AddDnsServers(directDNSAddress, directGeositeList, true);
+        AddDnsServers(directDNSAddress, expectedDomainList, true, expectedIPs, false);
+        AddDnsServers(remoteDNSAddress, expectedDomainList);
 
         if (!useDirectDns)
         {
-            dnsItem.servers.AddRange(JsonUtils.SerializeToArray(remoteDNSAddress));
+            dnsItem.servers.AddRange(JsonUtils.SerializeToArray(remoteDNSAddress)!);
         }
         else
         {
             foreach (var dns in directDNSAddress)
             {
                 var dnsServer = CreateDnsServer(dns, []);
-                dnsServer.tag = $"{Global.DirectDnsTag}-{directDnsTagIndex++}";
+                dnsServer.tag = Global.DirectDnsTag;
                 dnsServer.skipFallback = false;
                 dnsItem.servers.Add(JsonUtils.SerializeToNode(dnsServer));
             }
@@ -407,7 +414,7 @@ public partial class CoreConfigV2rayService
             return dnsServer;
         }
 
-        void AddDnsServers(List<string> dnsAddresses, HashSet<string> domains, bool isDirectDns = false, HashSet<string>? expectedIPs = null, bool finalQuery = false, bool skipFallback = true)
+        void AddDnsServers(List<string> dnsAddresses, HashSet<string> domains, bool isDirectDns = false, HashSet<string>? expectedIPs = null, bool finalQuery = true, bool skipFallback = true)
         {
             if (domains.Count <= 0)
             {
@@ -419,10 +426,8 @@ public partial class CoreConfigV2rayService
                 var dnsServer = CreateDnsServer(dnsAddress, domains, expectedIPs);
                 if (isDirectDns)
                 {
-                    dnsServer.tag = $"{Global.DirectDnsTag}-{directDnsTagIndex++}";
+                    dnsServer.tag = Global.DirectDnsTag;
                 }
-                // PattN: the group's last server ends the query, so that every server of the group is asked in turn
-                // and none after them
                 if (finalQuery && i == dnsAddresses.Count - 1)
                 {
                     dnsServer.finalQuery = true;

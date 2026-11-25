@@ -38,7 +38,7 @@ public sealed class AetherExitHost
     {
         return new AetherExitHost
         {
-            ListenPort = () => AetherPorts.ListenPortOf(AppManager.Instance.Config?.CoreBasicItem?.AetherListenPort),
+            ListenPort = () => AetherPorts.ListenPortOf(ConfigTextHandler.Config?.CoreBasicItem?.AetherListenPort),
             Generate = (exit, port) => GenerateAsync(exit, port, AetherUplinkBinding.Default),
             StartXray = async fileName =>
                 await CoreManager.Instance.RunAetherExitXrayAsync(fileName) is { } process ? new XrayProcess(process) : null,
@@ -63,7 +63,7 @@ public sealed class AetherExitHost
     /// </summary>
     public static async Task<RetResult> GenerateAsync(AetherExit exit, int port, AetherUplinkBinding uplink)
     {
-        var config = AppManager.Instance.Config;
+        var config = ConfigTextHandler.Config;
         // Its routing rules are never used: a rule's target never refuses it, nor logs that it would (E2).
         var (context, _) = await CoreConfigContextBuilder.Build(config, ContextProfile(), refuseRuleTargets: false);
         if (exit.Node is { } node)

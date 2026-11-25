@@ -794,7 +794,7 @@ public partial class CoreConfigV2rayService
         var localPort = _config.Inbound?.FirstOrDefault(inbound => inbound.Protocol == nameof(EInboundProtocol.socks))?.LocalPort ?? 10808;
         var pacPort = localPort + (int)EInboundProtocol.pac;
         var app = AppManager.Instance;
-        return app.Config == null ? [pacPort] : [app.StatePort, app.StatePort2, pacPort];
+        return !ConfigState.Instance.IsInitialized ? [pacPort] : [app.StatePort, app.StatePort2, pacPort];
     }
 
     /// <summary>

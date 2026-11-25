@@ -28,13 +28,13 @@ public class ConfigHandlerImportAlpnTests
 
     private static async Task<Dictionary<string, ProfileItem>> Profiles(string subId)
     {
-        return (await AppManager.Instance.ProfileItems(subId) ?? []).ToDictionary(profile => profile.Remarks);
+        return (await ConfigDbQuery.ProfileItems(subId) ?? []).ToDictionary(profile => profile.Remarks);
     }
 
     /// <summary>Removes what the test imported under <paramref name="subId" />, so that the test database does not grow with each run.</summary>
     private static async Task Remove(string subId)
     {
-        foreach (var profile in await AppManager.Instance.ProfileItems(subId) ?? [])
+        foreach (var profile in await ConfigDbQuery.ProfileItems(subId) ?? [])
         {
             await SQLiteHelper.Instance.DeleteAsync(profile);
         }
@@ -56,7 +56,7 @@ public class ConfigHandlerImportAlpnTests
 
         try
         {
-            var count = await ConfigHandler.AddBatchServers(config, links, subId, false);
+            var count = await ConfigDbHandler.AddBatchServers(links, subId, false);
             var profiles = await Profiles(subId);
 
             await count.Should().BeEqualTo(7);
@@ -104,7 +104,7 @@ public class ConfigHandlerImportAlpnTests
 
         try
         {
-            var count = await ConfigHandler.AddBatchServers(config, uri!, subId, false);
+            var count = await ConfigDbHandler.AddBatchServers(uri!, subId, false);
             var profiles = await Profiles(subId);
 
             await count.Should().BeEqualTo(3);
