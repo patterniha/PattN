@@ -577,6 +577,7 @@ public sealed class CoreInfoManager
                     Arguments = "", // not used: the Aether code builds the argument list of each run itself
                     Url = urlAether,
                     ReleaseApiUrl = urlAether.Replace(Global.GithubUrl, Global.GithubApiUrl),
+                    GitInfoRefsUrl = GetGitInfoRefsUrl(ECoreType.aether),
                     DownloadUrlWin64 = urlAether + "/download/{0}/aether-windows-x86_64.zip",
                     // The fork builds no arm64 Windows core; Windows 11 on ARM runs the x64 one.
                     DownloadUrlWinArm64 = urlAether + "/download/{0}/aether-windows-x86_64.zip",
