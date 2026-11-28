@@ -16,6 +16,7 @@ public sealed record SubscriptionInput(
     string? NextProfile = null,
     int? PreSocksPort = null,
     ECoreType? CustomCoreType = null,
+    string? PreResolver = null,
     // PattN: the subscription's override address and port; a request that leaves them out keeps them, an empty
     // address or port 0 clears them
     string? OverrideAddress = null,
@@ -39,6 +40,7 @@ public sealed record SubscriptionView(
     string? NextProfile,
     int? PreSocksPort,
     string? CustomCoreType,
+    string? PreResolver,
     string? OverrideAddress,
     int? OverridePort);
 
@@ -304,7 +306,10 @@ public sealed record DnsEditorOptionsView(
     string[] FakeIpv6Ranges,
     string[] ExpectedIps);
 
-public sealed record SubscriptionEditorOptionsView(string[] ConvertTargets, string[] CustomCoreTypes);
+public sealed record SubscriptionEditorOptionsView(
+    string[] ConvertTargets,
+    string[] CustomCoreTypes,
+    string[] PreResolveAddresses);
 
 public sealed record ProfileEditorOptionsView(
     string[] CoreTypes,
@@ -330,7 +335,9 @@ public sealed record ProfileEditorOptionsView(
     string[] Alpns,
     IReadOnlyDictionary<string, string[]> ShadowsocksSecurities,
     string[] StreamSecurityTypes,
-    string[] MultipleLoadStrategies);
+    string[] MultipleLoadStrategies,
+    string[] XdriveProviders,
+    string[] XdriveServices);
 
 public sealed record WebEditorOptionsView(
     SubscriptionEditorOptionsView Subscriptions,

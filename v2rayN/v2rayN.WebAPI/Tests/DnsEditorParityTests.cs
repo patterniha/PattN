@@ -20,6 +20,7 @@ public class DnsEditorParityTests
             Enum.GetValues<ECoreType>().Where(value => value is not (ECoreType.v2rayN or ECoreType.aether)).Select(value => value.ToString())).Should().BeTrue();
         await options.Subscriptions.CustomCoreTypes.Contains(nameof(ECoreType.aether)).Should().BeFalse();
         await options.Profiles.ShadowsocksSecurities.ContainsKey(nameof(ECoreType.aether)).Should().BeFalse();
+        await options.Subscriptions.PreResolveAddresses.SequenceEqual(Global.DomainDNS4PreResolveAddress).Should().BeTrue();
         await options.Profiles.CoreTypes.SequenceEqual(Global.CoreTypes).Should().BeTrue();
         await options.Profiles.ConfigTypes.SequenceEqual(Enum.GetValues<EConfigType>().Select(value => value.ToString())).Should().BeTrue();
         await options.Profiles.SingboxOnlyConfigTypes.ToHashSet().SetEquals(Global.SingboxOnlyConfigType.Select(value => value.ToString())).Should().BeTrue();
@@ -50,6 +51,8 @@ public class DnsEditorParityTests
             await options.Profiles.ShadowsocksSecurities[coreType.ToString()].SequenceEqual(expected).Should().BeTrue();
         }
         await options.Profiles.MultipleLoadStrategies.ToHashSet().SetEquals(Enum.GetNames<EMultipleLoad>()).Should().BeTrue();
+        await options.Profiles.XdriveProviders.SequenceEqual(Global.XdriveProviders).Should().BeTrue();
+        await options.Profiles.XdriveServices.SequenceEqual(Global.XdriveServices).Should().BeTrue();
         await settings.LogLevels.SequenceEqual(Global.LogLevels).Should().BeTrue();
         await settings.RootCertProviders.SequenceEqual(Global.RootCertProviders).Should().BeTrue();
         await settings.Fingerprints.SequenceEqual(Global.Fingerprints).Should().BeTrue();

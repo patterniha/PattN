@@ -27,6 +27,7 @@ public class SubscriptionParityTests
             PreSocksPort = 10809,
             Memo = "memo",
             CustomCoreType = ECoreType.sing_box,
+            PreResolver = "https://doh.pub/dns-query",
             OverrideAddress = "edge.example",
             OverridePort = 8443,
         };
@@ -48,6 +49,7 @@ public class SubscriptionParityTests
             loaded.NextProfile,
             loaded.PreSocksPort,
             ECoreType.sing_box,
+            loaded.PreResolver,
             loaded.OverrideAddress,
             loaded.OverridePort);
         var saved = V2rayRuntime.ToSubItem(input, original);
@@ -68,6 +70,7 @@ public class SubscriptionParityTests
         await reloaded.NextProfile.Should().BeEqualTo("typed landing alias");
         await reloaded.PreSocksPort.Should().BeEqualTo(original.PreSocksPort);
         await reloaded.CustomCoreType.Should().BeEqualTo("sing_box");
+        await reloaded.PreResolver.Should().BeEqualTo("https://doh.pub/dns-query");
         await reloaded.OverrideAddress.Should().BeEqualTo(original.OverrideAddress);
         await reloaded.OverridePort.Should().BeEqualTo(original.OverridePort);
     }
@@ -102,26 +105,6 @@ public class SubscriptionParityTests
         await code.Should().BeEqualTo("subscription_override_port_invalid");
         await V2rayRuntime.TryValidateSubscription(new SubscriptionInput("Overrides", string.Empty, OverridePort: 0),
             out _, out _).Should().BeTrue();
-    }
-
-    [Test]
-    public async Task AnEditKeepsThePreResolver()
-    {
-        // The API has no field for the pre-resolver the desktop's subscription editor sets (#10220): saving the
-        // subscription through the API must not erase it
-        var original = new SubItem
-        {
-            Id = "pre-resolver-subscription",
-            Remarks = "Pre-resolved",
-            Url = "https://main.example/sub",
-            PreResolver = "https://1.1.1.1/dns-query",
-        };
-
-        var edited = V2rayRuntime.ToSubItem(new SubscriptionInput("Renamed", original.Url), original);
-        var added = V2rayRuntime.ToSubItem(new SubscriptionInput("New", "https://new.example/sub"), null);
-
-        await edited.PreResolver.Should().BeEqualTo("https://1.1.1.1/dns-query");
-        await added.PreResolver.Should().BeNull();
     }
 
     [Test]

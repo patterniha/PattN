@@ -1390,13 +1390,13 @@ public sealed partial class V2rayRuntime(
         NextProfile = input.NextProfile ?? existing?.NextProfile,
         PreSocksPort = input.PreSocksPort,
         CustomCoreType = input.CustomCoreType,
+        // Omitted preResolver keeps the stored value; an explicit empty string clears it.
+        PreResolver = input.PreResolver ?? existing?.PreResolver,
         // PattN: kept when the request leaves them out (SubscriptionInput), stored like the subscription editor does
         OverrideAddress = (input.OverrideAddress ?? existing?.OverrideAddress)?.Trim() is { Length: > 0 } overrideAddress
             ? overrideAddress
             : null,
         OverridePort = (input.OverridePort ?? existing?.OverridePort) is int overridePort and > 0 ? overridePort : null,
-        // PattN: the API has no field for the pre-resolver (#10220), so an edit keeps the one the desktop editor set
-        PreResolver = existing?.PreResolver,
     };
 
     internal static SubscriptionView ToSubscriptionView(SubItem item) => new(
@@ -1417,6 +1417,7 @@ public sealed partial class V2rayRuntime(
         item.NextProfile,
         item.PreSocksPort,
         item.CustomCoreType is null ? null : System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(item.CustomCoreType.Value.ToString()),
+        item.PreResolver,
         item.OverrideAddress,
         item.OverridePort);
 
